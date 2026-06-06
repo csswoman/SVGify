@@ -28,13 +28,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <head>
-        {/* CSP: no inline scripts, no eval; wasm-unsafe-eval for the Web Worker only */}
-        <meta
-          httpEquiv="Content-Security-Policy"
-          content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; worker-src blob:"
-        />
-      </head>
+
       <body className="min-h-full flex flex-col bg-gray-100 text-gray-900">
         <header className="bg-white border-b border-gray-200 py-4 px-6 shrink-0">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
