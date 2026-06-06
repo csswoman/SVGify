@@ -16,7 +16,7 @@ export function parseSvgString(svgString: string): SVGDocument | null {
       throw new Error('SVG parsing failed');
     }
 
-    const svg = doc.documentElement as SVGElement;
+    const svg = doc.documentElement as unknown as SVGElement;
     const paths = extractPathsFromSvg(svg);
 
     // Get dimensions
@@ -65,7 +65,7 @@ export function extractPathsFromSvg(svg: SVGElement): SVGPath[] {
       }
     }
 
-    const strokeColor = stroke ? parseRgbString(stroke) : undefined;
+    const strokeColor = stroke ? (parseRgbString(stroke) ?? undefined) : undefined;
 
     paths.push({
       id: `path-${pathId++}`,
@@ -73,7 +73,7 @@ export function extractPathsFromSvg(svg: SVGElement): SVGPath[] {
       fill: fillColor,
       stroke: strokeColor,
       opacity,
-      label,
+      label: label ?? undefined,
     });
   });
 

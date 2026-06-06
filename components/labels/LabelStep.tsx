@@ -35,7 +35,7 @@ export function LabelStep({ svgString, onComplete }: LabelStepProps) {
 
       if (doc.documentElement.tagName === 'parsererror') throw new Error('Invalid SVG');
 
-      const svg = doc.documentElement as SVGElement;
+      const svg = doc.documentElement as unknown as SVGElement;
       svg.setAttribute('width', '100%');
       svg.setAttribute('height', '100%');
       svg.style.maxWidth = '100%';

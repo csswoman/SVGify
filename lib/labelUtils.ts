@@ -12,9 +12,9 @@ export function addLabelToPath(pathEl: SVGPathElement, label: string): void {
   pathEl.setAttribute('data-label', sanitized);
 
   // Create or update <title> element
-  let titleEl = pathEl.querySelector('title');
+  let titleEl = pathEl.querySelector<SVGTitleElement>('title');
   if (!titleEl) {
-    titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+    titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title') as SVGTitleElement;
     pathEl.insertBefore(titleEl, pathEl.firstChild);
   }
   titleEl.textContent = sanitized;
@@ -22,7 +22,7 @@ export function addLabelToPath(pathEl: SVGPathElement, label: string): void {
 
 export function removeLabelFromPath(pathEl: SVGPathElement): void {
   pathEl.removeAttribute('data-label');
-  const titleEl = pathEl.querySelector('title');
+  const titleEl = pathEl.querySelector<SVGTitleElement>('title');
   if (titleEl) {
     titleEl.remove();
   }

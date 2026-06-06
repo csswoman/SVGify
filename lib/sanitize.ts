@@ -6,7 +6,7 @@ export function sanitizeSvgString(svgString: string): string {
     throw new Error('Invalid SVG');
   }
 
-  const svg = doc.documentElement;
+  const svg = doc.documentElement as unknown as SVGElement;
 
   // Remove dangerous elements
   const dangerousElements = svg.querySelectorAll('script, foreignObject, style, iframe, object, embed, link, meta, title, base');

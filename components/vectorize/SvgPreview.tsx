@@ -30,7 +30,7 @@ function SvgPreviewInner({ svgString, onPathClick }: SvgPreviewProps) {
         throw new Error('SVG could not be parsed');
       }
 
-      const svg = doc.documentElement as SVGElement;
+      const svg = doc.documentElement as unknown as SVGElement;
 
       // Make SVG fill its container
       svg.setAttribute('width', '100%');
