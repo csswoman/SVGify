@@ -18,12 +18,10 @@ images and the resulting SVGs never leave the device.
 | Framework | Next.js **16.2.7** | App Router, TypeScript, `output: 'export'` (static) |
 | UI | React **19** | |
 | Styling | Tailwind CSS **v4** | `@theme` directive in CSS; no `tailwind.config.js` |
-| Vectorize engine | **`vectortracer@0.1.2`** | vtracer Rust→WASM bindings, ESM, MIT, TS types, 0 deps |
-| Fallback engine | `imagetracerjs@1.2.6` | Pure JS. ONLY if WASM init genuinely fails after debugging; ask user first |
-| Heavy work | Web Worker | WASM runs off the main thread |
+| Vectorize engine | **`imagetracerjs@1.2.6`** | Pure JS, color tracing, per-path fills, synchronous, no WASM |
+| Heavy work | Web Worker | Keeps UI responsive during tracing |
 
-**Engine note:** the originally-requested `@alanscodelog/vectortracer` does not
-exist on npm (404). The correct package is the unscoped **`vectortracer`**.
+**Engine decision:** `vectortracer@0.1.2` (the corrected name for the originally-requested `@alanscodelog/vectortracer`) has `ColorImageConverter` marked TODO — not yet implemented. Since **color editing is core to SVGcraft**, we use `imagetracerjs` for its proven color tracing and per-path `fill="rgb(...)"` attributes. Smoke test verified it works end-to-end in Node.js (and will work identically in Web Worker).
 
 ## Architecture
 
@@ -61,42 +59,37 @@ If `vectortracer` ever breaks or is swapped for `imagetracerjs`, only the worker
 { type: 'error'; message: string }      // user-friendly, never a raw stack
 ```
 
-### Worker lifecycle (vectortracer specifics)
+### Worker lifecycle (imagetracerjs specifics)
 
-vectortracer is class-based and incremental, not one-shot:
+imagetracerjs is synchronous and pure JS. The worker:
 
-1. Pick converter by mode: `ColorImageConverter` (color) or
-   `BinaryImageConverter` (b/w).
-2. `new Converter(imageData, vtracerParams, options)`
-3. `await converter.init()`
-4. Loop: `converter.tick()` while reading `converter.progress()` →
-   emit `progress` events — until done.
-5. `converter.getResult()` → SVG string → emit `done`.
-6. **ALWAYS `converter.free()`** in a `finally` block (manual WASM memory
-   cleanup), including on error/cancel.
+1. Receives `{ type: 'vectorize', imageData, settings }`.
+2. Calls `ImageTracer.imagedataToSVG(imageData, options)` — runs to completion.
+3. Posts `{ type: 'done', svg: string }`.
+4. On error, posts `{ type: 'error', message }` (catches and sanitizes thrown errors).
 
-### WASM serving (static export)
+No progress events during tracing (imagetracerjs is synchronous), so the progress bar
+shows "vectorizing..." without a percentage. Acceptable UX: typical images complete in
+<500ms.
 
-The `.wasm` is copied to `/public/wasm/` and the worker initializes it from a
-relative URL. Predictable, CDN-cacheable, works on any static host. Copy is
-wired via a `postinstall`/prebuild script or committed asset (verified during
-scaffold).
+### No WASM required
 
-## Settings → vtracer params
+imagetracerjs is pure JavaScript — no `.wasm` file to serve, no init complexity.
+The worker simply imports it as an ES module and calls `imagedataToSVG()` synchronously.
 
-| UI control | vtracer param | Notes |
+## Settings → imagetracerjs options
+
+| UI control | imagetracerjs option | Notes |
 |---|---|---|
-| Color precision | `color_precision` | |
-| Filter speckle | `filter_speckle` | |
-| Smoothing | `corner_threshold` + `path_precision` | |
-| Curve mode | `mode` | spline / polygon |
-| Layering | `hierarchical` | stacked / cutout |
-| Color / B&W | converter class | Color vs Binary |
+| Color count | `numberofcolors` | 2–256; fewer colors = simpler output |
+| Smoothing | `ltres` + `qtres` | Lower threshold = more detail; higher = smoother |
+| Stroke width | `strokewidth` | 1–5 pixels |
+| Color sampling | `colorsampling` | 0 = systematic, 1–n = random sampling |
 
-**Presets** are param bundles, applied then user-adjustable:
-- **Logo / flat color** — low color_precision, higher filter_speckle, spline.
-- **Sketch / line art** — Binary converter, polygon/spline tuned for lines.
-- **Photo** — high color_precision, low filter_speckle.
+**Presets** bundle option values and are user-adjustable:
+- **Logo / flat color** — `numberofcolors: 2–4`, `ltres: 2`, `qtres: 1` (clean, simplified).
+- **Sketch / line art** — `numberofcolors: 1–2`, `ltres: 0.5`, `qtres: 0.5` (sharp edges).
+- **Photo** — `numberofcolors: 16–32`, `ltres: 0.5`, `qtres: 0.5` (detailed).
 
 Sensible defaults so most users never open the settings.
 
@@ -189,6 +182,7 @@ working SVG string, the source image). Each step is a self-contained component.
 
 ## Decisions locked with user
 
-- Engine: `vectortracer@0.1.2`, fallback `imagetracerjs` only after asking.
-- WASM: copy to `/public/wasm/`, fetch by URL.
+- Engine: **`imagetracerjs@1.2.6`** (pure JS, color tracing, verified smoke test).
+  Reason: `vectortracer` ColorImageConverter not yet implemented.
+- No WASM, no asset serving complexity.
 - Git: `git init`, commit per module.
