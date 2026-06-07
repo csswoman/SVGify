@@ -21,7 +21,7 @@ export function StepIndicator({ currentStep, totalSteps, onStepClick }: StepIndi
                 ? 'bg-blue-600 text-white'
                 : i < currentStep
                 ? 'bg-green-600 text-white cursor-pointer'
-                : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                : 'bg-gray-300 text-gray-600 dark:text-gray-400 cursor-not-allowed'
             }`}
           >
             {i + 1}
@@ -31,7 +31,7 @@ export function StepIndicator({ currentStep, totalSteps, onStepClick }: StepIndi
           )}
         </div>
       ))}
-      <div className="ml-4 text-sm font-medium text-gray-700">
+      <div className="ml-4 text-sm font-medium text-gray-700 dark:text-gray-300">
         {STEP_NAMES[currentStep] || 'Unknown'}
       </div>
     </div>
