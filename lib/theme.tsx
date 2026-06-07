@@ -30,8 +30,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const saved =
       typeof window !== 'undefined' ? window.localStorage.getItem('theme') : null;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from persisted user preference on mount
-    if (saved === 'light' || saved === 'dark') setThemeState(saved);
+    if (saved === 'light' || saved === 'dark') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from persisted user preference on mount
+      setThemeState(saved);
+      applyClass(saved);
+    }
   }, []);
 
   const setTheme = useCallback((t: Theme) => {
