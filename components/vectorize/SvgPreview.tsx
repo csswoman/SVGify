@@ -32,9 +32,21 @@ function SvgPreviewInner({ svgString, onPathClick }: SvgPreviewProps) {
       }
 
       const svg = doc.documentElement as unknown as SVGElement;
-      svg.setAttribute('width', '100%');
-      svg.setAttribute('height', '100%');
-      svg.style.maxWidth = '100%';
+      // Keep the intrinsic viewBox so the whole drawing stays visible.
+      // imagetracerjs emits width/height in px; ensure a viewBox exists, then
+      // let the SVG scale to fit the container without cropping.
+      if (!svg.getAttribute('viewBox')) {
+        const w = svg.getAttribute('width');
+        const h = svg.getAttribute('height');
+        if (w && h) svg.setAttribute('viewBox', `0 0 ${parseFloat(w)} ${parseFloat(h)}`);
+      }
+      svg.removeAttribute('width');
+      svg.removeAttribute('height');
+      svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      svg.style.width = '100%';
+      svg.style.height = '100%';
+      svg.style.maxHeight = '100%';
+      svg.style.display = 'block';
 
       if (onPathClick) {
         svg.querySelectorAll('path').forEach((path) => {
@@ -59,7 +71,7 @@ function SvgPreviewInner({ svgString, onPathClick }: SvgPreviewProps) {
   return (
     // Outer wrapper: React owns this level (no ref, no imperative mutation)
     <div
-      className="w-full min-h-72 border border-gray-200 rounded-lg bg-white overflow-hidden relative"
+      className="w-full min-h-72 border border-gray-200 dark:border-gray-700 rounded-lg bg-white overflow-hidden relative"
       aria-label="SVG preview"
     >
       {/* Placeholder: React-managed, shown only when there is no SVG yet */}
