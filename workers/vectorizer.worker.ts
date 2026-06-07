@@ -39,50 +39,45 @@ function applyBlur(imageData: ImageData, radius: number): ImageData {
   const src = new Uint8ClampedArray(data);
   const dst = new Uint8ClampedArray(data.length);
 
-  // Two-pass box blur (horizontal then vertical) approximates Gaussian.
-  const passes: Array<[Uint8ClampedArray, Uint8ClampedArray]> = [
-    [src, dst],
-    [dst, src],
-  ];
-
-  for (const [input, output] of passes) {
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        let rSum = 0, gSum = 0, bSum = 0, aSum = 0, count = 0;
-        for (let dx = -r; dx <= r; dx++) {
-          const nx = Math.min(Math.max(x + dx, 0), width - 1);
-          const idx = (y * width + nx) * 4;
-          rSum += input[idx];
-          gSum += input[idx + 1];
-          bSum += input[idx + 2];
-          aSum += input[idx + 3];
-          count++;
-        }
-        const oi = (y * width + x) * 4;
-        output[oi]     = rSum / count;
-        output[oi + 1] = gSum / count;
-        output[oi + 2] = bSum / count;
-        output[oi + 3] = aSum / count;
-      }
-    }
+  // Pass 1: horizontal blur src → dst
+  for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      for (let y = 0; y < height; y++) {
-        let rSum = 0, gSum = 0, bSum = 0, aSum = 0, count = 0;
-        for (let dy = -r; dy <= r; dy++) {
-          const ny = Math.min(Math.max(y + dy, 0), height - 1);
-          const idx = (ny * width + x) * 4;
-          rSum += input[idx];
-          gSum += input[idx + 1];
-          bSum += input[idx + 2];
-          aSum += input[idx + 3];
-          count++;
-        }
-        const oi = (y * width + x) * 4;
-        output[oi]     = rSum / count;
-        output[oi + 1] = gSum / count;
-        output[oi + 2] = bSum / count;
-        output[oi + 3] = aSum / count;
+      let rSum = 0, gSum = 0, bSum = 0, aSum = 0, count = 0;
+      for (let dx = -r; dx <= r; dx++) {
+        const nx = Math.min(Math.max(x + dx, 0), width - 1);
+        const idx = (y * width + nx) * 4;
+        rSum += src[idx];
+        gSum += src[idx + 1];
+        bSum += src[idx + 2];
+        aSum += src[idx + 3];
+        count++;
       }
+      const oi = (y * width + x) * 4;
+      dst[oi]     = rSum / count;
+      dst[oi + 1] = gSum / count;
+      dst[oi + 2] = bSum / count;
+      dst[oi + 3] = aSum / count;
+    }
+  }
+
+  // Pass 2: vertical blur dst → src
+  for (let x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) {
+      let rSum = 0, gSum = 0, bSum = 0, aSum = 0, count = 0;
+      for (let dy = -r; dy <= r; dy++) {
+        const ny = Math.min(Math.max(y + dy, 0), height - 1);
+        const idx = (ny * width + x) * 4;
+        rSum += dst[idx];
+        gSum += dst[idx + 1];
+        bSum += dst[idx + 2];
+        aSum += dst[idx + 3];
+        count++;
+      }
+      const oi = (y * width + x) * 4;
+      src[oi]     = rSum / count;
+      src[oi + 1] = gSum / count;
+      src[oi + 2] = bSum / count;
+      src[oi + 3] = aSum / count;
     }
   }
 
