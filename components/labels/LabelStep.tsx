@@ -21,7 +21,7 @@ export function LabelStep({ svgString, onComplete }: LabelStepProps) {
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
 
   const { labels, extractLabels, addLabel } = usePathLabels(svgEl);
-  const { selectedPathEl, selectPath, clearSelection } = useSvgSelection();
+  const { selectPath, clearSelection } = useSvgSelection();
 
   // Mount SVG once
   useEffect(() => {
@@ -36,11 +36,21 @@ export function LabelStep({ svgString, onComplete }: LabelStepProps) {
       if (doc.documentElement.tagName === 'parsererror') throw new Error('Invalid SVG');
 
       const svg = doc.documentElement as unknown as SVGElement;
-      svg.setAttribute('width', '100%');
-      svg.setAttribute('height', '100%');
-      svg.style.maxWidth = '100%';
+      if (!svg.getAttribute('viewBox')) {
+        const w = svg.getAttribute('width');
+        const h = svg.getAttribute('height');
+        if (w && h) svg.setAttribute('viewBox', `0 0 ${parseFloat(w)} ${parseFloat(h)}`);
+      }
+      svg.removeAttribute('width');
+      svg.removeAttribute('height');
+      svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      svg.style.width = '100%';
+      svg.style.height = '100%';
+      svg.style.maxHeight = '100%';
+      svg.style.display = 'block';
 
       container.replaceChildren(svg);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- imperative mount: svgEl must be published after the node is in the DOM
       setSvgEl(svg);
     } catch (err) {
       console.error('LabelStep: failed to mount SVG', err);
@@ -106,8 +116,8 @@ export function LabelStep({ svgString, onComplete }: LabelStepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-1">Label Shapes</h1>
-        <p className="text-gray-500">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">Label Shapes</h1>
+        <p className="text-gray-500 dark:text-gray-400">
           Enable Label Mode, click a path, and give it a name. Labels are saved in the SVG file.
         </p>
       </div>
@@ -122,7 +132,7 @@ export function LabelStep({ svgString, onComplete }: LabelStepProps) {
           className={`px-5 py-2.5 rounded-lg font-semibold text-sm transition ${
             isLabelMode
               ? 'bg-blue-600 text-white ring-2 ring-blue-300'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
           }`}
           aria-pressed={isLabelMode}
         >
@@ -138,7 +148,7 @@ export function LabelStep({ svgString, onComplete }: LabelStepProps) {
         <div className="lg:col-span-2">
           <div
             ref={containerRef}
-            className="w-full min-h-72 border border-gray-200 rounded-lg bg-white overflow-hidden flex items-center justify-center"
+            className="w-full min-h-72 border border-gray-200 dark:border-gray-700 rounded-lg bg-white overflow-hidden flex items-center justify-center"
             aria-label="SVG label editor"
           />
         </div>

@@ -28,7 +28,7 @@ export function LabelInput({ currentLabel, onSave, onCancel }: LabelInputProps) 
 
   return (
     <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
-      <p className="text-sm font-semibold text-gray-800">Label this path</p>
+      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Label this path</p>
       <input
         ref={inputRef}
         type="text"
@@ -37,7 +37,7 @@ export function LabelInput({ currentLabel, onSave, onCancel }: LabelInputProps) 
         onKeyDown={handleKeyDown}
         placeholder="e.g. wing, beak, body"
         maxLength={100}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
         aria-label="Path label"
       />
       <div className="flex gap-2">
@@ -50,7 +50,7 @@ export function LabelInput({ currentLabel, onSave, onCancel }: LabelInputProps) 
         </button>
         <button
           onClick={onCancel}
-          className="flex-1 px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-300 transition"
+          className="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition"
         >
           Cancel
         </button>
