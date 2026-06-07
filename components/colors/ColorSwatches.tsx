@@ -2,21 +2,32 @@
 
 import { RGBColor } from '@/types/svg.types';
 import { rgbToHex } from '@/lib/colorUtils';
+import { useI18n } from '@/lib/i18n';
 
 interface ColorSwatchesProps {
   colors: RGBColor[];
   onColorClick: (color: RGBColor) => void;
   selectedColor: RGBColor | null;
+  /** Delete a color (its regions get reassigned to the nearest remaining color). */
+  onColorDelete?: (color: RGBColor) => void;
 }
 
-export function ColorSwatches({ colors, onColorClick, selectedColor }: ColorSwatchesProps) {
+export function ColorSwatches({
+  colors,
+  onColorClick,
+  selectedColor,
+  onColorDelete,
+}: ColorSwatchesProps) {
+  const { t } = useI18n();
   if (colors.length === 0) {
-    return <p className="text-sm text-gray-400">No colors found.</p>;
+    return <p className="text-sm text-gray-400 dark:text-gray-500">{t('col.noColors')}</p>;
   }
 
   return (
     <div className="space-y-2">
-      <p className="text-sm font-semibold text-gray-700">Palette ({colors.length} colors)</p>
+      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+        {t('col.paletteTitle')} ({colors.length} {t('vec.colors')})
+      </p>
       <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
         {colors.map((color, idx) => {
           const hex = rgbToHex(color);
@@ -24,23 +35,35 @@ export function ColorSwatches({ colors, onColorClick, selectedColor }: ColorSwat
             selectedColor !== null && rgbToHex(selectedColor) === hex;
 
           return (
-            <button
+            <div
               key={idx}
-              onClick={() => onColorClick(color)}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${
-                isSelected
-                  ? 'bg-blue-50 ring-2 ring-blue-500'
-                  : 'bg-gray-50 hover:bg-gray-100'
+              className={`group w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${
+                isSelected ? 'bg-blue-50 ring-2 ring-blue-500' : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
-              aria-label={`Select color ${hex}`}
-              aria-pressed={isSelected}
             >
-              <span
-                className="w-7 h-7 rounded border border-gray-300 shrink-0"
-                style={{ backgroundColor: hex }}
-              />
-              <span className="font-mono text-gray-700">{hex}</span>
-            </button>
+              <button
+                onClick={() => onColorClick(color)}
+                className="flex items-center gap-3 flex-1 min-w-0"
+                aria-label={`Select color ${hex}`}
+                aria-pressed={isSelected}
+              >
+                <span
+                  className="w-7 h-7 rounded border border-gray-300 dark:border-gray-600 shrink-0"
+                  style={{ backgroundColor: hex }}
+                />
+                <span className="font-mono text-gray-700 dark:text-gray-300">{hex}</span>
+              </button>
+              {onColorDelete && colors.length > 1 && (
+                <button
+                  onClick={() => onColorDelete(color)}
+                  className="shrink-0 p-1 rounded text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50 transition"
+                  aria-label={`${t('col.deleteColor')} ${hex}`}
+                  title={t('col.deleteColor')}
+                >
+                  🗑
+                </button>
+              )}
+            </div>
           );
         })}
       </div>
