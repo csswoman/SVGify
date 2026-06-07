@@ -29,6 +29,8 @@ export interface VectorizeSettings {
   colorsampling: number;  // 0-n
   strokewidth: number;    // 1-5
   scale: number;
+  pathomit: number;       // discard paths shorter than N points (removes noise → smaller file)
+  roundcoords: number;    // decimal places in coordinates (lower = smaller file)
 }
 
 export interface VectorizePreset {
@@ -38,38 +40,48 @@ export interface VectorizePreset {
 
 export const VECTORIZE_PRESETS: Record<VectorizePreset['name'], VectorizeSettings> = {
   logo: {
-    numberofcolors: 4,
-    ltres: 2,
-    qtres: 1,
+    numberofcolors: 5,
+    ltres: 3.5,
+    qtres: 3.5,
     colorsampling: 2,
     strokewidth: 1,
     scale: 1,
+    pathomit: 28,
+    roundcoords: 0,
   },
   sketch: {
     numberofcolors: 2,
-    ltres: 0.5,
-    qtres: 0.5,
+    ltres: 2.5,
+    qtres: 2.5,
     colorsampling: 0,
     strokewidth: 1,
     scale: 1,
+    pathomit: 24,
+    roundcoords: 0,
   },
   photo: {
-    numberofcolors: 16,
-    ltres: 0.5,
-    qtres: 0.5,
+    numberofcolors: 10,
+    ltres: 2,
+    qtres: 2,
     colorsampling: 0,
     strokewidth: 1,
     scale: 1,
+    pathomit: 20,
+    roundcoords: 0,
   },
 };
 
+// Aggressive, size-optimized defaults: strong noise removal, simplified curves,
+// integer coordinates. Produces small files out of the box.
 export const VECTORIZE_DEFAULTS: VectorizeSettings = {
-  numberofcolors: 8,
-  ltres: 1,
-  qtres: 1,
+  numberofcolors: 6,
+  ltres: 2.8,
+  qtres: 2.8,
   colorsampling: 2,
   strokewidth: 1,
   scale: 1,
+  pathomit: 24,
+  roundcoords: 0,
 };
 
 export interface WorkerMessage {

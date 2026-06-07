@@ -11,6 +11,7 @@ export interface ValidationResult {
 const ALLOWED_MIMES = ['image/png', 'image/jpeg', 'image/webp'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const MAX_DIMENSIONS = 16384; // 16k x 16k max
+const MAX_TRACE_DIMENSION = 1400; // Keep traced SVGs compact by limiting raster detail.
 
 export async function validateFile(file: File): Promise<ValidationResult> {
   // Check MIME type
@@ -86,16 +87,22 @@ export async function fileToImageData(file: File): Promise<ImageData> {
           return;
         }
 
+        const scale = Math.min(1, MAX_TRACE_DIMENSION / Math.max(img.width, img.height));
+        const width = Math.max(1, Math.round(img.width * scale));
+        const height = Math.max(1, Math.round(img.height * scale));
+
         const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = width;
+        canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
           reject(new Error('Could not get 2D context'));
           return;
         }
-        ctx.drawImage(img, 0, 0);
-        const imageData = ctx.getImageData(0, 0, img.width, img.height);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+        const imageData = ctx.getImageData(0, 0, width, height);
         resolve(imageData);
       };
       img.onerror = () => reject(new Error('Failed to load image'));
