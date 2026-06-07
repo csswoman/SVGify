@@ -1,6 +1,9 @@
 declare module 'imagetracerjs' {
   interface ImageTracerOptions {
     numberofcolors?: number;
+    pal?: Array<{ r: number; g: number; b: number; a: number }>;
+    colorquantcycles?: number;
+    mincolorratio?: number;
     ltres?: number;
     qtres?: number;
     colorsampling?: number;
