@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AppShell } from "@/components/shared/AppShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,36 +29,16 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-
-      <body className="min-h-full flex flex-col bg-gray-100 text-gray-900">
-        <header className="bg-white border-b border-gray-200 py-4 px-6 shrink-0">
-          <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <div>
-              <span className="text-xl font-bold tracking-tight">SVGcraft</span>
-              <span className="ml-3 text-xs text-gray-400 hidden sm:inline">
-                Free · Open Source · 100% client-side
-              </span>
-            </div>
-          </div>
-        </header>
-
-        <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-10">
-          {children}
-        </main>
-
-        <footer className="shrink-0 border-t border-gray-200 bg-white py-5 px-6 text-center text-xs text-gray-400">
-          <p>
-            SVGcraft — MIT License · Your images never leave your device ·{" "}
-            <a
-              href="https://github.com"
-              className="underline hover:text-gray-600"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              Source on GitHub
-            </a>
-          </p>
-        </footer>
+      <head>
+        <script
+          // Apply persisted theme before first paint to prevent a flash.
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}`,
+          }}
+        />
+      </head>
+      <body className="min-h-full flex flex-col bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );
