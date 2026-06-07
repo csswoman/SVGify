@@ -88,7 +88,7 @@ export function VectorizeStep({ imageData, onVectorizeComplete }: VectorizeStepP
       </div>
 
       {error && (
-        <div role="alert" className="p-4 bg-red-50 border border-red-300 rounded-lg text-red-700 text-sm">
+        <div role="alert" className="p-4 bg-red-50 border border-red-300 rounded-lg text-red-700 text-sm dark:bg-red-950/40 dark:border-red-800 dark:text-red-300">
           {error}
         </div>
       )}
@@ -115,7 +115,7 @@ export function VectorizeStep({ imageData, onVectorizeComplete }: VectorizeStepP
           <PalettePreview svg={activeSvg} />
 
           {isComplex && (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs">
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300">
               {t('vec.complexWarn')}
             </div>
           )}

@@ -28,7 +28,7 @@ export function LabelSidebar({ labels, onLabelClick, selectedLabel }: LabelSideb
                 onClick={() => onLabelClick(label)}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
                   selectedLabel === label
-                    ? 'bg-blue-50 ring-2 ring-blue-500 text-blue-800 font-medium'
+                    ? 'bg-blue-50 ring-2 ring-blue-500 text-blue-800 font-medium dark:bg-blue-950/50 dark:text-blue-300'
                     : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                 }`}
                 aria-pressed={selectedLabel === label}

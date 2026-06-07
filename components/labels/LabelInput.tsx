@@ -27,7 +27,7 @@ export function LabelInput({ currentLabel, onSave, onCancel }: LabelInputProps) 
   };
 
   return (
-    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3 dark:bg-blue-950/40 dark:border-blue-800">
       <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Label this path</p>
       <input
         ref={inputRef}

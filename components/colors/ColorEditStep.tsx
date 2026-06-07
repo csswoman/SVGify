@@ -317,7 +317,7 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
             />
             <button
               onClick={handleMergeSimilar}
-              className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-900 hover:bg-blue-50 hover:text-blue-700 rounded-lg text-sm font-medium transition"
+              className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-900 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/50 dark:hover:text-blue-300 rounded-lg text-sm font-medium transition"
             >
               {t('col.mergeBtn')} ({colors.length} {t('vec.colors')})
             </button>
@@ -346,7 +346,7 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
               />
               <button
                 onClick={handleReduceColors}
-                className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-900 hover:bg-blue-50 hover:text-blue-700 rounded-lg text-sm font-medium transition"
+                className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-900 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/50 dark:hover:text-blue-300 rounded-lg text-sm font-medium transition"
               >
                 {t('col.reduceBtn')} {targetCount} {targetCount === 1 ? t('vec.color') : t('vec.colors')}
               </button>

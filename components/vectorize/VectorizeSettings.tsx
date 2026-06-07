@@ -37,7 +37,7 @@ export function VectorizeSettingsPanel({ settings, onSettingsChange }: Vectorize
               <button
                 key={key}
                 onClick={() => applyPreset(key)}
-                className="w-full text-left px-4 py-2 bg-gray-100 dark:bg-gray-900 dark:text-gray-200 hover:bg-blue-50 hover:text-blue-700 rounded-lg text-sm font-medium transition"
+                className="w-full text-left px-4 py-2 bg-gray-100 dark:bg-gray-900 dark:text-gray-200 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/50 dark:hover:text-blue-300 rounded-lg text-sm font-medium transition"
               >
                 {t(PRESET_KEYS[key])}
               </button>

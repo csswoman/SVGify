@@ -38,7 +38,7 @@ export function ColorSwatches({
             <div
               key={idx}
               className={`group w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${
-                isSelected ? 'bg-blue-50 ring-2 ring-blue-500' : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700'
+                isSelected ? 'bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-950/50' : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               <button

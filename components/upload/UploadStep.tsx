@@ -20,7 +20,7 @@ export function UploadStep({ onUploadComplete }: UploadStepProps) {
       </div>
 
       {error && (
-        <div role="alert" className="p-4 bg-red-50 border border-red-300 rounded-lg text-red-700 text-sm">
+        <div role="alert" className="p-4 bg-red-50 border border-red-300 rounded-lg text-red-700 text-sm dark:bg-red-950/40 dark:border-red-800 dark:text-red-300">
           {error}
         </div>
       )}
