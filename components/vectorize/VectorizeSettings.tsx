@@ -46,23 +46,65 @@ export function VectorizeSettingsPanel({ settings, onSettingsChange }: Vectorize
         </div>
 
         <div>
+          <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            {t('set.mode')}
+            <Tooltip text={t('set.mode.help')} label={t('set.mode')} />
+          </label>
+          <div className="flex gap-2">
+            {(['color', 'lineart'] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => onSettingsChange({ ...settings, mode: m })}
+                className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition ${
+                  settings.mode === m
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/50 dark:hover:text-blue-300'
+                }`}
+              >
+                {t(m === 'color' ? 'set.mode.color' : 'set.mode.lineart')}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
           <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-            {t('set.colors')}: <span className="font-mono ml-1">{settings.numberofcolors}</span>
-            <Tooltip text={t('set.colors.help')} label={t('set.colors')} />
+            {t('set.blur')}: <span className="font-mono ml-1">{settings.blurRadius}</span>
+            <Tooltip text={t('set.blur.help')} label={t('set.blur')} />
           </label>
           <input
             type="range"
-            min={2}
-            max={12}
-            value={settings.numberofcolors}
-            onChange={(e) =>
-              onSettingsChange({ ...settings, numberofcolors: Number(e.target.value) })
-            }
+            min={0}
+            max={5}
+            step={1}
+            value={settings.blurRadius}
+            onChange={(e) => onSettingsChange({ ...settings, blurRadius: Number(e.target.value) })}
             className="w-full accent-blue-600"
-            aria-label={`${t('set.colors')}: ${settings.numberofcolors}`}
+            aria-label={`${t('set.blur')}: ${settings.blurRadius}`}
           />
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('set.colors.hint')}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('set.blur.hint')}</p>
         </div>
+
+        {settings.mode === 'color' && (
+          <div>
+            <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+              {t('set.colors')}: <span className="font-mono ml-1">{settings.numberofcolors}</span>
+              <Tooltip text={t('set.colors.help')} label={t('set.colors')} />
+            </label>
+            <input
+              type="range"
+              min={2}
+              max={12}
+              value={settings.numberofcolors}
+              onChange={(e) =>
+                onSettingsChange({ ...settings, numberofcolors: Number(e.target.value) })
+              }
+              className="w-full accent-blue-600"
+              aria-label={`${t('set.colors')}: ${settings.numberofcolors}`}
+            />
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('set.colors.hint')}</p>
+          </div>
+        )}
       </div>
 
       {/* ── Advanced (collapsible) ── */}
@@ -78,39 +120,43 @@ export function VectorizeSettingsPanel({ settings, onSettingsChange }: Vectorize
 
         {showAdvanced && (
           <div className="space-y-5 mt-4">
-            <div>
-              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('set.smoothing')}: <span className="font-mono ml-1">{settings.ltres.toFixed(1)}</span>
-                <Tooltip text={t('set.smoothing.help')} label={t('set.smoothing')} />
-              </label>
-              <input
-                type="range"
-                min={0.1}
-                max={5}
-                step={0.1}
-                value={settings.ltres}
-                onChange={(e) => onSettingsChange({ ...settings, ltres: parseFloat(e.target.value) })}
-                className="w-full accent-blue-600"
-                aria-label={`${t('set.smoothing')}: ${settings.ltres}`}
-              />
-            </div>
+            {settings.mode === 'color' && (
+              <>
+                <div>
+                  <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    {t('set.smoothing')}: <span className="font-mono ml-1">{settings.ltres.toFixed(1)}</span>
+                    <Tooltip text={t('set.smoothing.help')} label={t('set.smoothing')} />
+                  </label>
+                  <input
+                    type="range"
+                    min={0.1}
+                    max={5}
+                    step={0.1}
+                    value={settings.ltres}
+                    onChange={(e) => onSettingsChange({ ...settings, ltres: parseFloat(e.target.value) })}
+                    className="w-full accent-blue-600"
+                    aria-label={`${t('set.smoothing')}: ${settings.ltres}`}
+                  />
+                </div>
 
-            <div>
-              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('set.detail')}: <span className="font-mono ml-1">{settings.qtres.toFixed(1)}</span>
-                <Tooltip text={t('set.detail.help')} label={t('set.detail')} />
-              </label>
-              <input
-                type="range"
-                min={0.1}
-                max={5}
-                step={0.1}
-                value={settings.qtres}
-                onChange={(e) => onSettingsChange({ ...settings, qtres: parseFloat(e.target.value) })}
-                className="w-full accent-blue-600"
-                aria-label={`${t('set.detail')}: ${settings.qtres}`}
-              />
-            </div>
+                <div>
+                  <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    {t('set.detail')}: <span className="font-mono ml-1">{settings.qtres.toFixed(1)}</span>
+                    <Tooltip text={t('set.detail.help')} label={t('set.detail')} />
+                  </label>
+                  <input
+                    type="range"
+                    min={0.1}
+                    max={5}
+                    step={0.1}
+                    value={settings.qtres}
+                    onChange={(e) => onSettingsChange({ ...settings, qtres: parseFloat(e.target.value) })}
+                    className="w-full accent-blue-600"
+                    aria-label={`${t('set.detail')}: ${settings.qtres}`}
+                  />
+                </div>
+              </>
+            )}
 
             <div>
               <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
@@ -163,6 +209,63 @@ export function VectorizeSettingsPanel({ settings, onSettingsChange }: Vectorize
               />
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('set.precision.hint')}</p>
             </div>
+
+            {settings.mode === 'lineart' && (
+              <>
+                <div>
+                  <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    {t('set.vt.speckle')}: <span className="font-mono ml-1">{settings.vtracerFilterSpeckle}</span>
+                    <Tooltip text={t('set.vt.speckle.help')} label={t('set.vt.speckle')} />
+                  </label>
+                  <input
+                    type="range"
+                    min={2}
+                    max={16}
+                    value={settings.vtracerFilterSpeckle}
+                    onChange={(e) => onSettingsChange({ ...settings, vtracerFilterSpeckle: Number(e.target.value) })}
+                    className="w-full accent-blue-600"
+                    aria-label={`${t('set.vt.speckle')}: ${settings.vtracerFilterSpeckle}`}
+                  />
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('set.vt.speckle.hint')}</p>
+                </div>
+
+                <div>
+                  <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    {t('set.vt.corner')}: <span className="font-mono ml-1">{settings.vtracerCornerThreshold}°</span>
+                    <Tooltip text={t('set.vt.corner.help')} label={t('set.vt.corner')} />
+                  </label>
+                  <input
+                    type="range"
+                    min={60}
+                    max={170}
+                    step={5}
+                    value={settings.vtracerCornerThreshold}
+                    onChange={(e) => onSettingsChange({ ...settings, vtracerCornerThreshold: Number(e.target.value) })}
+                    className="w-full accent-blue-600"
+                    aria-label={`${t('set.vt.corner')}: ${settings.vtracerCornerThreshold}`}
+                  />
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('set.vt.corner.hint')}</p>
+                </div>
+
+                <div>
+                  <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    {t('set.vt.splice')}: <span className="font-mono ml-1">{settings.vtracerSpliceThreshold}°</span>
+                    <Tooltip text={t('set.vt.splice.help')} label={t('set.vt.splice')} />
+                  </label>
+                  <input
+                    type="range"
+                    min={15}
+                    max={90}
+                    step={5}
+                    value={settings.vtracerSpliceThreshold}
+                    onChange={(e) => onSettingsChange({ ...settings, vtracerSpliceThreshold: Number(e.target.value) })}
+                    className="w-full accent-blue-600"
+                    aria-label={`${t('set.vt.splice')}: ${settings.vtracerSpliceThreshold}`}
+                  />
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('set.vt.splice.hint')}</p>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>
