@@ -3,6 +3,18 @@ import { WorkerMessage, WorkerResponse, VectorizeSettings, VECTORIZE_DEFAULTS } 
 import { optimizeSvg } from '@/lib/optimizeSvg';
 import { normalizeSvgPalette } from '@/lib/colorUtils';
 import { simplifySvgPaths } from '@/lib/simplifyPath';
+import { main as vtracerInit, BinaryImageConverter } from 'vectortracer';
+
+// Initialize VTracer WASM once when the worker starts.
+let vtracerReady = false;
+(async () => {
+  try {
+    await vtracerInit();
+    vtracerReady = true;
+  } catch {
+    // WASM load failed — lineart mode will fall back gracefully
+  }
+})();
 
 // Notify main thread that worker is ready
 self.postMessage({ type: 'ready' } satisfies WorkerResponse);
@@ -20,52 +32,187 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   }
 };
 
+function applyBlur(imageData: ImageData, radius: number): ImageData {
+  if (radius <= 0) return imageData;
+  const r = Math.round(radius);
+  const { width, height, data } = imageData;
+  const src = new Uint8ClampedArray(data);
+  const dst = new Uint8ClampedArray(data.length);
+
+  // Two-pass box blur (horizontal then vertical) approximates Gaussian.
+  const passes: Array<[Uint8ClampedArray, Uint8ClampedArray]> = [
+    [src, dst],
+    [dst, src],
+  ];
+
+  for (const [input, output] of passes) {
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let rSum = 0, gSum = 0, bSum = 0, aSum = 0, count = 0;
+        for (let dx = -r; dx <= r; dx++) {
+          const nx = Math.min(Math.max(x + dx, 0), width - 1);
+          const idx = (y * width + nx) * 4;
+          rSum += input[idx];
+          gSum += input[idx + 1];
+          bSum += input[idx + 2];
+          aSum += input[idx + 3];
+          count++;
+        }
+        const oi = (y * width + x) * 4;
+        output[oi]     = rSum / count;
+        output[oi + 1] = gSum / count;
+        output[oi + 2] = bSum / count;
+        output[oi + 3] = aSum / count;
+      }
+    }
+    for (let x = 0; x < width; x++) {
+      for (let y = 0; y < height; y++) {
+        let rSum = 0, gSum = 0, bSum = 0, aSum = 0, count = 0;
+        for (let dy = -r; dy <= r; dy++) {
+          const ny = Math.min(Math.max(y + dy, 0), height - 1);
+          const idx = (ny * width + x) * 4;
+          rSum += input[idx];
+          gSum += input[idx + 1];
+          bSum += input[idx + 2];
+          aSum += input[idx + 3];
+          count++;
+        }
+        const oi = (y * width + x) * 4;
+        output[oi]     = rSum / count;
+        output[oi + 1] = gSum / count;
+        output[oi + 2] = bSum / count;
+        output[oi + 3] = aSum / count;
+      }
+    }
+  }
+
+  return new ImageData(src, width, height);
+}
+
+function binarizeOtsu(imageData: ImageData): ImageData {
+  const { width, height, data } = imageData;
+
+  // Build grayscale histogram.
+  const hist = new Float64Array(256);
+  for (let i = 0; i < data.length; i += 4) {
+    const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+    hist[gray]++;
+  }
+
+  // Otsu's method to find optimal threshold.
+  const total = width * height;
+  let sum = 0;
+  for (let i = 0; i < 256; i++) sum += i * hist[i];
+
+  let sumB = 0, wB = 0, maxVar = 0, threshold = 128;
+  for (let t = 0; t < 256; t++) {
+    wB += hist[t];
+    if (wB === 0) continue;
+    const wF = total - wB;
+    if (wF === 0) break;
+    sumB += t * hist[t];
+    const mB = sumB / wB;
+    const mF = (sum - sumB) / wF;
+    const between = wB * wF * (mB - mF) ** 2;
+    if (between > maxVar) { maxVar = between; threshold = t; }
+  }
+
+  // Apply threshold: dark pixels → black (0), light → white (255).
+  const out = new Uint8ClampedArray(data.length);
+  for (let i = 0; i < data.length; i += 4) {
+    const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+    const val = gray <= threshold ? 0 : 255;
+    out[i] = out[i + 1] = out[i + 2] = val;
+    out[i + 3] = data[i + 3];
+  }
+  return new ImageData(out, width, height);
+}
+
+function vectorizeLineart(imageData: ImageData, settings: VectorizeSettings): string {
+  if (!vtracerReady) throw new Error('VTracer WASM not ready');
+
+  const converter = new BinaryImageConverter(
+    imageData,
+    {
+      debug: false,
+      mode: 'spline',
+      cornerThreshold: settings.vtracerCornerThreshold,
+      spliceThreshold: settings.vtracerSpliceThreshold,
+      filterSpeckle: settings.vtracerFilterSpeckle,
+      pathPrecision: settings.roundcoords > 0 ? settings.roundcoords : 2,
+    },
+    {
+      invert: false,
+      pathFill: '#000000',
+      backgroundColor: undefined,
+      attributes: undefined,
+    }
+  );
+
+  converter.init();
+  while (converter.tick()) { /* iterate until done */ }
+  const svg = converter.getResult();
+  converter.free();
+  return svg;
+}
+
 function vectorizeImage(imageData: ImageData, settings: VectorizeSettings): void {
   try {
-    // Merge with defaults
     const options = { ...VECTORIZE_DEFAULTS, ...settings };
-    const targetColors = Math.min(options.numberofcolors, 12);
-    const effectivePathOmit =
-      targetColors >= 10
-        ? Math.min(options.pathomit, 10)
-        : targetColors >= 7
-          ? Math.min(options.pathomit, 16)
-          : options.pathomit;
-    const { imageData: tracedImageData, palette } = quantizeToDominantPalette(imageData, targetColors);
 
-    // Call imagetracerjs
-    const svgString = ImageTracer.imagedataToSVG(tracedImageData, {
-      numberofcolors: palette.length,
-      pal: palette,
-      colorquantcycles: 1,
-      mincolorratio: 0,
-      ltres: options.ltres,
-      qtres: options.qtres,
-      colorsampling: 0,
-      strokewidth: options.strokewidth,
-      scale: options.scale,
-      pathomit: effectivePathOmit,
-      roundcoords: options.roundcoords,
-      // Keep the SVG compact:
-      desc: false,       // omit per-path desc attributes
-      viewbox: true,     // use a viewBox instead of duplicated width/height
-    });
+    // Apply blur before any tracing.
+    const blurred = applyBlur(imageData, options.blurRadius);
 
-    // Normalize the palette: collapse near-duplicate shades into clean, distinct
-    // colors, capped at the requested color count. Gives a tidy palette up front.
-    const withoutTransparent = removeTransparentPaths(svgString);
-    const normalized = normalizeSvgPalette(withoutTransparent, targetColors >= 7 ? 18 : 32, targetColors);
-    const withoutSpeckles = removeTinyPaths(normalized, Math.max(effectivePathOmit, targetColors >= 10 ? 8 : 16));
-    const simplified = simplifySvgPaths(withoutSpeckles, 1.1, options.roundcoords);
+    let optimized: string;
 
-    // Shrink the machine-generated SVG (drop redundant strokes/opacity, round coords).
-    const optimized = optimizeSvg(simplified, {
-      dropDefaultOpacity: true,
-      coordDecimals: options.roundcoords,
-      removeStroke: true,
-    });
+    if (options.mode === 'lineart') {
+      const binary = binarizeOtsu(blurred);
+      const svg = vectorizeLineart(binary, options);
+      optimized = optimizeSvg(svg, {
+        dropDefaultOpacity: true,
+        coordDecimals: options.roundcoords,
+        removeStroke: false,
+      });
+    } else {
+      // ── Existing color pipeline ──
+      const targetColors = Math.min(options.numberofcolors, 12);
+      const effectivePathOmit =
+        targetColors >= 10
+          ? Math.min(options.pathomit, 10)
+          : targetColors >= 7
+            ? Math.min(options.pathomit, 16)
+            : options.pathomit;
 
-    // Send result back
+      const { imageData: tracedImageData, palette } = quantizeToDominantPalette(blurred, targetColors);
+
+      const svgString = ImageTracer.imagedataToSVG(tracedImageData, {
+        numberofcolors: palette.length,
+        pal: palette,
+        colorquantcycles: 1,
+        mincolorratio: 0,
+        ltres: options.ltres,
+        qtres: options.qtres,
+        colorsampling: 0,
+        strokewidth: options.strokewidth,
+        scale: options.scale,
+        pathomit: effectivePathOmit,
+        roundcoords: options.roundcoords,
+        desc: false,
+        viewbox: true,
+      });
+
+      const withoutTransparent = removeTransparentPaths(svgString);
+      const normalized = normalizeSvgPalette(withoutTransparent, targetColors >= 7 ? 18 : 32, targetColors);
+      const withoutSpeckles = removeTinyPaths(normalized, Math.max(effectivePathOmit, targetColors >= 10 ? 8 : 16));
+      const simplified = simplifySvgPaths(withoutSpeckles, 1.1, options.roundcoords);
+
+      optimized = optimizeSvg(simplified, {
+        dropDefaultOpacity: true,
+        coordDecimals: options.roundcoords,
+        removeStroke: true,
+      });
+    }
+
     self.postMessage({ type: 'done', svg: optimized } satisfies WorkerResponse);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Vectorization failed';
