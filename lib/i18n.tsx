@@ -73,6 +73,28 @@ const DICT = {
   'set.precision.hint': { en: 'Lower = fewer decimals → smaller file.', es: 'Más bajo = menos decimales → archivo más ligero.' },
   'set.precision.help': { en: 'Decimal places kept in coordinates. Lower = smaller file with a tiny loss of precision.', es: 'Decimales que se conservan en las coordenadas. Más bajo = archivo más ligero con una mínima pérdida de precisión.' },
 
+  // Mode toggle
+  'set.mode': { en: 'Mode', es: 'Modo' },
+  'set.mode.color': { en: 'Color', es: 'Color' },
+  'set.mode.lineart': { en: 'Line art', es: 'Líneas' },
+  'set.mode.help': { en: 'Color: full-color tracing with ImageTracer. Line art: black & white tracing with VTracer — ideal for sketches and drawings.', es: 'Color: trazado a todo color con ImageTracer. Líneas: trazado en blanco y negro con VTracer — ideal para bocetos y dibujos.' },
+
+  // Blur
+  'set.blur': { en: 'Pre-blur', es: 'Desenfoque previo' },
+  'set.blur.hint': { en: '0 = off · Higher = smoother edges, fewer paths.', es: '0 = desactivado · Más alto = bordes más suaves, menos paths.' },
+  'set.blur.help': { en: 'Applies a light blur before tracing. Reduces noise and prevents fragmented paths. 0 disables it.', es: 'Aplica un desenfoque ligero antes de trazar. Reduce el ruido y evita paths fragmentados. 0 lo desactiva.' },
+
+  // VTracer controls (lineart mode)
+  'set.vt.speckle': { en: 'Speckle filter', es: 'Filtro de motas' },
+  'set.vt.speckle.hint': { en: 'Higher = removes more tiny specs.', es: 'Más alto = elimina más motas pequeñas.' },
+  'set.vt.speckle.help': { en: 'Removes stray pixels smaller than this size. Higher = cleaner result but may lose fine detail.', es: 'Elimina píxeles sueltos menores a este tamaño. Más alto = resultado más limpio pero puede perder detalle fino.' },
+  'set.vt.corner': { en: 'Corner threshold', es: 'Umbral de esquinas' },
+  'set.vt.corner.hint': { en: 'Higher = smoother corners.', es: 'Más alto = esquinas más suaves.' },
+  'set.vt.corner.help': { en: 'Angle below which a point is treated as a corner. Higher = rounder shapes; lower = sharper corners.', es: 'Ángulo por debajo del cual un punto es tratado como esquina. Más alto = formas más redondeadas; más bajo = esquinas más marcadas.' },
+  'set.vt.splice': { en: 'Curve tolerance', es: 'Tolerancia de curva' },
+  'set.vt.splice.hint': { en: 'Higher = smoother, fewer segments.', es: 'Más alto = más suave, menos segmentos.' },
+  'set.vt.splice.help': { en: 'How aggressively curves are joined. Higher = fewer path segments, smoother result.', es: 'Qué tan agresivamente se unen las curvas. Más alto = menos segmentos, resultado más suave.' },
+
   // Background removal
   'bg.remove': { en: 'Remove background', es: 'Quitar fondo' },
   'bg.auto': { en: 'Auto mode: removes background detected from the image corners. Click the background in the image to pick exactly which color to remove instead.', es: 'Modo automático: quita el fondo detectado en las esquinas. Haz clic en el fondo de la imagen para elegir exactamente qué color quitar.' },
