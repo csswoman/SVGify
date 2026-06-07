@@ -53,7 +53,7 @@ export function VectorizeSettingsPanel({ settings, onSettingsChange }: Vectorize
           <input
             type="range"
             min={2}
-            max={64}
+            max={12}
             value={settings.numberofcolors}
             onChange={(e) =>
               onSettingsChange({ ...settings, numberofcolors: Number(e.target.value) })

@@ -24,12 +24,6 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
   const [svgEl, setSvgEl] = useState<SVGElement | null>(null);
   const [selectedColor, setSelectedColor] = useState<RGBColor | null>(null);
   const [eraseMode, setEraseMode] = useState(false);
-  // Read inside the (once-registered) click listener so it sees the live value.
-  const eraseModeRef = useRef(eraseMode);
-  useEffect(() => {
-    eraseModeRef.current = eraseMode;
-  }, [eraseMode]);
-  const [mergeThreshold, setMergeThreshold] = useState(24);
 
   // Before/after compare: when true the preview shows the original SVG.
   const [showOriginal, setShowOriginal] = useState(false);
@@ -41,9 +35,18 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
   // Undo/redo: serialized SVG snapshots. `index` points at the current state.
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const historyRef = useRef(history);
+  useEffect(() => {
+    historyRef.current = history;
+  }, [history]);
+  const historyIndexRef = useRef(historyIndex);
+  useEffect(() => {
+    historyIndexRef.current = historyIndex;
+  }, [historyIndex]);
 
-  const { colors, extractColors, replaceColor, mergeSimilar, deleteColor, reduceToCount } =
+  const { colors, extractColors, replaceColor, deleteColor, snapDarksToBlack, normalizePalette } =
     useSvgColors(svgEl);
+  const [targetCount, setTargetCount] = useState(6);
 
   // Mounts an SVG string into the container, wiring path-click handlers, and
   // publishes the live element. Used on first load and on undo/redo restore.
@@ -72,18 +75,6 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
 
       svg.querySelectorAll('path').forEach((path) => {
         path.style.cursor = 'pointer';
-        path.addEventListener('click', () => {
-          if (eraseModeRef.current) {
-            path.remove();
-            extractColors();
-            pushSnapshotRef.current?.();
-            return;
-          }
-          const fill = path.getAttribute('fill');
-          if (!fill) return;
-          const color = parseRgbString(fill);
-          if (color) setSelectedColor(color);
-        });
       });
 
       container.replaceChildren(svg);
@@ -91,7 +82,7 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
       zoom.attach(svg as unknown as SVGSVGElement);
       return svg;
     },
-    [extractColors, zoom]
+    [zoom]
   );
 
   // Push the current SVG state onto the history (truncating any redo branch).
@@ -99,18 +90,17 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
     const svg = containerRef.current?.querySelector('svg');
     if (!svg) return;
     const snapshot = new XMLSerializer().serializeToString(svg);
+    if (snapshot === historyRef.current[historyIndexRef.current]) return;
+    const nextIndex = historyIndexRef.current + 1;
     setHistory((prev) => {
-      const base = prev.slice(0, historyIndex + 1);
-      return [...base, snapshot];
+      const base = prev.slice(0, historyIndexRef.current + 1);
+      const next = [...base, snapshot];
+      historyRef.current = next;
+      return next;
     });
-    setHistoryIndex((i) => i + 1);
-  }, [historyIndex]);
-  // Stable ref so the once-registered path listeners can call the latest version.
-  const pushSnapshotRef = useRef<() => void>(undefined);
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/immutability -- keeping a stable handle to the latest callback for once-registered listeners
-    pushSnapshotRef.current = pushSnapshot;
-  }, [pushSnapshot]);
+    historyIndexRef.current = nextIndex;
+    setHistoryIndex(nextIndex);
+  }, []);
 
   // Initial mount: capture original palette + seed history.
   useEffect(() => {
@@ -119,7 +109,9 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
     mountSvg(svgString);
     setOriginalPalette(extractPaletteFromSvgString(svgString));
     setHistory([svgString]);
+    historyRef.current = [svgString];
     setHistoryIndex(0);
+    historyIndexRef.current = 0;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount once per svgString
   }, [svgString]);
 
@@ -133,6 +125,7 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
       const snap = history[index];
       if (snap === undefined) return;
       mountSvg(snap);
+      historyIndexRef.current = index;
       setHistoryIndex(index);
       setSelectedColor(null);
     },
@@ -167,11 +160,6 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
     [selectedColor, replaceColor, pushSnapshot]
   );
 
-  const handleMergeSimilar = useCallback(() => {
-    mergeSimilar(mergeThreshold);
-    pushSnapshot();
-  }, [mergeSimilar, mergeThreshold, pushSnapshot]);
-
   const handleDeleteColor = useCallback(
     (color: RGBColor) => {
       deleteColor(color);
@@ -183,11 +171,38 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
     [deleteColor, selectedColor, pushSnapshot]
   );
 
-  const [targetCount, setTargetCount] = useState(4);
-  const handleReduceColors = useCallback(() => {
-    reduceToCount(targetCount);
+  const handleSnapBlack = useCallback(() => {
+    snapDarksToBlack(72);
     pushSnapshot();
-  }, [reduceToCount, targetCount, pushSnapshot]);
+  }, [snapDarksToBlack, pushSnapshot]);
+
+  const handleNormalize = useCallback(() => {
+    normalizePalette(targetCount);
+    pushSnapshot();
+  }, [normalizePalette, targetCount, pushSnapshot]);
+
+  const handleSvgClick = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (showOriginal) return;
+      const target = event.target as Element | null;
+      const path = target?.closest('path') as SVGPathElement | null;
+      if (!path || !containerRef.current?.contains(path)) return;
+
+      if (eraseMode) {
+        path.remove();
+        extractColors();
+        pushSnapshot();
+        setSelectedColor(null);
+        return;
+      }
+
+      const fill = path.getAttribute('fill');
+      if (!fill) return;
+      const color = parseRgbString(fill);
+      if (color) setSelectedColor(color);
+    },
+    [eraseMode, extractColors, pushSnapshot, showOriginal]
+  );
 
   // Before/after compare: press and hold to view the original, release to go back.
   // Stashes the current edit while the original is shown (history untouched).
@@ -243,12 +258,13 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
           <div className="relative">
             <div
               ref={containerRef}
+              onClick={handleSvgClick}
               onWheel={(e) => {
                 e.preventDefault();
                 if (e.deltaY < 0) zoom.zoomIn();
                 else zoom.zoomOut();
               }}
-              className={`w-full min-h-72 border rounded-lg bg-white overflow-hidden flex items-center justify-center ${
+              className={`transparent-preview w-full min-h-72 border rounded-lg overflow-hidden flex items-center justify-center ${
                 showOriginal ? 'border-amber-300' : 'border-gray-200 dark:border-gray-700'
               }`}
               aria-label="SVG color editor"
@@ -301,56 +317,34 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
             <Tooltip text={t('col.erase.help')} label={t('col.erase')} />
           </label>
 
-          <div className="space-y-2 border border-gray-100 dark:border-gray-700 rounded-lg p-3">
+          <div className="space-y-3 border border-gray-100 dark:border-gray-700 rounded-lg p-3">
             <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {t('col.merge')}: <span className="font-mono ml-1">{mergeThreshold}</span>
-              <Tooltip text={t('col.merge.help')} label={t('col.merge')} />
+              {t('col.reduce')}: <span className="font-mono ml-1">{targetCount}</span>
+              <Tooltip text={t('col.reduce.help')} label={t('col.reduce')} />
             </label>
             <input
               type="range"
-              min={0}
-              max={80}
-              value={mergeThreshold}
-              onChange={(e) => setMergeThreshold(Number(e.target.value))}
+              min={2}
+              max={Math.max(2, Math.min(12, colors.length))}
+              value={Math.min(targetCount, Math.max(2, Math.min(12, colors.length)))}
+              onChange={(e) => setTargetCount(Number(e.target.value))}
               className="w-full accent-blue-600"
-              aria-label={`Merge threshold: ${mergeThreshold}`}
+              aria-label={`${t('col.reduce')}: ${targetCount}`}
             />
             <button
-              onClick={handleMergeSimilar}
-              className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-900 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/50 dark:hover:text-blue-300 rounded-lg text-sm font-medium transition"
+              onClick={handleNormalize}
+              className="w-full px-4 py-3 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-1"
             >
-              {t('col.mergeBtn')} ({colors.length} {t('vec.colors')})
+              {t('col.normalize')}
+              <Tooltip text={t('col.normalize.help')} label={t('col.normalize')} />
             </button>
-
-            <div className="pt-2 border-t border-gray-100 dark:border-gray-700 space-y-2">
-              <button
-                onClick={handleReduceColors}
-                className="w-full px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-1"
-              >
-                {t('col.autoSimplify')}
-                <Tooltip text={t('col.autoSimplify.help')} label={t('col.autoSimplify')} />
-              </button>
-
-              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {t('col.reduce')}: <span className="font-mono ml-1">{targetCount}</span>
-                <Tooltip text={t('col.reduce.help')} label={t('col.reduce')} />
-              </label>
-              <input
-                type="range"
-                min={1}
-                max={Math.max(2, colors.length)}
-                value={Math.min(targetCount, Math.max(2, colors.length))}
-                onChange={(e) => setTargetCount(Number(e.target.value))}
-                className="w-full accent-blue-600"
-                aria-label={`Reduce to ${targetCount} colors`}
-              />
-              <button
-                onClick={handleReduceColors}
-                className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-900 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/50 dark:hover:text-blue-300 rounded-lg text-sm font-medium transition"
-              >
-                {t('col.reduceBtn')} {targetCount} {targetCount === 1 ? t('vec.color') : t('vec.colors')}
-              </button>
-            </div>
+            <button
+              onClick={handleSnapBlack}
+              className="w-full px-4 py-2 bg-gray-900 text-white hover:bg-black rounded-lg text-sm font-semibold transition flex items-center justify-center gap-1"
+            >
+              {t('col.snapBlackBtn')}
+              <Tooltip text={t('col.snapBlack.help')} label={t('col.snapBlack')} />
+            </button>
           </div>
 
           <ColorSwatches
@@ -393,7 +387,7 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
           )}
 
           {selectedColor && (
-            <ColorPicker color={selectedColor} onChange={handleColorPickerChange} />
+            <ColorPicker color={selectedColor} onChange={handleColorPickerChange} onCommit={pushSnapshot} />
           )}
 
           <button

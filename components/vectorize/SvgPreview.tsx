@@ -71,7 +71,7 @@ function SvgPreviewInner({ svgString, onPathClick }: SvgPreviewProps) {
   return (
     // Outer wrapper: React owns this level (no ref, no imperative mutation)
     <div
-      className="w-full min-h-72 border border-gray-200 dark:border-gray-700 rounded-lg bg-white overflow-hidden relative"
+      className="transparent-preview w-full min-h-72 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden relative"
       aria-label="SVG preview"
     >
       {/* Placeholder: React-managed, shown only when there is no SVG yet */}

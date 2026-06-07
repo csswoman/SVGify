@@ -34,6 +34,14 @@ export function VectorizeStep({ imageData, onVectorizeComplete }: VectorizeStepP
 
   // The SVG actually shown / downloaded: the optimized one if present.
   const activeSvg = optimizedSvg ?? svg;
+  const updateSettings = useCallback((next: VectorizeSettings) => {
+    setSettings({
+      ...next,
+      numberofcolors: Math.min(12, Math.max(2, next.numberofcolors)),
+      pathomit: Math.max(20, next.pathomit),
+      roundcoords: 0,
+    });
+  }, []);
 
   // The raster fed to the tracer: background removed (if enabled) or the original.
   const processedImageData = useMemo(() => {
@@ -143,7 +151,7 @@ export function VectorizeStep({ imageData, onVectorizeComplete }: VectorizeStepP
 
         {/* Right: settings panel */}
         <div className="space-y-6">
-          <VectorizeSettingsPanel settings={settings} onSettingsChange={setSettings} />
+          <VectorizeSettingsPanel settings={settings} onSettingsChange={updateSettings} />
 
           <div className="space-y-3 border-t border-gray-100 dark:border-gray-700 pt-4">
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer">
