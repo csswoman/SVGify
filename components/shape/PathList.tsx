@@ -43,7 +43,7 @@ export function PathList({ items, onHover, onDelete }: PathListProps) {
           </span>
           <button
             onClick={() => onDelete(item)}
-            className="shrink-0 p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
+            className="shrink-0 p-1 rounded text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition"
             aria-label={`${t('shape.deleteShape')} ${item.id + 1}`}
             title={t('shape.deleteShape')}
           >

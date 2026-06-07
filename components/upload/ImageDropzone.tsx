@@ -58,7 +58,7 @@ export function ImageDropzone({ onImageData, onError }: ImageDropzoneProps) {
       onDrop={handleDrop}
       className={`border-4 border-dashed rounded-xl p-16 text-center transition-colors ${
         isDragging
-          ? 'border-blue-500 bg-blue-50'
+          ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10'
           : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 hover:border-gray-400 dark:hover:border-gray-500'
       }`}
     >

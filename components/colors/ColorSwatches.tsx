@@ -56,7 +56,7 @@ export function ColorSwatches({
               {onColorDelete && colors.length > 1 && (
                 <button
                   onClick={() => onColorDelete(color)}
-                  className="shrink-0 p-1 rounded text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50 transition"
+                  className="shrink-0 p-1 rounded text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition"
                   aria-label={`${t('col.deleteColor')} ${hex}`}
                   title={t('col.deleteColor')}
                 >
