@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { validateFile, fileToImageData } from '@/lib/fileUtils';
+import { useI18n } from '@/lib/i18n';
 
 interface ImageDropzoneProps {
   onImageData: (imageData: ImageData) => void;
@@ -9,6 +10,7 @@ interface ImageDropzoneProps {
 }
 
 export function ImageDropzone({ onImageData, onError }: ImageDropzoneProps) {
+  const { t } = useI18n();
   const [isDragging, setIsDragging] = useState(false);
 
   const handleFile = useCallback(
@@ -57,27 +59,24 @@ export function ImageDropzone({ onImageData, onError }: ImageDropzoneProps) {
       className={`border-4 border-dashed rounded-xl p-16 text-center transition-colors ${
         isDragging
           ? 'border-blue-500 bg-blue-50'
-          : 'border-gray-300 bg-gray-50 hover:border-gray-400'
+          : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 hover:border-gray-400 dark:hover:border-gray-500'
       }`}
     >
       <div className="text-5xl mb-4 select-none">🖼️</div>
-      <h2 className="text-xl font-semibold text-gray-800 mb-2">
-        Drag &amp; drop your image here
-      </h2>
-      <p className="text-gray-500 mb-6">or</p>
+      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">{t('upload.drop')}</h2>
       <label>
         <input
           type="file"
           accept="image/png,image/jpeg,image/webp"
           onChange={handleInputChange}
           className="sr-only"
-          aria-label="Choose image file"
+          aria-label={t('upload.drop')}
         />
         <span className="cursor-pointer inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
-          Choose file
+          {t('upload.title')}
         </span>
       </label>
-      <p className="text-sm text-gray-400 mt-6">PNG, JPG, or WEBP · Max 10 MB</p>
+      <p className="text-sm text-gray-400 dark:text-gray-500 mt-6">{t('upload.formats')}</p>
     </div>
   );
 }
