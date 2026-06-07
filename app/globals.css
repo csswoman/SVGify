@@ -6,3 +6,23 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
+
+.transparent-preview {
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
+    linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-size: 16px 16px;
+}
+
+.dark .transparent-preview {
+  background-color: #111827;
+  background-image:
+    linear-gradient(45deg, #1f2937 25%, transparent 25%),
+    linear-gradient(-45deg, #1f2937 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #1f2937 75%),
+    linear-gradient(-45deg, transparent 75%, #1f2937 75%);
+}
