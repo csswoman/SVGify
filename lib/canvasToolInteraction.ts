@@ -2,6 +2,8 @@ import { parseRgbString, rgbToHex } from './colorUtils';
 import type { RGBColor } from '@/types/svg.types';
 import type { WorkspaceTool } from '@/types/workspace.types';
 
+export type CanvasStatusEvent = 'colorPicked' | 'fillReplaced';
+
 export interface PathClickContext {
   fillColor: RGBColor;
   selectedColor: RGBColor | null;
@@ -11,6 +13,7 @@ export interface PathClickContext {
   replaceColor: (from: RGBColor, to: RGBColor) => void;
   removePath: (path: SVGPathElement) => void;
   pushSnapshot: () => void;
+  onStatusMessage?: (event: CanvasStatusEvent, detail?: string) => void;
 }
 
 export function parsePathFill(path: SVGPathElement): RGBColor | null {
@@ -30,11 +33,13 @@ export function routePathClick(
   switch (activeTool) {
     case 'eyedropper':
       ctx.setSelectedColor(color);
+      ctx.onStatusMessage?.('colorPicked', rgbToHex(color));
       break;
     case 'fill':
       if (rgbToHex(color) !== rgbToHex(ctx.fillColor)) {
         ctx.replaceColor(color, ctx.fillColor);
         ctx.pushSnapshot();
+        ctx.onStatusMessage?.('fillReplaced');
       }
       break;
     case 'erase':

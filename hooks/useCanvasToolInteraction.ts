@@ -6,6 +6,7 @@ import {
   resolvePathFromEvent,
   routeBackgroundClick,
   routePathClick,
+  type CanvasStatusEvent,
   type PathClickContext,
 } from '@/lib/canvasToolInteraction';
 import type { RGBColor } from '@/types/svg.types';
@@ -23,6 +24,7 @@ interface UseCanvasToolInteractionOptions {
   setEditingLabelPath: (path: SVGPathElement | null) => void;
   removePath: (path: SVGPathElement) => void;
   onEraseHover: (path: SVGPathElement | null) => void;
+  onStatusMessage?: (event: CanvasStatusEvent, detail?: string) => void;
 }
 
 export function useCanvasToolInteraction({
@@ -37,6 +39,7 @@ export function useCanvasToolInteraction({
   setEditingLabelPath,
   removePath,
   onEraseHover,
+  onStatusMessage,
 }: UseCanvasToolInteractionOptions) {
   const buildCtx = useCallback((): PathClickContext => ({
     fillColor,
@@ -47,7 +50,8 @@ export function useCanvasToolInteraction({
     replaceColor,
     removePath,
     pushSnapshot,
-  }), [fillColor, selectedColor, onSelectedColorChange, setSelectedPath, setEditingLabelPath, replaceColor, removePath, pushSnapshot]);
+    onStatusMessage,
+  }), [fillColor, selectedColor, onSelectedColorChange, setSelectedPath, setEditingLabelPath, replaceColor, removePath, pushSnapshot, onStatusMessage]);
 
   const handleCanvasClick = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {

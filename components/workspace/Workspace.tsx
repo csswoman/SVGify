@@ -27,6 +27,7 @@ export function Workspace() {
   const [previewBackground, setPreviewBackground] = useState<'checkerboard' | 'black'>('checkerboard');
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [inspectorOpen, setInspectorOpen] = useState(true);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const handleSvgReady = useCallback((svg: string) => {
     setSvgString(svg);
@@ -101,6 +102,7 @@ export function Workspace() {
             }}
             onUploadError={setUploadError}
             onToolChange={handleToolChange}
+            onStatusMessage={setStatusMessage}
           />
           <Inspector
             activeTool={activeTool}
@@ -128,6 +130,7 @@ export function Workspace() {
           byteSize={byteSize}
           zoomPercent={zoomPercent}
           activeTool={activeTool}
+          statusMessage={statusMessage}
         />
       </div>
     </ErrorBoundary>

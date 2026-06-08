@@ -13,6 +13,7 @@ import { formatBytes, svgByteSize } from '@/lib/optimizeSvg';
 import { useSvgColors } from '@/hooks/useSvgColors';
 import { useCanvasDisplaySize } from '@/hooks/useCanvasDisplaySize';
 import { useCanvasToolInteraction } from '@/hooks/useCanvasToolInteraction';
+import type { CanvasStatusEvent } from '@/lib/canvasToolInteraction';
 import { useVectorizePreviewSizes } from '@/hooks/useVectorizePreviewSizes';
 import type { RGBColor } from '@/types/svg.types';
 import type { WorkspaceTool } from '@/types/workspace.types';
@@ -47,6 +48,7 @@ interface CanvasProps {
   onImageData: (data: ImageData) => void;
   onUploadError: (error: string) => void;
   onToolChange: (tool: WorkspaceTool) => void;
+  onStatusMessage: (message: string) => void;
 }
 
 export function Canvas({
@@ -65,6 +67,7 @@ export function Canvas({
   onImageData,
   onUploadError,
   onToolChange,
+  onStatusMessage,
 }: CanvasProps) {
   const { t } = useI18n();
   const canvasPanelRef = useRef<HTMLElement>(null);
@@ -79,6 +82,16 @@ export function Canvas({
     svgString: activeTool === 'vectorize' ? vectorizeSession.svg : null,
   });
   const { replaceColor } = useSvgColors(editor?.svgEl ?? null);
+  const handleCanvasStatusMessage = useCallback(
+    (event: CanvasStatusEvent, detail?: string) => {
+      if (event === 'colorPicked' && detail) {
+        onStatusMessage(`${t('workspace.statusColorPicked')} ${detail}`);
+      } else if (event === 'fillReplaced') {
+        onStatusMessage(t('workspace.statusFillReplaced'));
+      }
+    },
+    [onStatusMessage, t]
+  );
   const { handleCanvasClick, handleCanvasMouseMove, cursor } = useCanvasToolInteraction({
     activeTool,
     containerRef: editor?.containerRef ?? { current: null },
@@ -91,6 +104,7 @@ export function Canvas({
     setEditingLabelPath: labelTools.setEditingPath,
     removePath: shapeTools.removePath,
     onEraseHover: shapeTools.handleHover,
+    onStatusMessage: handleCanvasStatusMessage,
   });
 
   const handleUpload = useCallback(

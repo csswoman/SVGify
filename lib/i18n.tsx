@@ -206,6 +206,8 @@ const DICT = {
   'workspace.inspectorPlaceholder': { en: 'Inspector', es: 'Inspector' },
   'workspace.labelsHint': { en: 'Click a path in the canvas to name it. Labels are saved in the SVG.', es: 'Haz clic en una forma del lienzo para nombrarla. Las etiquetas se guardan en el SVG.' },
   'workspace.fillHint': { en: 'Pick a fill color, then click any path with the same color to recolor all matching shapes.', es: 'Elige un color de relleno y haz clic en una forma del mismo color para recolorear todas las parecidas.' },
+  'workspace.statusColorPicked': { en: 'Color picked:', es: 'Color recogido:' },
+  'workspace.statusFillReplaced': { en: 'Fill color replaced', es: 'Color de relleno reemplazado' },
 } as const;
 
 export type TKey = keyof typeof DICT;

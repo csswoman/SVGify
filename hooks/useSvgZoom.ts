@@ -11,6 +11,7 @@ import {
   readSvgViewBox,
   serializeSvgAtBaseViewBox,
   zoomViewBoxSize,
+  type SvgBaseViewBox,
 } from '@/lib/svgViewBox';
 
 export interface ZoomState {

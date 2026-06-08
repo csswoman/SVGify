@@ -8,6 +8,7 @@ interface StatusBarProps {
   byteSize: number;
   zoomPercent: number;
   activeTool: WorkspaceTool;
+  statusMessage?: string | null;
 }
 
 function formatBytes(bytes: number): string {
@@ -15,11 +16,16 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1024).toFixed(1)} KB`;
 }
 
-export function StatusBar({ pathCount, byteSize, zoomPercent, activeTool }: StatusBarProps) {
+export function StatusBar({ pathCount, byteSize, zoomPercent, activeTool, statusMessage }: StatusBarProps) {
   const { t } = useI18n();
 
   return (
-    <footer className="flex shrink-0 items-center justify-between border-t border-gray-200 bg-white px-4 py-1.5 text-xs text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+    <footer className="flex shrink-0 items-center justify-between border-t border-gray-200 bg-white px-4 py-2 text-xs text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+      {statusMessage && (
+        <span aria-live="polite" className="sr-only">
+          {statusMessage}
+        </span>
+      )}
       <div className="flex items-center gap-3">
         <span>
           {pathCount} {t('workspace.paths')}
@@ -29,7 +35,7 @@ export function StatusBar({ pathCount, byteSize, zoomPercent, activeTool }: Stat
       </div>
       <div className="flex items-center gap-3">
         <span>{t(`tool.${activeTool}`)}</span>
-        <span className="hidden sm:inline">{t('workspace.shortcutHint')}</span>
+        <span className="max-sm:hidden sm:inline">{t('workspace.shortcutHint')}</span>
       </div>
     </footer>
   );
