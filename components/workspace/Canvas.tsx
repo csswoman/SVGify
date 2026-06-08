@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ImageDropzone } from '@/components/upload/ImageDropzone';
 import { ImagePreview } from '@/components/vectorize/ImagePreview';
@@ -12,6 +12,7 @@ import { ZoomableSvgViewport } from '@/components/shared/ZoomableSvgViewport';
 import { formatBytes, svgByteSize } from '@/lib/optimizeSvg';
 import { parseRgbString, rgbToHex } from '@/lib/colorUtils';
 import { useSvgColors } from '@/hooks/useSvgColors';
+import { useCanvasDisplaySize } from '@/hooks/useCanvasDisplaySize';
 import type { RGBColor } from '@/types/svg.types';
 import type { WorkspaceTool } from '@/types/workspace.types';
 import type { useVectorizeSession } from '@/hooks/useVectorizeSession';
@@ -38,6 +39,7 @@ interface CanvasProps {
   previewBackground: 'checkerboard' | 'black';
   selectedColor: RGBColor | null;
   fillColor: RGBColor;
+  uploadError: string | null;
   onSelectedColorChange: (color: RGBColor | null) => void;
   onImageData: (data: ImageData) => void;
   onUploadError: (error: string) => void;
@@ -54,18 +56,22 @@ export function Canvas({
   previewBackground,
   selectedColor,
   fillColor,
+  uploadError,
   onSelectedColorChange,
   onImageData,
   onUploadError,
   onToolChange,
 }: CanvasProps) {
   const { t } = useI18n();
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const canvasPanelRef = useRef<HTMLElement>(null);
+  const displaySize = useCanvasDisplaySize({
+    svgEl: editor?.svgEl ?? null,
+    panelRef: canvasPanelRef,
+  });
   const { replaceColor } = useSvgColors(editor?.svgEl ?? null);
 
   const handleUpload = useCallback(
     (data: ImageData) => {
-      setUploadError(null);
       onImageData(data);
       onToolChange('vectorize');
     },
@@ -74,7 +80,10 @@ export function Canvas({
 
   if (!imageData || activeTool === 'import') {
     return (
-      <main className="flex min-w-0 flex-1 flex-col items-center justify-center gap-4 bg-gray-200/60 p-8 dark:bg-gray-950/60">
+      <section
+        aria-label={t('workspace.canvas')}
+        className="flex min-w-0 flex-1 flex-col items-center justify-center gap-4 bg-gray-200/60 p-4 sm:p-8 dark:bg-gray-950/60"
+      >
         {uploadError && (
           <div
             role="alert"
@@ -86,14 +95,10 @@ export function Canvas({
         <div className="w-full max-w-lg">
           <ImageDropzone
             onImageData={handleUpload}
-            onError={(err) => {
-              setUploadError(err);
-              onUploadError(err);
-            }}
+            onError={onUploadError}
           />
         </div>
-        <p className="text-xs text-gray-400 dark:text-gray-500">{t('upload.privacy')}</p>
-      </main>
+      </section>
     );
   }
 
@@ -101,7 +106,10 @@ export function Canvas({
     const { processedImageData, svg, removeBg, handlePick, seeds, error } = vectorizeSession;
 
     return (
-      <main className="min-w-0 flex-1 overflow-y-auto bg-gray-200/60 p-4 dark:bg-gray-950/60">
+      <section
+        aria-label={t('workspace.canvas')}
+        className="min-w-0 flex-1 overflow-y-auto bg-gray-200/60 p-4 dark:bg-gray-950/60"
+      >
         {error && (
           <div
             role="alert"
@@ -119,10 +127,10 @@ export function Canvas({
               seeds={removeBg ? seeds : undefined}
             />
             <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
                 {t('vec.vector')}
                 {svg && (
-                  <span className="ml-2 font-normal normal-case text-gray-400 dark:text-gray-500">
+                  <span className="ml-2 font-normal text-gray-500 dark:text-gray-400">
                     ({formatBytes(svgByteSize(svg))})
                   </span>
                 )}
@@ -134,15 +142,18 @@ export function Canvas({
             </div>
           </div>
         )}
-      </main>
+      </section>
     );
   }
 
   if (!svgString || !editor) {
     return (
-      <main className="flex min-w-0 flex-1 items-center justify-center bg-gray-200/60 dark:bg-gray-950/60">
+      <section
+        aria-label={t('workspace.canvas')}
+        className="flex min-w-0 flex-1 items-center justify-center bg-gray-200/60 dark:bg-gray-950/60"
+      >
         <p className="text-sm text-gray-500">{t('vec.vectorizing')}</p>
-      </main>
+      </section>
     );
   }
 
@@ -189,12 +200,17 @@ export function Canvas({
   const svgForPortals = svgEl as SVGSVGElement | null;
 
   return (
-    <main className="min-w-0 flex-1 overflow-y-auto bg-gray-200/60 p-4 dark:bg-gray-950/60">
+    <section
+      ref={canvasPanelRef}
+      aria-label={t('workspace.canvas')}
+      className="min-w-0 flex-1 overflow-y-auto bg-gray-200/60 p-4 dark:bg-gray-950/60"
+    >
       <ZoomableSvgViewport
         containerRef={containerRef}
         zoom={zoom}
+        displaySize={displaySize}
         onClick={handleSvgClick}
-        className={`relative flex min-h-[28rem] w-full items-center justify-center overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 ${
+        className={`relative flex items-center justify-center overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 ${
           useTransparent ? 'transparent-preview' : ''
         }`}
         style={useTransparent ? undefined : previewStyle}
@@ -218,6 +234,6 @@ export function Canvas({
           />,
           svgForPortals
         )}
-    </main>
+    </section>
   );
 }

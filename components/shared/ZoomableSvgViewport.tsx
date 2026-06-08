@@ -2,12 +2,14 @@
 
 import type { RefObject } from 'react';
 import { ZoomControls } from '@/components/shared/ZoomControls';
+import type { CanvasDisplaySize } from '@/lib/canvasDisplaySize';
 import { useSvgZoom } from '@/hooks/useSvgZoom';
 import { useI18n } from '@/lib/i18n';
 
 interface ZoomableSvgViewportProps {
   containerRef: RefObject<HTMLDivElement | null>;
   zoom: ReturnType<typeof useSvgZoom>;
+  displaySize?: CanvasDisplaySize | null;
   className?: string;
   style?: React.CSSProperties;
   onClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
@@ -17,6 +19,7 @@ interface ZoomableSvgViewportProps {
 export function ZoomableSvgViewport({
   containerRef,
   zoom,
+  displaySize,
   className,
   style,
   onClick,
@@ -25,11 +28,10 @@ export function ZoomableSvgViewport({
   const { t } = useI18n();
 
   return (
-    <div className="relative">
+    <div className="relative mx-auto w-fit">
       <div
         ref={containerRef}
         onClick={onClick}
-        onWheel={zoom.onWheel}
         onPointerDown={zoom.onPointerDown}
         onPointerMove={zoom.onPointerMove}
         onPointerUp={zoom.onPointerUp}
@@ -38,6 +40,9 @@ export function ZoomableSvgViewport({
         style={{
           touchAction: 'none',
           cursor: zoom.isPanMode ? 'grab' : undefined,
+          ...(displaySize
+            ? { width: displaySize.width, height: displaySize.height }
+            : undefined),
           ...style,
         }}
         aria-label={ariaLabel}
