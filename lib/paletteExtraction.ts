@@ -17,6 +17,8 @@ interface ColorBucket {
   count: number;
 }
 
+type ColorCandidate = RGBColor & { count: number };
+
 const BASE_ICON_COLORS = ICON_BASE_PALETTE.map((entry) => entry.color);
 
 export function luminance(color: RGBColor): number {
@@ -39,6 +41,41 @@ function toRgb(color: Pick<TracePaletteColor, 'r' | 'g' | 'b'>): RGBColor {
 export function isNearWhite(color: RGBColor, threshold = 244): boolean {
   const maxChannelDelta = 255 - threshold;
   return colorDistanceSq(color, { r: 255, g: 255, b: 255 }) <= maxChannelDelta * maxChannelDelta * 3;
+}
+
+/** Neutral gray used in soft drop shadows (not white, not saturated accents). */
+export function isDropShadowColor(color: RGBColor): boolean {
+  if (isNearWhite(color)) return false;
+  const sat = saturationRange(color);
+  const light = luminance(color);
+  return sat <= 34 && light >= 48 && light < 245;
+}
+
+function isTrueBlackFill(color: RGBColor): boolean {
+  return luminance(color) <= 42 && saturationRange(color) <= 24 && !isDropShadowColor(color);
+}
+
+function nearestAmong(color: RGBColor, palette: readonly RGBColor[]): RGBColor {
+  let nearest: RGBColor = palette[0] ?? ICON_BASE_PALETTE[0].color;
+  let best = colorDistanceSq(color, nearest);
+
+  for (const entry of palette.slice(1)) {
+    const distance = colorDistanceSq(color, entry);
+    if (distance < best) {
+      best = distance;
+      nearest = entry;
+    }
+  }
+
+  return { ...nearest };
+}
+
+function shadowPaletteEntries(palette: readonly RGBColor[]): RGBColor[] {
+  return palette.filter(isDropShadowColor);
+}
+
+function blackPaletteEntries(palette: readonly RGBColor[]): RGBColor[] {
+  return palette.filter(isTrueBlackFill);
 }
 
 export function removeNearWhitePixels(imageData: ImageData, threshold = 244): ImageData {
@@ -106,6 +143,16 @@ export function smoothQuantizedPalette(
         const idx = (y * width + x) * 4;
         if (current[idx + 3] < 16) continue;
 
+        const currentRgb = {
+          r: current[idx],
+          g: current[idx + 1],
+          b: current[idx + 2],
+        };
+        const votePalette = isDropShadowColor(currentRgb)
+          ? shadowPaletteEntries(palette)
+          : palette;
+        const activePalette = votePalette.length > 0 ? votePalette : palette;
+
         const counts = new Map<number, number>();
         for (let dy = -radius; dy <= radius; dy++) {
           for (let dx = -radius; dx <= radius; dx++) {
@@ -117,16 +164,13 @@ export function smoothQuantizedPalette(
 
             const colorIndex = paletteColorIndex(
               { r: current[ni], g: current[ni + 1], b: current[ni + 2] },
-              palette
+              activePalette
             );
             counts.set(colorIndex, (counts.get(colorIndex) ?? 0) + 1);
           }
         }
 
-        let bestIndex = paletteColorIndex(
-          { r: current[idx], g: current[idx + 1], b: current[idx + 2] },
-          palette
-        );
+        let bestIndex = paletteColorIndex(currentRgb, activePalette);
         let bestCount = 0;
         for (const [colorIndex, count] of counts) {
           if (count > bestCount) {
@@ -135,7 +179,7 @@ export function smoothQuantizedPalette(
           }
         }
 
-        const snapped = palette[bestIndex] ?? palette[0];
+        const snapped = activePalette[bestIndex] ?? activePalette[0];
         next[idx] = snapped.r;
         next[idx + 1] = snapped.g;
         next[idx + 2] = snapped.b;
@@ -167,7 +211,16 @@ export function applyAlphaMask(color: ImageData, mask: ImageData): ImageData {
   const out = new ImageData(new Uint8ClampedArray(color.data), color.width, color.height);
 
   for (let i = 0; i < out.data.length; i += 4) {
-    out.data[i + 3] = mask.data[i + 3];
+    const rgb = { r: color.data[i], g: color.data[i + 1], b: color.data[i + 2] };
+    const sourceAlpha = color.data[i + 3];
+    const maskAlpha = mask.data[i + 3];
+
+    // Keep soft gray shadows even when the binary silhouette threshold misses them.
+    if (isDropShadowColor(rgb) && sourceAlpha >= 32) {
+      out.data[i + 3] = sourceAlpha >= 56 ? 255 : 0;
+    } else {
+      out.data[i + 3] = maskAlpha;
+    }
   }
 
   return out;
@@ -177,18 +230,24 @@ export function nearestPaletteColor(
   color: RGBColor,
   palette: readonly RGBColor[] = BASE_ICON_COLORS
 ): RGBColor {
-  let nearest: RGBColor = palette[0] ?? ICON_BASE_PALETTE[0].color;
-  let best = colorDistanceSq(color, nearest);
+  const shadows = shadowPaletteEntries(palette);
 
-  for (const entry of palette.slice(1)) {
-    const distance = colorDistanceSq(color, entry);
-    if (distance < best) {
-      best = distance;
-      nearest = entry;
-    }
+  if (isDropShadowColor(color) && shadows.length > 0) {
+    return nearestAmong(color, shadows);
   }
 
-  return { ...nearest };
+  const sat = saturationRange(color);
+  const light = luminance(color);
+  if (sat <= 34 && light >= 48 && light < 140 && shadows.length > 0) {
+    return nearestAmong(color, shadows);
+  }
+
+  if (isTrueBlackFill(color)) {
+    const blacks = blackPaletteEntries(palette);
+    if (blacks.length > 0) return nearestAmong(color, blacks);
+  }
+
+  return nearestAmong(color, palette);
 }
 
 export function quantizeImageToPalette(
@@ -228,7 +287,18 @@ export function snapSvgToPalette(
   );
 }
 
-function collectVisibleColorBuckets(imageData: ImageData): RGBColor[] {
+function countOpaqueNearWhitePixels(imageData: ImageData, threshold = 244): number {
+  let count = 0;
+  for (let i = 0; i < imageData.data.length; i += 4) {
+    if (imageData.data[i + 3] < 16) continue;
+    if (isNearWhite({ r: imageData.data[i], g: imageData.data[i + 1], b: imageData.data[i + 2] }, threshold)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+function collectVisibleColorBuckets(imageData: ImageData): ColorCandidate[] {
   const buckets = new Map<number, ColorBucket>();
 
   for (let i = 0; i < imageData.data.length; i += 4) {
@@ -271,9 +341,23 @@ export function suggestPaletteFromImage(imageData: ImageData, maxColors: number)
     if (!isSimilarToAny(color, selected)) selected.push({ ...color });
   };
 
-  if (candidates.some((color) => luminance(color) <= 70)) addColor(ICON_BASE_PALETTE[0].color);
+  if (candidates.some((color) => isTrueBlackFill(color))) addColor(ICON_BASE_PALETTE[0].color);
   if (candidates.some((color) => colorDistanceSq(color, ICON_BASE_PALETTE[1].color) <= 56 * 56)) {
     addColor(ICON_BASE_PALETTE[1].color);
+  }
+
+  // Enclosed white fills (face, belly, highlights) survive edge flood-fill — keep them in the palette.
+  const nearWhitePixels = countOpaqueNearWhitePixels(imageData);
+  const totalOpaque = imageData.data.filter((_, i) => i % 4 === 3 && imageData.data[i] >= 16).length;
+  if (nearWhitePixels > 0 && nearWhitePixels / Math.max(1, totalOpaque) >= 0.02) {
+    addColor({ r: 255, g: 255, b: 255 });
+  }
+
+  const shadowCandidates = candidates
+    .filter((color) => isDropShadowColor(color))
+    .sort((a, b) => b.count - a.count);
+  if (shadowCandidates[0]) {
+    addColor(toRgb(shadowCandidates[0]));
   }
 
   for (const color of candidates) {
@@ -283,11 +367,15 @@ export function suggestPaletteFromImage(imageData: ImageData, maxColors: number)
     if (isAccent && !isCream) addColor(toRgb(color));
   }
 
-  const hasShadow = candidates.some((color) => {
-    const lightness = luminance(color);
-    return saturationRange(color) <= 28 && lightness > 70 && lightness < 220;
-  });
-  if (hasShadow) addColor(ICON_BASE_PALETTE[3].color);
+  if (
+    shadowCandidates.length === 0 &&
+    candidates.some((color) => {
+      const lightness = luminance(color);
+      return saturationRange(color) <= 28 && lightness > 70 && lightness < 220;
+    })
+  ) {
+    addColor(ICON_BASE_PALETTE[3].color);
+  }
 
   for (const color of candidates) {
     if (selected.length >= limit) break;
