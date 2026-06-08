@@ -144,9 +144,13 @@ export function Inspector({
           />
         )}
 
-        {activeTool === 'optimize' && svgString && (
+        {activeTool === 'optimize' && svgString && editor && (
           <OptimizeInspector
+            svgEl={editor.svgEl}
             svgString={svgString}
+            selectedColor={selectedColor}
+            onSelectedColorChange={onSelectedColorChange}
+            onPushSnapshot={editor.pushSnapshot}
             pathOmit={VECTORIZE_DEFAULTS.pathomit}
             onSvgString={onSvgString}
           />

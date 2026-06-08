@@ -179,6 +179,10 @@ const DICT = {
   'tool.optimize': { en: 'Optimize', es: 'Optimizar' },
   'tool.zoom': { en: 'Zoom', es: 'Zoom' },
 
+  // Optimize inspector sections
+  'optimize.paletteSection': { en: 'Palette', es: 'Paleta' },
+  'optimize.optimizeSection': { en: 'Optimization', es: 'Optimización' },
+
   // Workspace chrome
   'workspace.download': { en: 'Download SVG', es: 'Descargar SVG' },
   'workspace.undo': { en: 'Undo', es: 'Deshacer' },
