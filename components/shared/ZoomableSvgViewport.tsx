@@ -13,6 +13,7 @@ interface ZoomableSvgViewportProps {
   className?: string;
   style?: React.CSSProperties;
   onClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
+  onMouseMove?: (event: React.MouseEvent<HTMLDivElement>) => void;
   'aria-label'?: string;
 }
 
@@ -23,6 +24,7 @@ export function ZoomableSvgViewport({
   className,
   style,
   onClick,
+  onMouseMove,
   'aria-label': ariaLabel,
 }: ZoomableSvgViewportProps) {
   const { t } = useI18n();
@@ -32,6 +34,7 @@ export function ZoomableSvgViewport({
       <div
         ref={containerRef}
         onClick={onClick}
+        onMouseMove={onMouseMove}
         onPointerDown={zoom.onPointerDown}
         onPointerMove={zoom.onPointerMove}
         onPointerUp={zoom.onPointerUp}

@@ -25,11 +25,13 @@ export function Workspace() {
   const [selectedColor, setSelectedColor] = useState<RGBColor | null>(null);
   const [fillColor, setFillColor] = useState<RGBColor>({ r: 0, g: 0, b: 0 });
   const [previewBackground, setPreviewBackground] = useState<'checkerboard' | 'black'>('checkerboard');
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [inspectorOpen, setInspectorOpen] = useState(true);
 
   const handleSvgReady = useCallback((svg: string) => {
     setSvgString(svg);
     setZoomViewport(DEFAULT_ZOOM_VIEWPORT);
-    setActiveTool('select');
+    setActiveTool('eyedropper');
   }, []);
 
   const vectorizeSession = useVectorizeSession({
@@ -48,10 +50,15 @@ export function Workspace() {
   const labelTools = useWorkspaceLabels(editor, activeTool);
   const document = { imageData, svgString };
 
+  const handleToolChange = useCallback((tool: WorkspaceTool) => {
+    setActiveTool(tool);
+    setInspectorOpen(true);
+  }, []);
+
   useWorkspaceShortcuts({
     document,
     activeTool,
-    onToolChange: setActiveTool,
+    onToolChange: handleToolChange,
     onUndo: () => editor.undo(),
     onRedo: () => editor.redo(),
   });
@@ -70,9 +77,11 @@ export function Workspace() {
           canRedo={editor.canRedo}
           onUndo={() => editor.undo()}
           onRedo={() => editor.redo()}
+          inspectorOpen={inspectorOpen}
+          onInspectorToggle={() => setInspectorOpen((open) => !open)}
         />
-        <div className="flex min-h-0 flex-1">
-          <ToolBar activeTool={activeTool} document={document} onToolChange={setActiveTool} />
+        <div className="relative flex min-h-0 flex-1">
+          <ToolBar activeTool={activeTool} document={document} onToolChange={handleToolChange} />
           <Canvas
             activeTool={activeTool}
             imageData={imageData}
@@ -80,13 +89,18 @@ export function Workspace() {
             vectorizeSession={vectorizeSession}
             editor={svgString ? editor : null}
             shapeTools={shapeTools}
+            labelTools={labelTools}
             previewBackground={previewBackground}
             selectedColor={selectedColor}
             fillColor={fillColor}
+            uploadError={uploadError}
             onSelectedColorChange={setSelectedColor}
-            onImageData={setImageData}
-            onUploadError={() => {}}
-            onToolChange={setActiveTool}
+            onImageData={(data) => {
+              setUploadError(null);
+              setImageData(data);
+            }}
+            onUploadError={setUploadError}
+            onToolChange={handleToolChange}
           />
           <Inspector
             activeTool={activeTool}
@@ -99,12 +113,14 @@ export function Workspace() {
             previewBackground={previewBackground}
             selectedColor={selectedColor}
             fillColor={fillColor}
+            open={inspectorOpen}
+            onClose={() => setInspectorOpen(false)}
             onSelectedColorChange={setSelectedColor}
             onFillColorChange={setFillColor}
             onPreviewBackgroundChange={setPreviewBackground}
             onImageData={setImageData}
             onSvgString={setSvgString}
-            onToolChange={setActiveTool}
+            onToolChange={handleToolChange}
           />
         </div>
         <StatusBar
