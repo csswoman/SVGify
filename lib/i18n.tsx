@@ -18,6 +18,14 @@ const DICT = {
   'app.footer': { en: 'Your images never leave your device', es: 'Tus imágenes nunca salen de tu dispositivo' },
   'app.source': { en: 'Source on GitHub', es: 'Código en GitHub' },
   'lang.toggle': { en: 'Español', es: 'English' },
+  'theme.switchToDark': { en: 'Switch to dark mode', es: 'Cambiar a modo oscuro' },
+  'theme.switchToLight': { en: 'Switch to light mode', es: 'Cambiar a modo claro' },
+  'theme.switchLang': { en: 'Switch language', es: 'Cambiar idioma' },
+
+  // Errors
+  'error.title': { en: 'Something went wrong', es: 'Algo salió mal' },
+  'error.unknown': { en: 'Unknown error', es: 'Error desconocido' },
+  'error.tryAgain': { en: 'Try again', es: 'Intentar de nuevo' },
 
   // Steps / wizard
   'nav.back': { en: '← Back', es: '← Atrás' },
@@ -52,7 +60,7 @@ const DICT = {
   'vec.maxOptimize.help': { en: 'Extra compression only: flattens curves to straight segments (Douglas–Peucker). Smaller file, but corners look chunkier. Skip this if you want the sharpest default preview.', es: 'Compresión extra: aplana curvas a segmentos rectos (Douglas–Peucker). Archivo más ligero, pero las esquinas se ven más toscas. Omítelo si quieres la vista previa más nítida.' },
   'vec.cleanFragments': { en: '🧹 Clean fragments', es: '🧹 Limpiar fragmentos' },
   'vec.cleanFragments.help': { en: 'Removes tiny near-white speckles and other small stray paths at the edges — fixes background halos without changing the main shapes.', es: 'Elimina motas blancas diminutas y otros paths sueltos en los bordes — corrige halos del fondo sin alterar las formas principales.' },
-  'zoom.panHint': { en: 'Space + drag, Alt + drag, or middle mouse to pan. Wheel to zoom.', es: 'Espacio + arrastrar, Alt + arrastrar o botón central para mover. Rueda para zoom.' },
+  'zoom.panHint': { en: 'Space + drag, Alt + drag, or middle mouse to pan. Use +/− controls to zoom.', es: 'Espacio + arrastrar, Alt + arrastrar o botón central para mover. Usa +/− para el zoom.' },
   'set.smoothing.help': { en: 'Higher simplifies and straightens edges (lighter file, chunkier corners); lower keeps curves faithful and sharper.', es: 'Más alto simplifica y endereza bordes (archivo más ligero, esquinas más toscas); más bajo mantiene curvas fieles y más nítidas.' },
   'set.detail.help': { en: 'Higher simplifies curves (lighter file, more angular); lower preserves smooth rounded detail.', es: 'Más alto simplifica curvas (archivo más ligero, más angular); más bajo conserva detalle redondeado y suave.' },
   'vec.complexWarn': { en: 'This icon produced many shapes. Try fewer colors, more noise removal, or “Optimize to the max” to keep the SVG lightweight.', es: 'Este icono generó muchas formas. Prueba menos colores, más “quitar ruido” u “Optimizar al máximo” para mantener el SVG liviano.' },
@@ -95,6 +103,9 @@ const DICT = {
   // Color editor
   'col.title': { en: 'Edit Colors', es: 'Editar colores' },
   'col.subtitle': { en: 'Click a color swatch or a path in the preview to select it, then pick a new color.', es: 'Haz clic en un color o en una forma del preview para seleccionarlo, luego elige un nuevo color.' },
+  'col.eyedropperHint': { en: 'Click a shape in the canvas to pick its fill color.', es: 'Haz clic en una forma del lienzo para recoger su color de relleno.' },
+  'col.eyedropperEmpty': { en: 'No color picked yet.', es: 'Aún no has recogido ningún color.' },
+  'col.useAsFill': { en: 'Use as fill', es: 'Usar como relleno' },
   'col.eraseSub': { en: 'Erase mode: click any shape in the preview to delete it.', es: 'Modo borrar: haz clic en cualquier forma del preview para eliminarla.' },
   'col.undo': { en: 'Undo', es: 'Deshacer' },
   'col.redo': { en: 'Redo', es: 'Rehacer' },
@@ -151,6 +162,11 @@ const DICT = {
   'shape.bgBlack': { en: 'Black', es: 'Negro' },
 
   // Workspace tools
+  'tool.group.file': { en: 'File', es: 'Archivo' },
+  'tool.group.edit': { en: 'Color', es: 'Color' },
+  'tool.group.shape': { en: 'Shape', es: 'Forma' },
+  'tool.group.output': { en: 'Output', es: 'Salida' },
+  'tool.group.view': { en: 'View', es: 'Vista' },
   'tool.import': { en: 'Import image', es: 'Importar imagen' },
   'tool.vectorize': { en: 'Vectorize', es: 'Vectorizar' },
   'tool.select': { en: 'Select', es: 'Seleccionar' },
@@ -168,8 +184,21 @@ const DICT = {
   'workspace.undo': { en: 'Undo', es: 'Deshacer' },
   'workspace.redo': { en: 'Redo', es: 'Rehacer' },
   'workspace.paths': { en: 'paths', es: 'formas' },
+  'workspace.tools': { en: 'Tools', es: 'Herramientas' },
   'workspace.shortcutHint': { en: 'Press shortcut keys to switch tools', es: 'Usa atajos de teclado para cambiar herramientas' },
+  'workspace.moreToolsAfterVectorize': {
+    en: 'More edit tools appear after you vectorize.',
+    es: 'Más herramientas de edición aparecen tras vectorizar.',
+  },
   'workspace.replaceImage': { en: 'Replace image', es: 'Reemplazar imagen' },
+  'workspace.importReplaceHint': {
+    en: 'Drop a new image on the canvas, or clear the current one.',
+    es: 'Suelta una imagen nueva en el lienzo o borra la actual.',
+  },
+  'workspace.canvas': { en: 'Editor canvas', es: 'Lienzo del editor' },
+  'workspace.inspector': { en: 'Inspector panel', es: 'Panel inspector' },
+  'workspace.openInspector': { en: 'Open inspector', es: 'Abrir inspector' },
+  'workspace.closeInspector': { en: 'Close inspector', es: 'Cerrar inspector' },
   'workspace.canvasPlaceholder': { en: 'Canvas', es: 'Lienzo' },
   'workspace.inspectorPlaceholder': { en: 'Inspector', es: 'Inspector' },
   'workspace.labelsHint': { en: 'Click a path in the canvas to name it. Labels are saved in the SVG.', es: 'Haz clic en una forma del lienzo para nombrarla. Las etiquetas se guardan en el SVG.' },
