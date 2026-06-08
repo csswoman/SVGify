@@ -22,31 +22,6 @@ export function useWorkspaceLabels(
   }, [editor.svgEl, extractLabels]);
 
   useEffect(() => {
-    const svgEl = editor.svgEl;
-    if (!svgEl) return;
-
-    let pathIndex = 0;
-    const handlers: Array<{ el: SVGPathElement; fn: () => void }> = [];
-
-    svgEl.querySelectorAll('path').forEach((path) => {
-      const idx = pathIndex++;
-      const fn = () => {
-        if (!isLabelMode) return;
-        selectPath(path, `path-${idx}`);
-        setEditingPath(path);
-        setSelectedLabel(null);
-      };
-      path.style.cursor = isLabelMode ? 'crosshair' : 'default';
-      path.addEventListener('click', fn);
-      handlers.push({ el: path, fn });
-    });
-
-    return () => {
-      handlers.forEach(({ el, fn }) => el.removeEventListener('click', fn));
-    };
-  }, [editor.svgEl, isLabelMode, selectPath]);
-
-  useEffect(() => {
     if (!isLabelMode) {
       setEditingPath(null);
       clearSelection();

@@ -1,20 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { PathItem } from '@/components/shape/PathList';
 import type { WorkspaceTool } from '@/types/workspace.types';
 import type { useWorkspaceSvg } from '@/hooks/useWorkspaceSvg';
 
 export function useWorkspaceShapeTools(
   editor: ReturnType<typeof useWorkspaceSvg>,
-  activeTool: WorkspaceTool
+  _activeTool: WorkspaceTool
 ) {
   const [selectedPath, setSelectedPath] = useState<SVGPathElement | null>(null);
   const [brushColor, setBrushColor] = useState('#000000');
   const [brushSize, setBrushSize] = useState(6);
   const [pathItems, setPathItems] = useState<PathItem[]>([]);
-  const activeToolRef = useRef(activeTool);
-  activeToolRef.current = activeTool;
 
   const refreshPathItems = useCallback((svg: SVGSVGElement) => {
     const items: PathItem[] = [];
@@ -23,44 +21,6 @@ export function useWorkspaceShapeTools(
     });
     setPathItems(items);
   }, []);
-
-  useEffect(() => {
-    const svg = editor.svgEl as SVGSVGElement | null;
-    if (!svg) return;
-
-    refreshPathItems(svg);
-    svg.querySelectorAll('[data-svgcraft-editor]').forEach((el) => el.remove());
-
-    const handlers: Array<{ el: SVGPathElement; fn: (e: Event) => void }> = [];
-    const shapeTool = activeTool === 'erase' || activeTool === 'nodes' || activeTool === 'brush';
-
-    svg.querySelectorAll('path').forEach((path) => {
-      path.style.cursor = shapeTool ? 'pointer' : 'default';
-      if (!shapeTool) return;
-
-      const fn = (e: Event) => {
-        e.stopPropagation();
-        if (activeToolRef.current === 'nodes') {
-          setSelectedPath(path);
-        } else if (activeToolRef.current === 'erase') {
-          path.remove();
-          refreshPathItems(svg);
-          editor.pushSnapshot();
-          setSelectedPath(null);
-        }
-      };
-      path.addEventListener('click', fn);
-      handlers.push({ el: path, fn });
-    });
-
-    if (activeTool !== 'nodes') {
-      setSelectedPath(null);
-    }
-
-    return () => {
-      handlers.forEach(({ el, fn }) => el.removeEventListener('click', fn));
-    };
-  }, [editor.svgEl, activeTool, editor.pushSnapshot, refreshPathItems]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -92,6 +52,17 @@ export function useWorkspaceShapeTools(
     [editor.containerRef, editor.pushSnapshot, refreshPathItems]
   );
 
+  const removePath = useCallback(
+    (path: SVGPathElement) => {
+      path.remove();
+      const svg = editor.containerRef.current?.querySelector('svg') as SVGSVGElement | null;
+      if (svg) refreshPathItems(svg);
+      editor.pushSnapshot();
+      setSelectedPath(null);
+    },
+    [editor.containerRef, editor.pushSnapshot, refreshPathItems]
+  );
+
   return {
     selectedPath,
     setSelectedPath,
@@ -102,5 +73,6 @@ export function useWorkspaceShapeTools(
     pathItems,
     handleHover,
     handleDeleteItem,
+    removePath,
   };
 }
