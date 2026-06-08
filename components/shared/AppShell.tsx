@@ -73,7 +73,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <ThemeProvider>
       <I18nProvider>
         <Header />
-        <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-10">{children}</main>
+        <main className="flex-1 w-full mx-auto px-3 sm:px-4 py-4">{children}</main>
         <Footer />
       </I18nProvider>
     </ThemeProvider>

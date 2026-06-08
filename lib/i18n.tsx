@@ -50,6 +50,8 @@ const DICT = {
   'vec.paletteReset': { en: 'Reset suggestion', es: 'Restaurar sugerencia' },
   'vec.maxOptimize': { en: '⚡ Optimize to the max', es: '⚡ Optimizar al máximo' },
   'vec.maxOptimize.help': { en: 'Extra compression only: flattens curves to straight segments (Douglas–Peucker). Smaller file, but corners look chunkier. Skip this if you want the sharpest default preview.', es: 'Compresión extra: aplana curvas a segmentos rectos (Douglas–Peucker). Archivo más ligero, pero las esquinas se ven más toscas. Omítelo si quieres la vista previa más nítida.' },
+  'vec.cleanFragments': { en: '🧹 Clean fragments', es: '🧹 Limpiar fragmentos' },
+  'vec.cleanFragments.help': { en: 'Removes tiny near-white speckles and other small stray paths at the edges — fixes background halos without changing the main shapes.', es: 'Elimina motas blancas diminutas y otros paths sueltos en los bordes — corrige halos del fondo sin alterar las formas principales.' },
   'zoom.panHint': { en: 'Space + drag, Alt + drag, or middle mouse to pan. Wheel to zoom.', es: 'Espacio + arrastrar, Alt + arrastrar o botón central para mover. Rueda para zoom.' },
   'set.smoothing.help': { en: 'Higher simplifies and straightens edges (lighter file, chunkier corners); lower keeps curves faithful and sharper.', es: 'Más alto simplifica y endereza bordes (archivo más ligero, esquinas más toscas); más bajo mantiene curvas fieles y más nítidas.' },
   'set.detail.help': { en: 'Higher simplifies curves (lighter file, more angular); lower preserves smooth rounded detail.', es: 'Más alto simplifica curvas (archivo más ligero, más angular); más bajo conserva detalle redondeado y suave.' },
@@ -62,7 +64,7 @@ const DICT = {
   'set.colors': { en: 'Colors', es: 'Colores' },
   'set.colors.hint': { en: 'Fewer = simpler shapes · More = detailed', es: 'Menos = formas simples · Más = detalle' },
   'set.colors.help': { en: 'How many distinct colors the vector can use. Icon mode keeps the dominant clean colors up to this limit.', es: 'Cuántos colores distintos puede usar el vector. El modo Icono conserva los colores limpios dominantes hasta este límite.' },
-  'set.icon.hint': { en: 'Best for icon assets: removes white background, preserves dominant accent colors, and reduces noisy paths.', es: 'Ideal para assets de iconos: quita fondo blanco, conserva los acentos dominantes y reduce paths ruidosos.' },
+  'set.icon.hint': { en: 'Best for icon assets: removes white background, preserves accent colors, and reduces noisy paths.', es: 'Ideal para assets de iconos: quita fondo blanco, conserva acentos de color y reduce paths ruidosos.' },
   'set.smoothing': { en: 'Smoothing', es: 'Suavizado' },
   'set.detail': { en: 'Detail', es: 'Detalle' },
   'set.stroke': { en: 'Stroke width', es: 'Grosor de borde' },
@@ -76,7 +78,7 @@ const DICT = {
 
   // Blur
   'set.blur': { en: 'Pre-blur', es: 'Desenfoque previo' },
-  'set.blur.hint': { en: '0 = off · 2–3 = clean icon edges · 5 = very soft (can look chunky).', es: '0 = desactivado · 2–3 = bordes limpios en iconos · 5 = muy suave (puede verse tosco).' },
+  'set.blur.hint': { en: '0 = sharpest · 2 = default · 4+ removes speckles only.', es: '0 = más nítido · 2 = predeterminado · 4+ solo quita motas.' },
   'set.blur.help': { en: 'Applies a light blur before tracing. Reduces noise and prevents fragmented paths. 0 disables it.', es: 'Aplica un desenfoque ligero antes de trazar. Reduce el ruido y evita paths fragmentados. 0 lo desactiva.' },
 
   // Background removal
@@ -147,6 +149,29 @@ const DICT = {
   'shape.previewBg': { en: 'Preview background', es: 'Fondo del preview' },
   'shape.bgCheckerboard': { en: 'Checkerboard', es: 'Cuadrícula' },
   'shape.bgBlack': { en: 'Black', es: 'Negro' },
+
+  // Workspace tools
+  'tool.import': { en: 'Import image', es: 'Importar imagen' },
+  'tool.vectorize': { en: 'Vectorize', es: 'Vectorizar' },
+  'tool.select': { en: 'Select', es: 'Seleccionar' },
+  'tool.eyedropper': { en: 'Eyedropper', es: 'Cuentagotas' },
+  'tool.fill': { en: 'Fill', es: 'Rellenar' },
+  'tool.erase': { en: 'Erase', es: 'Borrar' },
+  'tool.brush': { en: 'Brush', es: 'Pincel' },
+  'tool.nodes': { en: 'Nodes', es: 'Nodos' },
+  'tool.labels': { en: 'Labels', es: 'Etiquetas' },
+  'tool.optimize': { en: 'Optimize', es: 'Optimizar' },
+  'tool.zoom': { en: 'Zoom', es: 'Zoom' },
+
+  // Workspace chrome
+  'workspace.download': { en: 'Download SVG', es: 'Descargar SVG' },
+  'workspace.undo': { en: 'Undo', es: 'Deshacer' },
+  'workspace.redo': { en: 'Redo', es: 'Rehacer' },
+  'workspace.paths': { en: 'paths', es: 'formas' },
+  'workspace.shortcutHint': { en: 'Press shortcut keys to switch tools', es: 'Usa atajos de teclado para cambiar herramientas' },
+  'workspace.replaceImage': { en: 'Replace image', es: 'Reemplazar imagen' },
+  'workspace.canvasPlaceholder': { en: 'Canvas', es: 'Lienzo' },
+  'workspace.inspectorPlaceholder': { en: 'Inspector', es: 'Inspector' },
 } as const;
 
 export type TKey = keyof typeof DICT;
