@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { DEFAULT_ZOOM_VIEWPORT, type SvgZoomViewport } from '@/types/svg.types';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { StepIndicator } from '@/components/shared/StepIndicator';
 import { UploadStep } from '@/components/upload/UploadStep';
@@ -19,6 +20,7 @@ export default function Home() {
   const [currentStep, setCurrentStep] = useState<Step>('upload');
   const [imageData, setImageData] = useState<ImageData | null>(null);
   const [svgString, setSvgString] = useState<string | null>(null);
+  const [editorZoom, setEditorZoom] = useState<SvgZoomViewport>(DEFAULT_ZOOM_VIEWPORT);
 
   const stepIndex = STEPS.indexOf(currentStep);
 
@@ -55,6 +57,7 @@ export default function Home() {
               imageData={imageData}
               onVectorizeComplete={(svg) => {
                 setSvgString(svg);
+                setEditorZoom(DEFAULT_ZOOM_VIEWPORT);
                 setCurrentStep('colors');
               }}
             />
@@ -63,6 +66,8 @@ export default function Home() {
           {currentStep === 'colors' && svgString && (
             <ColorEditStep
               svgString={svgString}
+              zoomViewport={editorZoom}
+              onZoomViewportChange={setEditorZoom}
               onColorsEdited={(svg) => {
                 setSvgString(svg);
                 setCurrentStep('shape');
@@ -73,6 +78,8 @@ export default function Home() {
           {currentStep === 'shape' && svgString && (
             <ShapeEditStep
               svgString={svgString}
+              zoomViewport={editorZoom}
+              onZoomViewportChange={setEditorZoom}
               onComplete={(svg) => {
                 setSvgString(svg);
                 setCurrentStep('labels');
@@ -83,6 +90,8 @@ export default function Home() {
           {currentStep === 'labels' && svgString && (
             <LabelStep
               svgString={svgString}
+              zoomViewport={editorZoom}
+              onZoomViewportChange={setEditorZoom}
               onComplete={(svg) => setSvgString(svg)}
             />
           )}

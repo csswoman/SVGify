@@ -1,25 +1,34 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { RGBColor } from '@/types/svg.types';
+import { RGBColor, type SvgZoomViewport } from '@/types/svg.types';
 import { useSvgColors } from '@/hooks/useSvgColors';
 import { sanitizeSvgString } from '@/lib/sanitize';
 import { parseRgbString, extractPaletteFromSvgString, rgbToHex } from '@/lib/colorUtils';
 import { ColorSwatches } from './ColorSwatches';
 import { ColorPicker } from './ColorPicker';
 import { Tooltip } from '@/components/shared/Tooltip';
-import { ZoomControls } from '@/components/shared/ZoomControls';
+import { ZoomableSvgViewport } from '@/components/shared/ZoomableSvgViewport';
 import { useSvgZoom } from '@/hooks/useSvgZoom';
 import { useI18n } from '@/lib/i18n';
 
 interface ColorEditStepProps {
   svgString: string;
+  zoomViewport: SvgZoomViewport;
+  onZoomViewportChange: (viewport: SvgZoomViewport) => void;
   onColorsEdited: (svgString: string) => void;
 }
 
-export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps) {
+export function ColorEditStep({
+  svgString,
+  zoomViewport,
+  onZoomViewportChange,
+  onColorsEdited,
+}: ColorEditStepProps) {
   const { t } = useI18n();
-  const zoom = useSvgZoom();
+  const zoom = useSvgZoom({ viewport: zoomViewport, onViewportChange: onZoomViewportChange });
+  const attachZoom = zoom.attach;
+  const serializeMountedSvg = zoom.serializeMountedSvg;
   const containerRef = useRef<HTMLDivElement>(null);
   const [svgEl, setSvgEl] = useState<SVGElement | null>(null);
   const [selectedColor, setSelectedColor] = useState<RGBColor | null>(null);
@@ -79,17 +88,16 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
 
       container.replaceChildren(svg);
       setSvgEl(svg);
-      zoom.attach(svg as unknown as SVGSVGElement);
+      attachZoom(svg as unknown as SVGSVGElement);
       return svg;
     },
-    [zoom]
+    [attachZoom]
   );
 
   // Push the current SVG state onto the history (truncating any redo branch).
   const pushSnapshot = useCallback(() => {
-    const svg = containerRef.current?.querySelector('svg');
-    if (!svg) return;
-    const snapshot = new XMLSerializer().serializeToString(svg);
+    const snapshot = serializeMountedSvg();
+    if (!snapshot) return;
     if (snapshot === historyRef.current[historyIndexRef.current]) return;
     const nextIndex = historyIndexRef.current + 1;
     setHistory((prev) => {
@@ -100,7 +108,7 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
     });
     historyIndexRef.current = nextIndex;
     setHistoryIndex(nextIndex);
-  }, []);
+  }, [serializeMountedSvg]);
 
   // Initial mount: capture original palette + seed history.
   useEffect(() => {
@@ -209,11 +217,10 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
   const editedStashRef = useRef<string | null>(null);
   const showOriginalStart = useCallback(() => {
     if (showOriginal) return;
-    const svg = containerRef.current?.querySelector('svg');
-    editedStashRef.current = svg ? new XMLSerializer().serializeToString(svg) : null;
+    editedStashRef.current = serializeMountedSvg();
     if (history[0] !== undefined) mountSvg(history[0]);
     setShowOriginal(true);
-  }, [showOriginal, history, mountSvg]);
+  }, [showOriginal, history, mountSvg, serializeMountedSvg]);
   const showOriginalEnd = useCallback(() => {
     if (!showOriginal) return;
     if (editedStashRef.current) mountSvg(editedStashRef.current);
@@ -221,9 +228,8 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
   }, [showOriginal, mountSvg]);
 
   const handleContinue = () => {
-    if (!svgEl) return;
-    const edited = new XMLSerializer().serializeToString(svgEl);
-    onColorsEdited(edited);
+    const edited = serializeMountedSvg();
+    if (edited) onColorsEdited(edited);
   };
 
   return (
@@ -255,29 +261,15 @@ export function ColorEditStep({ svgString, onColorsEdited }: ColorEditStepProps)
               {t('col.holdOriginal')}
             </button>
           </div>
-          <div className="relative">
-            <div
-              ref={containerRef}
-              onClick={handleSvgClick}
-              onWheel={(e) => {
-                e.preventDefault();
-                if (e.deltaY < 0) zoom.zoomIn();
-                else zoom.zoomOut();
-              }}
-              className={`transparent-preview w-full min-h-72 border rounded-lg overflow-hidden flex items-center justify-center ${
-                showOriginal ? 'border-amber-300' : 'border-gray-200 dark:border-gray-700'
-              }`}
-              aria-label="SVG color editor"
-            />
-            <div className="absolute top-2 right-2">
-              <ZoomControls
-                scale={zoom.scale}
-                onZoomIn={zoom.zoomIn}
-                onZoomOut={zoom.zoomOut}
-                onReset={zoom.reset}
-              />
-            </div>
-          </div>
+          <ZoomableSvgViewport
+            containerRef={containerRef}
+            zoom={zoom}
+            onClick={handleSvgClick}
+            className={`transparent-preview w-full min-h-72 border rounded-lg overflow-hidden flex items-center justify-center ${
+              showOriginal ? 'border-amber-300' : 'border-gray-200 dark:border-gray-700'
+            }`}
+            aria-label="SVG color editor"
+          />
         </div>
 
         {/* Controls */}

@@ -7,13 +7,26 @@ import { sanitizeSvgString } from '@/lib/sanitize';
 import { LabelSidebar } from './LabelSidebar';
 import { LabelInput } from './LabelInput';
 import { DownloadButton } from '@/components/shared/DownloadButton';
+import { ZoomableSvgViewport } from '@/components/shared/ZoomableSvgViewport';
+import { useSvgZoom } from '@/hooks/useSvgZoom';
+import type { SvgZoomViewport } from '@/types/svg.types';
 
 interface LabelStepProps {
   svgString: string;
+  zoomViewport: SvgZoomViewport;
+  onZoomViewportChange: (viewport: SvgZoomViewport) => void;
   onComplete: (svgString: string) => void;
 }
 
-export function LabelStep({ svgString, onComplete }: LabelStepProps) {
+export function LabelStep({
+  svgString,
+  zoomViewport,
+  onZoomViewportChange,
+  onComplete,
+}: LabelStepProps) {
+  const zoom = useSvgZoom({ viewport: zoomViewport, onViewportChange: onZoomViewportChange });
+  const attachZoom = zoom.attach;
+  const serializeMountedSvg = zoom.serializeMountedSvg;
   const containerRef = useRef<HTMLDivElement>(null);
   const [svgEl, setSvgEl] = useState<SVGElement | null>(null);
   const [isLabelMode, setIsLabelMode] = useState(false);
@@ -50,12 +63,13 @@ export function LabelStep({ svgString, onComplete }: LabelStepProps) {
       svg.style.display = 'block';
 
       container.replaceChildren(svg);
+      attachZoom(svg as unknown as SVGSVGElement);
       // eslint-disable-next-line react-hooks/set-state-in-effect -- imperative mount: svgEl must be published after the node is in the DOM
       setSvgEl(svg);
     } catch (err) {
       console.error('LabelStep: failed to mount SVG', err);
     }
-  }, [svgString]);
+  }, [svgString, attachZoom]);
 
   // Extract labels after mount
   useEffect(() => {
@@ -108,9 +122,8 @@ export function LabelStep({ svgString, onComplete }: LabelStepProps) {
   );
 
   const handleComplete = () => {
-    if (!svgEl) return;
-    const serialized = new XMLSerializer().serializeToString(svgEl);
-    onComplete(serialized);
+    const serialized = serializeMountedSvg();
+    if (serialized) onComplete(serialized);
   };
 
   return (
@@ -146,8 +159,9 @@ export function LabelStep({ svgString, onComplete }: LabelStepProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* SVG preview */}
         <div className="lg:col-span-2">
-          <div
-            ref={containerRef}
+          <ZoomableSvgViewport
+            containerRef={containerRef}
+            zoom={zoom}
             className="w-full min-h-72 border border-gray-200 dark:border-gray-700 rounded-lg bg-white overflow-hidden flex items-center justify-center"
             aria-label="SVG label editor"
           />

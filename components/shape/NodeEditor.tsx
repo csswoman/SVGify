@@ -94,7 +94,7 @@ export function NodeEditor({ pathEl, svgEl, onChange }: NodeEditorProps) {
   const r = Math.max(vb.width, vb.height) * 0.012;
 
   return (
-    <g onPointerMove={onPointerMove} onPointerUp={onPointerUp}>
+    <g data-svgcraft-editor aria-hidden="true" onPointerMove={onPointerMove} onPointerUp={onPointerUp}>
       {nodes.map((n, idx) => (
         <circle
           key={idx}

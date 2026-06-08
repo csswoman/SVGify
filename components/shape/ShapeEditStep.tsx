@@ -3,22 +3,41 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { sanitizeSvgString } from '@/lib/sanitize';
+import { serializeSvgElement } from '@/lib/serializeSvg';
 import { NodeEditor } from './NodeEditor';
 import { BrushEditor } from './BrushEditor';
 import { PathList, type PathItem } from './PathList';
 import { Tooltip } from '@/components/shared/Tooltip';
-import { ZoomControls } from '@/components/shared/ZoomControls';
+import { ZoomableSvgViewport } from '@/components/shared/ZoomableSvgViewport';
 import { useSvgZoom } from '@/hooks/useSvgZoom';
 import { useI18n } from '@/lib/i18n';
+import type { SvgZoomViewport } from '@/types/svg.types';
 
 interface ShapeEditStepProps {
   svgString: string;
+  zoomViewport: SvgZoomViewport;
+  onZoomViewportChange: (viewport: SvgZoomViewport) => void;
   onComplete: (svgString: string) => void;
 }
 
 type Mode = 'nodes' | 'brush' | 'delete';
+type PreviewBackground = 'checkerboard' | 'black';
 
-export function ShapeEditStep({ svgString, onComplete }: ShapeEditStepProps) {
+const CHECKERBOARD_BG: React.CSSProperties = {
+  backgroundImage: 'repeating-conic-gradient(#f3f4f6 0% 25%, #ffffff 0% 50%)',
+  backgroundSize: '16px 16px',
+};
+
+const BLACK_BG: React.CSSProperties = {
+  backgroundColor: '#000000',
+};
+
+export function ShapeEditStep({
+  svgString,
+  zoomViewport,
+  onZoomViewportChange,
+  onComplete,
+}: ShapeEditStepProps) {
   const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const [svgEl, setSvgEl] = useState<SVGSVGElement | null>(null);
@@ -27,8 +46,12 @@ export function ShapeEditStep({ svgString, onComplete }: ShapeEditStepProps) {
   const [brushColor, setBrushColor] = useState('#000000');
   const [brushSize, setBrushSize] = useState(6);
   const [pathItems, setPathItems] = useState<PathItem[]>([]);
+  const [previewBackground, setPreviewBackground] = useState<PreviewBackground>('checkerboard');
 
-  const zoom = useSvgZoom();
+  const zoom = useSvgZoom({ viewport: zoomViewport, onViewportChange: onZoomViewportChange });
+  const attachZoom = zoom.attach;
+  const getBaseViewBox = zoom.getBaseViewBox;
+  const serializeMountedSvg = zoom.serializeMountedSvg;
 
   // Undo/redo snapshots of the whole SVG.
   const [history, setHistory] = useState<string[]>([]);
@@ -69,6 +92,8 @@ export function ShapeEditStep({ svgString, onComplete }: ShapeEditStepProps) {
       svg.style.height = '100%';
       svg.style.display = 'block';
 
+      svg.querySelectorAll('[data-svgcraft-editor]').forEach((el) => el.remove());
+
       svg.querySelectorAll('path').forEach((p) => {
         p.style.cursor = 'pointer';
         p.addEventListener('click', () => {
@@ -85,20 +110,21 @@ export function ShapeEditStep({ svgString, onComplete }: ShapeEditStepProps) {
       container.replaceChildren(svg);
       setSvgEl(svg);
       setSelectedPath(null);
-      zoom.attach(svg);
+      attachZoom(svg);
       refreshPathItems(svg);
       return svg;
     },
-    [zoom, refreshPathItems]
+    [attachZoom, refreshPathItems]
   );
 
   const snapshot = useCallback(() => {
     const svg = containerRef.current?.querySelector('svg');
     if (!svg) return;
-    const s = new XMLSerializer().serializeToString(svg);
+    const base = getBaseViewBox();
+    const s = serializeSvgElement(svg as SVGSVGElement, base ?? undefined);
     setHistory((prev) => [...prev.slice(0, index + 1), s]);
     setIndex((i) => i + 1);
-  }, [index]);
+  }, [index, getBaseViewBox]);
   useEffect(() => {
     snapshotRef.current = snapshot;
   }, [snapshot]);
@@ -113,6 +139,14 @@ export function ShapeEditStep({ svgString, onComplete }: ShapeEditStepProps) {
     /* eslint-enable react-hooks/set-state-in-effect */
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [svgString]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedPath(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const restore = useCallback(
     (i: number) => {
@@ -152,17 +186,19 @@ export function ShapeEditStep({ svgString, onComplete }: ShapeEditStepProps) {
     [refreshPathItems, snapshot]
   );
 
-  // Wheel zoom.
-  const onWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    if (e.deltaY < 0) zoom.zoomIn();
-    else zoom.zoomOut();
+  const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (mode !== 'nodes' || !selectedPath) return;
+    const target = e.target as Element;
+    if (target.tagName === 'svg' || target === containerRef.current) {
+      setSelectedPath(null);
+    }
   };
 
   const handleContinue = () => {
     handleHover(null);
-    const svg = containerRef.current?.querySelector('svg');
-    if (svg) onComplete(new XMLSerializer().serializeToString(svg));
+    setSelectedPath(null);
+    const exported = serializeMountedSvg();
+    if (exported) onComplete(exported);
   };
 
   return (
@@ -179,28 +215,37 @@ export function ShapeEditStep({ svgString, onComplete }: ShapeEditStepProps) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <div className="relative">
-            <div
-              ref={containerRef}
-              onWheel={onWheel}
-              className="w-full min-h-72 border border-gray-200 dark:border-gray-700 rounded-lg bg-white overflow-hidden flex items-center justify-center"
-              style={{
-                backgroundImage:
-                  'repeating-conic-gradient(#f3f4f6 0% 25%, #ffffff 0% 50%)',
-                backgroundSize: '16px 16px',
-              }}
-              aria-label="Shape editor"
-            />
-            <div className="absolute top-2 right-2">
-              <ZoomControls
-                scale={zoom.scale}
-                onZoomIn={zoom.zoomIn}
-                onZoomOut={zoom.zoomOut}
-                onReset={zoom.reset}
-              />
+        <div className="lg:col-span-2 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+              {t('shape.previewBg')}
+            </span>
+            <div className="flex gap-1 rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 bg-gray-50 dark:bg-gray-900">
+              {(['checkerboard', 'black'] as PreviewBackground[]).map((bg) => (
+                <button
+                  key={bg}
+                  type="button"
+                  onClick={() => setPreviewBackground(bg)}
+                  className={`px-3 py-1 rounded-md text-xs font-semibold transition ${
+                    previewBackground === bg
+                      ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                  }`}
+                  aria-pressed={previewBackground === bg}
+                >
+                  {bg === 'checkerboard' ? t('shape.bgCheckerboard') : t('shape.bgBlack')}
+                </button>
+              ))}
             </div>
           </div>
+          <ZoomableSvgViewport
+            containerRef={containerRef}
+            zoom={zoom}
+            onClick={handleCanvasClick}
+            className="w-full min-h-72 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden flex items-center justify-center"
+            style={previewBackground === 'black' ? BLACK_BG : CHECKERBOARD_BG}
+            aria-label="Shape editor"
+          />
           {svgEl &&
             mode === 'nodes' &&
             selectedPath &&
@@ -240,7 +285,10 @@ export function ShapeEditStep({ svgString, onComplete }: ShapeEditStepProps) {
             {(['nodes', 'brush', 'delete'] as Mode[]).map((m) => (
               <button
                 key={m}
-                onClick={() => setMode(m)}
+                onClick={() => {
+                  setMode(m);
+                  setSelectedPath(null);
+                }}
                 className={`px-2 py-2 rounded-lg text-xs font-semibold transition ${
                   mode === m ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
@@ -251,10 +299,21 @@ export function ShapeEditStep({ svgString, onComplete }: ShapeEditStepProps) {
           </div>
 
           {mode === 'nodes' && (
-            <p className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-              {selectedPath ? t('shape.nodesActive') : t('shape.nodesHint')}
-              <Tooltip text={t('shape.nodes.help')} label={t('shape.modeNodes')} />
-            </p>
+            <div className="space-y-2">
+              <p className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                {selectedPath ? t('shape.nodesActive') : t('shape.nodesHint')}
+                <Tooltip text={t('shape.nodes.help')} label={t('shape.modeNodes')} />
+              </p>
+              {selectedPath && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedPath(null)}
+                  className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-900 dark:text-gray-100 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                >
+                  {t('shape.deselect')}
+                </button>
+              )}
+            </div>
           )}
 
           {mode === 'brush' && (
