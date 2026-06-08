@@ -24,8 +24,8 @@ describe('isToolEnabled', () => {
 });
 
 describe('toolFromKeyboard', () => {
-  it('maps v/i/g/e/b/a/l/z to tools', () => {
-    expect(toolFromKeyboard('v')).toBe('select');
+  it('maps i/g/e/b/a/l/z to tools', () => {
+    expect(toolFromKeyboard('v')).toBeNull();
     expect(toolFromKeyboard('I')).toBe('eyedropper');
     expect(toolFromKeyboard('g')).toBe('fill');
     expect(toolFromKeyboard('e')).toBe('erase');

@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  Cursor,
   Eraser,
   Eyedropper,
   ImageSquare,
@@ -15,25 +14,22 @@ import {
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { ToolButton } from './ToolButton';
-import { isToolEnabled } from '@/lib/workspaceTools';
+import { isToolEnabled, WORKSPACE_TOOL_GROUPS } from '@/lib/workspaceTools';
 import { useI18n } from '@/lib/i18n';
 import type { WorkspaceDocument, WorkspaceTool } from '@/types/workspace.types';
 
-const TOOL_CONFIG: { id: WorkspaceTool; icon: Icon; shortcut?: string }[] = [
-  { id: 'import', icon: ImageSquare },
-  { id: 'vectorize', icon: MagicWand },
-  { id: 'select', icon: Cursor, shortcut: 'V' },
-  { id: 'eyedropper', icon: Eyedropper, shortcut: 'I' },
-  { id: 'fill', icon: PaintBucket, shortcut: 'G' },
-  { id: 'erase', icon: Eraser, shortcut: 'E' },
-  { id: 'brush', icon: PaintBrush, shortcut: 'B' },
-  { id: 'nodes', icon: PenNib, shortcut: 'A' },
-  { id: 'labels', icon: Tag, shortcut: 'L' },
-  { id: 'optimize', icon: Lightning },
-  { id: 'zoom', icon: MagnifyingGlass, shortcut: 'Z' },
-];
-
-const SEPARATORS_AFTER = new Set<WorkspaceTool>(['import', 'fill', 'labels']);
+const TOOL_ICONS: Record<WorkspaceTool, Icon> = {
+  import: ImageSquare,
+  vectorize: MagicWand,
+  eyedropper: Eyedropper,
+  fill: PaintBucket,
+  erase: Eraser,
+  brush: PaintBrush,
+  nodes: PenNib,
+  labels: Tag,
+  optimize: Lightning,
+  zoom: MagnifyingGlass,
+};
 
 interface ToolBarProps {
   activeTool: WorkspaceTool;
@@ -43,28 +39,53 @@ interface ToolBarProps {
 
 export function ToolBar({ activeTool, document, onToolChange }: ToolBarProps) {
   const { t } = useI18n();
+  const hasSvg = document.svgString !== null;
+
+  const visibleGroups = WORKSPACE_TOOL_GROUPS.filter(
+    (group) => !group.requiresSvg || hasSvg
+  );
 
   return (
     <nav
       role="toolbar"
-      aria-label="Tools"
-      className="flex w-14 shrink-0 flex-col items-center gap-1 border-r border-gray-200 bg-white py-2 dark:border-gray-700 dark:bg-gray-800"
+      aria-label={t('workspace.tools')}
+      className="flex w-14 shrink-0 flex-col gap-2 overflow-y-auto border-r border-gray-200 bg-white px-1.5 py-3 lg:w-44 lg:gap-3 lg:px-2 dark:border-gray-700 dark:bg-gray-800"
     >
-      {TOOL_CONFIG.map(({ id, icon, shortcut }) => (
-        <div key={id} className="flex flex-col items-center gap-1">
-          <ToolButton
-            icon={icon}
-            label={t(`tool.${id}`)}
-            shortcut={shortcut}
-            active={activeTool === id}
-            disabled={!isToolEnabled(id, document)}
-            onClick={() => onToolChange(id)}
-          />
-          {SEPARATORS_AFTER.has(id) && (
-            <div className="my-1 h-px w-8 bg-gray-200 dark:bg-gray-700" />
+      {visibleGroups.map((group, groupIndex) => (
+        <div key={group.id} className="flex flex-col gap-0.5">
+          <span
+            className="hidden px-1 text-[10px] font-medium text-gray-500 lg:block dark:text-gray-400"
+            id={`tool-group-${group.id}`}
+          >
+            {t(`tool.group.${group.id}`)}
+          </span>
+          <div
+            role="group"
+            aria-label={t(`tool.group.${group.id}`)}
+            className="flex flex-col gap-0.5"
+          >
+            {group.tools.map(({ id, shortcut }) => (
+              <ToolButton
+                key={id}
+                icon={TOOL_ICONS[id]}
+                label={t(`tool.${id}`)}
+                shortcut={shortcut}
+                active={activeTool === id}
+                disabled={!isToolEnabled(id, document)}
+                onClick={() => onToolChange(id)}
+              />
+            ))}
+          </div>
+          {groupIndex < visibleGroups.length - 1 && (
+            <div className="mt-2 h-px bg-gray-100 dark:bg-gray-700" aria-hidden />
           )}
         </div>
       ))}
+      {!hasSvg && (
+        <p className="hidden px-1 text-[10px] leading-snug text-gray-500 lg:block dark:text-gray-400">
+          {t('workspace.moreToolsAfterVectorize')}
+        </p>
+      )}
     </nav>
   );
 }

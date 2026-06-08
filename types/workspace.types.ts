@@ -1,7 +1,6 @@
 export type WorkspaceTool =
   | 'import'
   | 'vectorize'
-  | 'select'
   | 'eyedropper'
   | 'fill'
   | 'erase'
