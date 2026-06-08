@@ -44,26 +44,27 @@ const DICT = {
   'vec.auto': { en: 'Updates automatically as you adjust settings.', es: 'Se actualiza automáticamente al ajustar las opciones.' },
   'vec.vectorizing': { en: 'Vectorizing…', es: 'Vectorizando…' },
   'vec.optimized': { en: 'optimized', es: 'optimizado' },
+  'vec.paletteEditor': { en: 'Clean icon palette', es: 'Paleta del icono limpio' },
+  'vec.paletteEditor.help': { en: 'These suggested colors come from the original image. Edit, delete, or merge them before tracing.', es: 'Estos colores sugeridos salen de la imagen original. Edítalos, bórralos o une parecidos antes de trazar.' },
+  'vec.paletteMerge': { en: 'Merge similar', es: 'Unir parecidos' },
+  'vec.paletteReset': { en: 'Reset suggestion', es: 'Restaurar sugerencia' },
   'vec.maxOptimize': { en: '⚡ Optimize to the max', es: '⚡ Optimizar al máximo' },
-  'vec.maxOptimize.help': { en: 'Drastically reduces the number of points in every shape (Douglas–Peucker), flattening curves to lines. Much smaller file with a small loss of smoothness — ideal for logos and icons.', es: 'Reduce drásticamente la cantidad de puntos de cada forma (Douglas–Peucker), convirtiendo curvas en líneas. Archivo mucho más ligero con una pequeña pérdida de suavidad — ideal para logos e iconos.' },
-  'vec.complexWarn': { en: '⚠ This image has many shapes (looks like a photo). SVG is not ideal for photos — the file will stay large. For photos, a PNG/WebP is usually smaller. Try fewer colors, more noise removal, or “Optimize to the max”.', es: '⚠ Esta imagen tiene muchas formas (parece una foto). El SVG no es ideal para fotos — el archivo seguirá siendo grande. Para fotos, un PNG/WebP suele ser más ligero. Prueba menos colores, más “quitar ruido”, o “Optimizar al máximo”.' },
+  'vec.maxOptimize.help': { en: 'Extra compression only: flattens curves to straight segments (Douglas–Peucker). Smaller file, but corners look chunkier. Skip this if you want the sharpest default preview.', es: 'Compresión extra: aplana curvas a segmentos rectos (Douglas–Peucker). Archivo más ligero, pero las esquinas se ven más toscas. Omítelo si quieres la vista previa más nítida.' },
+  'zoom.panHint': { en: 'Space + drag, Alt + drag, or middle mouse to pan. Wheel to zoom.', es: 'Espacio + arrastrar, Alt + arrastrar o botón central para mover. Rueda para zoom.' },
+  'set.smoothing.help': { en: 'Higher simplifies and straightens edges (lighter file, chunkier corners); lower keeps curves faithful and sharper.', es: 'Más alto simplifica y endereza bordes (archivo más ligero, esquinas más toscas); más bajo mantiene curvas fieles y más nítidas.' },
+  'set.detail.help': { en: 'Higher simplifies curves (lighter file, more angular); lower preserves smooth rounded detail.', es: 'Más alto simplifica curvas (archivo más ligero, más angular); más bajo conserva detalle redondeado y suave.' },
+  'vec.complexWarn': { en: 'This icon produced many shapes. Try fewer colors, more noise removal, or “Optimize to the max” to keep the SVG lightweight.', es: 'Este icono generó muchas formas. Prueba menos colores, más “quitar ruido” u “Optimizar al máximo” para mantener el SVG liviano.' },
 
   // Settings groups
   'set.basic': { en: 'Basic', es: 'Básico' },
   'set.advanced': { en: 'Advanced', es: 'Avanzado' },
-  'set.presets': { en: 'Presets', es: 'Ajustes rápidos' },
-  'set.preset.logo': { en: 'Logo / Flat color', es: 'Logo / Color plano' },
-  'set.preset.sketch': { en: 'Sketch / Line art', es: 'Boceto / Líneas' },
-  'set.preset.photo': { en: 'Photo', es: 'Foto' },
-
   // Settings controls
   'set.colors': { en: 'Colors', es: 'Colores' },
   'set.colors.hint': { en: 'Fewer = simpler shapes · More = detailed', es: 'Menos = formas simples · Más = detalle' },
-  'set.colors.help': { en: 'How many distinct colors the vector will use. Fewer = simpler and a much smaller file; more = closer to the original.', es: 'Cuántos colores distintos usará el vector. Menos = más simple y archivo mucho más ligero; más = más fiel al original.' },
+  'set.colors.help': { en: 'How many distinct colors the vector can use. Icon mode keeps the dominant clean colors up to this limit.', es: 'Cuántos colores distintos puede usar el vector. El modo Icono conserva los colores limpios dominantes hasta este límite.' },
+  'set.icon.hint': { en: 'Best for icon assets: removes white background, preserves dominant accent colors, and reduces noisy paths.', es: 'Ideal para assets de iconos: quita fondo blanco, conserva los acentos dominantes y reduce paths ruidosos.' },
   'set.smoothing': { en: 'Smoothing', es: 'Suavizado' },
-  'set.smoothing.help': { en: 'Higher straightens and simplifies edges (lighter file); lower keeps edges faithful.', es: 'Más alto endereza y simplifica los bordes (archivo más ligero); más bajo los mantiene fieles.' },
   'set.detail': { en: 'Detail', es: 'Detalle' },
-  'set.detail.help': { en: 'Higher simplifies curves (lighter file); lower keeps fine curved detail.', es: 'Más alto simplifica las curvas (archivo más ligero); más bajo conserva el detalle.' },
   'set.stroke': { en: 'Stroke width', es: 'Grosor de borde' },
   'set.stroke.help': { en: 'Width of the outline around each shape. Set to 1 to drop strokes and shrink the file.', es: 'Grosor del contorno de cada forma. Ponlo en 1 para quitar bordes y reducir el archivo.' },
   'set.noise': { en: 'Noise removal', es: 'Quitar ruido' },
@@ -73,27 +74,10 @@ const DICT = {
   'set.precision.hint': { en: 'Lower = fewer decimals → smaller file.', es: 'Más bajo = menos decimales → archivo más ligero.' },
   'set.precision.help': { en: 'Decimal places kept in coordinates. Lower = smaller file with a tiny loss of precision.', es: 'Decimales que se conservan en las coordenadas. Más bajo = archivo más ligero con una mínima pérdida de precisión.' },
 
-  // Mode toggle
-  'set.mode': { en: 'Mode', es: 'Modo' },
-  'set.mode.color': { en: 'Color', es: 'Color' },
-  'set.mode.lineart': { en: 'Line art', es: 'Líneas' },
-  'set.mode.help': { en: 'Color: full-color tracing with ImageTracer. Line art: black & white tracing with VTracer — ideal for sketches and drawings.', es: 'Color: trazado a todo color con ImageTracer. Líneas: trazado en blanco y negro con VTracer — ideal para bocetos y dibujos.' },
-
   // Blur
   'set.blur': { en: 'Pre-blur', es: 'Desenfoque previo' },
-  'set.blur.hint': { en: '0 = off · Higher = smoother edges, fewer paths.', es: '0 = desactivado · Más alto = bordes más suaves, menos paths.' },
+  'set.blur.hint': { en: '0 = off · 2–3 = clean icon edges · 5 = very soft (can look chunky).', es: '0 = desactivado · 2–3 = bordes limpios en iconos · 5 = muy suave (puede verse tosco).' },
   'set.blur.help': { en: 'Applies a light blur before tracing. Reduces noise and prevents fragmented paths. 0 disables it.', es: 'Aplica un desenfoque ligero antes de trazar. Reduce el ruido y evita paths fragmentados. 0 lo desactiva.' },
-
-  // VTracer controls (lineart mode)
-  'set.vt.speckle': { en: 'Speckle filter', es: 'Filtro de motas' },
-  'set.vt.speckle.hint': { en: 'Higher = removes more tiny specs.', es: 'Más alto = elimina más motas pequeñas.' },
-  'set.vt.speckle.help': { en: 'Removes stray pixels smaller than this size. Higher = cleaner result but may lose fine detail.', es: 'Elimina píxeles sueltos menores a este tamaño. Más alto = resultado más limpio pero puede perder detalle fino.' },
-  'set.vt.corner': { en: 'Corner threshold', es: 'Umbral de esquinas' },
-  'set.vt.corner.hint': { en: 'Higher = smoother corners.', es: 'Más alto = esquinas más suaves.' },
-  'set.vt.corner.help': { en: 'Angle below which a point is treated as a corner. Higher = rounder shapes; lower = sharper corners.', es: 'Ángulo por debajo del cual un punto es tratado como esquina. Más alto = formas más redondeadas; más bajo = esquinas más marcadas.' },
-  'set.vt.splice': { en: 'Curve tolerance', es: 'Tolerancia de curva' },
-  'set.vt.splice.hint': { en: 'Higher = smoother, fewer segments.', es: 'Más alto = más suave, menos segmentos.' },
-  'set.vt.splice.help': { en: 'How aggressively curves are joined. Higher = fewer path segments, smoother result.', es: 'Qué tan agresivamente se unen las curvas. Más alto = menos segmentos, resultado más suave.' },
 
   // Background removal
   'bg.remove': { en: 'Remove background', es: 'Quitar fondo' },
@@ -145,7 +129,8 @@ const DICT = {
   'shape.modeNodes': { en: '✥ Move nodes', es: '✥ Mover nodos' },
   'shape.modeBrush': { en: '🖌 Brush', es: '🖌 Pincel' },
   'shape.nodesHint': { en: 'Click a shape in the preview to edit its points.', es: 'Haz clic en una forma del preview para editar sus puntos.' },
-  'shape.nodesActive': { en: 'Drag the blue points to reshape. Click another shape to switch.', es: 'Arrastra los puntos azules para reformar. Haz clic en otra forma para cambiar.' },
+  'shape.nodesActive': { en: 'Drag the blue points to reshape. Press Esc, click empty space, or Done when finished.', es: 'Arrastra los puntos azules para reformar. Pulsa Esc, haz clic en un espacio vacío o Listo al terminar.' },
+  'shape.deselect': { en: 'Done editing nodes', es: 'Listo — salir de nodos' },
   'shape.nodes.help': { en: 'Each blue circle is a point of the selected shape. Drag to move it; the curve follows. Use undo if you overshoot.', es: 'Cada círculo azul es un punto de la forma seleccionada. Arrástralo para moverlo; la curva lo sigue. Usa deshacer si te pasas.' },
   'shape.brushColor': { en: 'Color', es: 'Color' },
   'shape.brushSize': { en: 'Brush size', es: 'Tamaño del pincel' },
@@ -159,6 +144,9 @@ const DICT = {
   'shape.noShapes': { en: 'No shapes.', es: 'Sin formas.' },
   'shape.deleteShape': { en: 'Delete shape', es: 'Borrar forma' },
   'shape.list.help': { en: 'Every shape in the SVG. Hover a row to highlight it in the preview; click the trash to delete it. Great for removing stray bits.', es: 'Cada forma del SVG. Pasa el cursor por una fila para resaltarla en el preview; pulsa la papelera para borrarla. Ideal para quitar trozos sueltos.' },
+  'shape.previewBg': { en: 'Preview background', es: 'Fondo del preview' },
+  'shape.bgCheckerboard': { en: 'Checkerboard', es: 'Cuadrícula' },
+  'shape.bgBlack': { en: 'Black', es: 'Negro' },
 } as const;
 
 export type TKey = keyof typeof DICT;

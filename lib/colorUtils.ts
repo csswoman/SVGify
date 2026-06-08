@@ -208,69 +208,6 @@ export function simplifyColors(svg: string, threshold: number): string {
   return applyColorMergeToSvgString(svg, map);
 }
 
-/**
- * Measure how much each fill color is actually used, weighted by area.
- * Uses the length of each path's `d` (number of coordinates) as an area proxy —
- * big filled shapes have long path data, stray noise specks have tiny ones.
- */
-function measureColorAreas(svg: string): Map<string, { color: RGBColor; area: number }> {
-  const areas = new Map<string, { color: RGBColor; area: number }>();
-  const pathRe = /<path\b([^>]*)>/g;
-  let m: RegExpExecArray | null;
-  while ((m = pathRe.exec(svg)) !== null) {
-    const attrs = m[1];
-    const fill = /fill="rgb\((\d+),\s*(\d+),\s*(\d+)\)"/.exec(attrs);
-    const dMatch = /\bd="([^"]*)"/.exec(attrs);
-    if (!fill || !dMatch) continue;
-    const color = { r: Number(fill[1]), g: Number(fill[2]), b: Number(fill[3]) };
-    // Approx area weight: count of coordinate numbers in the path data.
-    const weight = (dMatch[1].match(/-?\d*\.?\d+/g) ?? []).length;
-    const hex = rgbToHex(color);
-    const e = areas.get(hex);
-    if (e) e.area += weight;
-    else areas.set(hex, { color, area: weight });
-  }
-  return areas;
-}
-
-/**
- * Normalize a traced SVG's palette into a clean set of distinct colors.
- * 1) Groups perceptually-similar shades (a dozen near-beiges → one beige).
- * 2) Keeps the `maxColors` colors that cover the MOST AREA (the dominant ones)
- *    and reassigns every other color — including stray, low-area colors like a
- *    rogue red/yellow from edge noise — to the nearest dominant color.
- * This makes the surviving palette the colors a human would name.
- */
-export function normalizeSvgPalette(svg: string, threshold = 40, maxColors = 8): string {
-  // Pass 1: cluster near-identical shades.
-  let out = simplifyColors(svg, threshold);
-
-  // Rank remaining colors by area covered.
-  const ranked = [...measureColorAreas(out).values()].sort((a, b) => b.area - a.area);
-  if (ranked.length <= maxColors) return out;
-
-  // Dominant palette = the top colors by area.
-  const dominant = ranked.slice(0, maxColors).map((e) => e.color);
-  const losers = ranked.slice(maxColors).map((e) => e.color);
-
-  // Reassign each non-dominant color to its nearest dominant color.
-  const map = new Map<string, RGBColor>();
-  for (const c of losers) {
-    let nearest = dominant[0];
-    let best = colorDistanceSq(c, nearest);
-    for (const d of dominant) {
-      const dist = colorDistanceSq(c, d);
-      if (dist < best) {
-        best = dist;
-        nearest = d;
-      }
-    }
-    map.set(rgbToHex(c), nearest);
-  }
-  out = applyColorMergeToSvgString(out, map);
-  return out;
-}
-
 // Replace all paths with a specific fill color
 export function replaceColorInSvg(svg: SVGElement, oldColor: RGBColor, newColor: RGBColor): void {
   const newStr = rgbToString(newColor);

@@ -2,14 +2,17 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useVectorizer } from '@/hooks/useVectorizer';
+import { useEditablePalette } from '@/hooks/useEditablePalette';
 import { VectorizeSettings, VECTORIZE_DEFAULTS } from '@/types/svg.types';
 import { removeBackground, type SeedPoint } from '@/lib/backgroundRemoval';
 import { svgByteSize, formatBytes, optimizeSvg } from '@/lib/optimizeSvg';
 import { simplifySvgPaths, countPaths } from '@/lib/simplifyPath';
+import { removeNearWhitePixels, suggestPaletteFromImage } from '@/lib/paletteExtraction';
 import { VectorizeSettingsPanel } from './VectorizeSettings';
 import { ImagePreview } from './ImagePreview';
 import { SvgPreview } from './SvgPreview';
 import { PalettePreview } from './PalettePreview';
+import { EditablePalette } from './EditablePalette';
 import { DownloadButton } from '@/components/shared/DownloadButton';
 import { Tooltip } from '@/components/shared/Tooltip';
 import { useI18n } from '@/lib/i18n';
@@ -38,8 +41,8 @@ export function VectorizeStep({ imageData, onVectorizeComplete }: VectorizeStepP
     setSettings({
       ...next,
       numberofcolors: Math.min(12, Math.max(2, next.numberofcolors)),
-      pathomit: Math.max(20, next.pathomit),
-      roundcoords: 0,
+      pathomit: Math.max(12, Math.min(24, next.pathomit)),
+      roundcoords: Math.max(2, next.roundcoords),
     });
   }, []);
 
@@ -53,23 +56,51 @@ export function VectorizeStep({ imageData, onVectorizeComplete }: VectorizeStepP
     });
   }, [removeBg, imageData, bgTolerance, contiguous, seeds]);
 
+  const suggestedPalette = useMemo(
+    () => suggestPaletteFromImage(removeNearWhitePixels(processedImageData), settings.numberofcolors)
+      .map(({ r, g, b }) => ({ r, g, b })),
+    [processedImageData, settings.numberofcolors]
+  );
+
+  const {
+    colors: paletteColors,
+    selectedColor,
+    replacePalette,
+    selectColor,
+    updateSelectedColor,
+    deleteColor,
+    mergeSimilar,
+  } = useEditablePalette(suggestedPalette);
+
+  useEffect(() => {
+    replacePalette(suggestedPalette);
+  }, [replacePalette, suggestedPalette]);
+
+  const settingsWithPalette = useMemo(
+    () => ({
+      ...settings,
+      customPalette: paletteColors.map((color) => ({ ...color })),
+    }),
+    [settings, paletteColors]
+  );
+
   const handlePick = useCallback((point: SeedPoint) => {
     setSeeds((prev) => [...prev, point]);
   }, []);
 
   const handleVectorize = useCallback(() => {
-    vectorize(processedImageData, settings);
-  }, [processedImageData, settings, vectorize]);
+    vectorize(processedImageData, settingsWithPalette);
+  }, [processedImageData, settingsWithPalette, vectorize]);
 
   // Dynamic, debounced re-vectorize: whenever the settings or the processed
   // raster (background removal) change, re-run automatically so both previews
   // and the palette reflect the chosen settings without a manual click.
   // The first run happens here too (on mount), so no separate init effect.
   useEffect(() => {
-    const t = setTimeout(() => vectorize(processedImageData, settings), 300);
+    const t = setTimeout(() => vectorize(processedImageData, settingsWithPalette), 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [processedImageData, settings]);
+  }, [processedImageData, settingsWithPalette]);
 
   // A fresh vectorization invalidates any prior max-optimization.
   useEffect(() => {
@@ -86,7 +117,7 @@ export function VectorizeStep({ imageData, onVectorizeComplete }: VectorizeStepP
   }, [svg]);
 
   const pathCount = useMemo(() => (svg ? countPaths(svg) : 0), [svg]);
-  const isComplex = pathCount > 1500; // likely a photo → poor SVG candidate
+  const isComplex = pathCount > 1500; // Too many shapes for a lightweight icon.
 
   return (
     <div className="space-y-6">
@@ -152,6 +183,16 @@ export function VectorizeStep({ imageData, onVectorizeComplete }: VectorizeStepP
         {/* Right: settings panel */}
         <div className="space-y-6">
           <VectorizeSettingsPanel settings={settings} onSettingsChange={updateSettings} />
+
+          <EditablePalette
+            colors={paletteColors}
+            selectedColor={selectedColor}
+            onSelectColor={selectColor}
+            onChangeSelectedColor={updateSelectedColor}
+            onDeleteColor={deleteColor}
+            onMergeSimilar={() => mergeSimilar()}
+            onReset={() => replacePalette(suggestedPalette)}
+          />
 
           <div className="space-y-3 border-t border-gray-100 dark:border-gray-700 pt-4">
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer">
