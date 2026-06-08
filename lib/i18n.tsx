@@ -102,7 +102,7 @@ const DICT = {
 
   // Color editor
   'col.title': { en: 'Edit Colors', es: 'Editar colores' },
-  'col.subtitle': { en: 'Click a color swatch or a path in the preview to select it, then pick a new color.', es: 'Haz clic en un color o en una forma del preview para seleccionarlo, luego elige un nuevo color.' },
+  'col.subtitle': { en: 'Pick a fill color from the canvas with the eyedropper, then choose a replacement.', es: 'Recoge un color de relleno del lienzo con el cuentagotas, luego elige uno nuevo.' },
   'col.eyedropperHint': { en: 'Click a shape in the canvas to pick its fill color.', es: 'Haz clic en una forma del lienzo para recoger su color de relleno.' },
   'col.eyedropperEmpty': { en: 'No color picked yet.', es: 'Aún no has recogido ningún color.' },
   'col.useAsFill': { en: 'Use as fill', es: 'Usar como relleno' },
@@ -169,7 +169,6 @@ const DICT = {
   'tool.group.view': { en: 'View', es: 'Vista' },
   'tool.import': { en: 'Import image', es: 'Importar imagen' },
   'tool.vectorize': { en: 'Vectorize', es: 'Vectorizar' },
-  'tool.select': { en: 'Select', es: 'Seleccionar' },
   'tool.eyedropper': { en: 'Eyedropper', es: 'Cuentagotas' },
   'tool.fill': { en: 'Fill', es: 'Rellenar' },
   'tool.erase': { en: 'Erase', es: 'Borrar' },
