@@ -1,10 +1,13 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ImageDropzone } from '@/components/upload/ImageDropzone';
 import { ImagePreview } from '@/components/vectorize/ImagePreview';
 import { SvgPreview } from '@/components/vectorize/SvgPreview';
 import { PalettePreview } from '@/components/vectorize/PalettePreview';
+import { NodeEditor } from '@/components/shape/NodeEditor';
+import { BrushEditor } from '@/components/shape/BrushEditor';
 import { ZoomableSvgViewport } from '@/components/shared/ZoomableSvgViewport';
 import { formatBytes, svgByteSize } from '@/lib/optimizeSvg';
 import { parseRgbString, rgbToHex } from '@/lib/colorUtils';
@@ -13,6 +16,7 @@ import type { RGBColor } from '@/types/svg.types';
 import type { WorkspaceTool } from '@/types/workspace.types';
 import type { useVectorizeSession } from '@/hooks/useVectorizeSession';
 import type { useWorkspaceSvg } from '@/hooks/useWorkspaceSvg';
+import type { useWorkspaceShapeTools } from '@/hooks/useWorkspaceShapeTools';
 import { useI18n } from '@/lib/i18n';
 
 const CHECKERBOARD_BG: React.CSSProperties = {
@@ -30,8 +34,10 @@ interface CanvasProps {
   svgString: string | null;
   vectorizeSession: ReturnType<typeof useVectorizeSession>;
   editor: ReturnType<typeof useWorkspaceSvg> | null;
+  shapeTools: ReturnType<typeof useWorkspaceShapeTools>;
   previewBackground: 'checkerboard' | 'black';
   selectedColor: RGBColor | null;
+  fillColor: RGBColor;
   onSelectedColorChange: (color: RGBColor | null) => void;
   onImageData: (data: ImageData) => void;
   onUploadError: (error: string) => void;
@@ -44,8 +50,10 @@ export function Canvas({
   svgString,
   vectorizeSession,
   editor,
+  shapeTools,
   previewBackground,
   selectedColor,
+  fillColor,
   onSelectedColorChange,
   onImageData,
   onUploadError,
@@ -53,6 +61,7 @@ export function Canvas({
 }: CanvasProps) {
   const { t } = useI18n();
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const { replaceColor } = useSvgColors(editor?.svgEl ?? null);
 
   const handleUpload = useCallback(
     (data: ImageData) => {
@@ -89,14 +98,7 @@ export function Canvas({
   }
 
   if (activeTool === 'vectorize') {
-    const {
-      processedImageData,
-      svg,
-      removeBg,
-      handlePick,
-      seeds,
-      error,
-    } = vectorizeSession;
+    const { processedImageData, svg, removeBg, handlePick, seeds, error } = vectorizeSession;
 
     return (
       <main className="min-w-0 flex-1 overflow-y-auto bg-gray-200/60 p-4 dark:bg-gray-950/60">
@@ -145,11 +147,23 @@ export function Canvas({
   }
 
   const { containerRef, zoom, pushSnapshot, svgEl } = editor;
-  const { replaceColor } = useSvgColors(svgEl);
+  const { selectedPath, brushColor, brushSize } = shapeTools;
   const previewStyle = previewBackground === 'black' ? BLACK_BG : CHECKERBOARD_BG;
-  const useTransparent = activeTool === 'select' || activeTool === 'zoom' || activeTool === 'eyedropper';
+  const useTransparent =
+    activeTool === 'select' ||
+    activeTool === 'zoom' ||
+    activeTool === 'eyedropper' ||
+    activeTool === 'labels';
 
   const handleSvgClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (activeTool === 'nodes' && selectedPath) {
+      const target = event.target as Element;
+      if (target.tagName === 'svg' || target === containerRef.current) {
+        shapeTools.setSelectedPath(null);
+      }
+      return;
+    }
+
     const target = event.target as Element | null;
     const path = target?.closest('path') as SVGPathElement | null;
     if (!path || !containerRef.current?.contains(path)) return;
@@ -164,13 +178,15 @@ export function Canvas({
       return;
     }
 
-    if (activeTool === 'fill' && selectedColor) {
-      if (rgbToHex(color) !== rgbToHex(selectedColor)) {
-        replaceColor(color, selectedColor);
+    if (activeTool === 'fill') {
+      if (rgbToHex(color) !== rgbToHex(fillColor)) {
+        replaceColor(color, fillColor);
         pushSnapshot();
       }
     }
   };
+
+  const svgForPortals = svgEl as SVGSVGElement | null;
 
   return (
     <main className="min-w-0 flex-1 overflow-y-auto bg-gray-200/60 p-4 dark:bg-gray-950/60">
@@ -178,12 +194,30 @@ export function Canvas({
         containerRef={containerRef}
         zoom={zoom}
         onClick={handleSvgClick}
-        className={`flex min-h-[28rem] w-full items-center justify-center overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 ${
+        className={`relative flex min-h-[28rem] w-full items-center justify-center overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 ${
           useTransparent ? 'transparent-preview' : ''
         }`}
         style={useTransparent ? undefined : previewStyle}
         aria-label="SVG editor canvas"
       />
+      {svgForPortals &&
+        activeTool === 'nodes' &&
+        selectedPath &&
+        createPortal(
+          <NodeEditor pathEl={selectedPath} svgEl={svgForPortals} onChange={pushSnapshot} />,
+          svgForPortals
+        )}
+      {svgForPortals &&
+        activeTool === 'brush' &&
+        createPortal(
+          <BrushEditor
+            svgEl={svgForPortals}
+            color={brushColor}
+            size={brushSize}
+            onChange={pushSnapshot}
+          />,
+          svgForPortals
+        )}
     </main>
   );
 }

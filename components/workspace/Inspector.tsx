@@ -1,18 +1,23 @@
 'use client';
 
-import type { RGBColor, SvgZoomViewport } from '@/types/svg.types';
+import type { RGBColor } from '@/types/svg.types';
 import type { WorkspaceTool } from '@/types/workspace.types';
 import type { useVectorizeSession } from '@/hooks/useVectorizeSession';
 import type { useWorkspaceSvg } from '@/hooks/useWorkspaceSvg';
+import type { useWorkspaceShapeTools } from '@/hooks/useWorkspaceShapeTools';
+import type { useWorkspaceLabels } from '@/hooks/useWorkspaceLabels';
 import { VECTORIZE_DEFAULTS } from '@/types/svg.types';
 import { ImportInspector } from './inspectors/ImportInspector';
 import { VectorizeInspector } from './inspectors/VectorizeInspector';
 import { SelectInspector } from './inspectors/SelectInspector';
+import { EraseInspector } from './inspectors/EraseInspector';
+import { BrushInspector } from './inspectors/BrushInspector';
+import { NodesInspector } from './inspectors/NodesInspector';
+import { LabelsInspector } from './inspectors/LabelsInspector';
+import { FillInspector } from './inspectors/FillInspector';
 import { OptimizeInspector } from './inspectors/OptimizeInspector';
 import { ZoomInspector } from './inspectors/ZoomInspector';
 import { useI18n } from '@/lib/i18n';
-
-const LEGACY_TOOLS = new Set<WorkspaceTool>(['erase', 'brush', 'nodes', 'labels']);
 
 interface InspectorProps {
   activeTool: WorkspaceTool;
@@ -20,9 +25,13 @@ interface InspectorProps {
   svgString: string | null;
   vectorizeSession: ReturnType<typeof useVectorizeSession>;
   editor: ReturnType<typeof useWorkspaceSvg> | null;
+  shapeTools: ReturnType<typeof useWorkspaceShapeTools>;
+  labelTools: ReturnType<typeof useWorkspaceLabels>;
   previewBackground: 'checkerboard' | 'black';
   selectedColor: RGBColor | null;
+  fillColor: RGBColor;
   onSelectedColorChange: (color: RGBColor | null) => void;
+  onFillColorChange: (color: RGBColor) => void;
   onPreviewBackgroundChange: (bg: 'checkerboard' | 'black') => void;
   onImageData: (data: ImageData | null) => void;
   onSvgString: (svg: string) => void;
@@ -35,23 +44,19 @@ export function Inspector({
   svgString,
   vectorizeSession,
   editor,
+  shapeTools,
+  labelTools,
   previewBackground,
   selectedColor,
+  fillColor,
   onSelectedColorChange,
+  onFillColorChange,
   onPreviewBackgroundChange,
   onImageData,
   onSvgString,
   onToolChange,
 }: InspectorProps) {
   const { t } = useI18n();
-
-  if (LEGACY_TOOLS.has(activeTool)) {
-    return (
-      <aside className="w-72 shrink-0 overflow-y-auto border-l border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-        <p className="text-xs text-gray-500 dark:text-gray-400">{t(`tool.${activeTool}`)}</p>
-      </aside>
-    );
-  }
 
   return (
     <aside className="w-72 shrink-0 overflow-y-auto border-l border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
@@ -78,8 +83,8 @@ export function Inspector({
 
       {activeTool === 'eyedropper' && (
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold">{t('tool.eyedropper')}</h2>
-          <p className="text-xs text-gray-500">{t('col.subtitle')}</p>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('tool.eyedropper')}</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('col.subtitle')}</p>
           {selectedColor && (
             <div
               className="h-10 w-full rounded border border-gray-200 dark:border-gray-700"
@@ -92,15 +97,45 @@ export function Inspector({
       )}
 
       {activeTool === 'fill' && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold">{t('tool.fill')}</h2>
-          <p className="text-xs text-gray-500">{t('col.subtitle')}</p>
-          {selectedColor && (
-            <p className="font-mono text-xs text-gray-600 dark:text-gray-300">
-              rgb({selectedColor.r},{selectedColor.g},{selectedColor.b})
-            </p>
-          )}
-        </div>
+        <FillInspector initialColor={fillColor} onFillColorChange={onFillColorChange} />
+      )}
+
+      {activeTool === 'erase' && editor && (
+        <EraseInspector
+          pathItems={shapeTools.pathItems}
+          onHover={shapeTools.handleHover}
+          onDelete={shapeTools.handleDeleteItem}
+        />
+      )}
+
+      {activeTool === 'brush' && (
+        <BrushInspector
+          brushColor={shapeTools.brushColor}
+          brushSize={shapeTools.brushSize}
+          onBrushColorChange={shapeTools.setBrushColor}
+          onBrushSizeChange={shapeTools.setBrushSize}
+        />
+      )}
+
+      {activeTool === 'nodes' && (
+        <NodesInspector
+          hasSelectedPath={!!shapeTools.selectedPath}
+          onDeselect={() => shapeTools.setSelectedPath(null)}
+        />
+      )}
+
+      {activeTool === 'labels' && (
+        <LabelsInspector
+          labels={labelTools.labels}
+          editingPath={labelTools.editingPath}
+          selectedLabel={labelTools.selectedLabel}
+          onLabelSave={labelTools.handleLabelSave}
+          onLabelClick={labelTools.handleLabelClick}
+          onCancelEdit={() => {
+            labelTools.setEditingPath(null);
+            labelTools.clearSelection();
+          }}
+        />
       )}
 
       {activeTool === 'optimize' && svgString && (
