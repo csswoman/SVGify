@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import type { SvgZoomViewport } from '@/types/svg.types';
-import { readSvgViewBox, serializeSvgAtBaseViewBox, type SvgBaseViewBox } from '@/lib/svgViewBox';
+import {
+  DEFAULT_ZOOM_SCALE,
+  MAX_ZOOM_SCALE,
+  MIN_ZOOM_SCALE,
+  type SvgZoomViewport,
+} from '@/types/svg.types';
+import {
+  centeredZoomOffset,
+  clampZoomOffset,
+  readSvgViewBox,
+  serializeSvgAtBaseViewBox,
+  zoomViewBoxSize,
+} from '@/lib/svgViewBox';
 
 export interface ZoomState {
   scale: number;
@@ -11,7 +22,11 @@ interface UseSvgZoomOptions {
   onViewportChange?: (viewport: SvgZoomViewport) => void;
 }
 
-const DEFAULT_VIEWPORT: SvgZoomViewport = { scale: 1, offsetX: 0, offsetY: 0 };
+const DEFAULT_VIEWPORT: SvgZoomViewport = {
+  scale: DEFAULT_ZOOM_SCALE,
+  offsetX: 0,
+  offsetY: 0,
+};
 
 /**
  * Zoom + pan controls for a mounted <svg>, driven by its viewBox.
@@ -57,8 +72,7 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
     const svg = svgRef.current;
     const base = baseRef.current;
     if (!svg || !base) return;
-    const w = base.w / newScale;
-    const h = base.h / newScale;
+    const { w, h } = zoomViewBoxSize(base, newScale);
     svg.setAttribute('viewBox', `${base.x + ox} ${base.y + oy} ${w} ${h}`);
   }, []);
 
@@ -71,24 +85,28 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
       baseRef.current = base;
 
       const viewport = viewportRef.current;
-      offset.current = { x: viewport.offsetX, y: viewport.offsetY };
-      const nextScale = Math.min(8, Math.max(1, viewport.scale));
+      const nextScale = Math.min(MAX_ZOOM_SCALE, Math.max(MIN_ZOOM_SCALE, viewport.scale));
+      const isDefaultOffset = viewport.offsetX === 0 && viewport.offsetY === 0;
+      offset.current =
+        isDefaultOffset && nextScale <= 1
+          ? centeredZoomOffset(base, nextScale)
+          : clampZoomOffset(base, nextScale, viewport.offsetX, viewport.offsetY);
       setScale(nextScale);
       svg.setAttribute('viewBox', `${base.x} ${base.y} ${base.w} ${base.h}`);
       apply(nextScale, offset.current.x, offset.current.y);
+      if (isDefaultOffset && nextScale <= 1) {
+        emitViewport(nextScale, offset.current.x, offset.current.y);
+      }
     },
-    [apply]
+    [apply, emitViewport]
   );
 
   const setZoom = useCallback(
     (next: number) => {
-      const clamped = Math.min(8, Math.max(1, next));
+      const clamped = Math.min(MAX_ZOOM_SCALE, Math.max(MIN_ZOOM_SCALE, next));
       const base = baseRef.current;
       if (base) {
-        const w = base.w / clamped;
-        const h = base.h / clamped;
-        offset.current.x = Math.min(base.w - w, Math.max(0, offset.current.x));
-        offset.current.y = Math.min(base.h - h, Math.max(0, offset.current.y));
+        offset.current = centeredZoomOffset(base, clamped);
       }
       setScale(clamped);
       apply(clamped, offset.current.x, offset.current.y);
@@ -100,18 +118,20 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
   const zoomIn = useCallback(() => setZoom(scale * 1.3), [scale, setZoom]);
   const zoomOut = useCallback(() => setZoom(scale / 1.3), [scale, setZoom]);
   const reset = useCallback(() => {
-    offset.current = { x: 0, y: 0 };
-    setZoom(1);
+    setZoom(DEFAULT_ZOOM_SCALE);
   }, [setZoom]);
 
   const pan = useCallback(
     (dxUser: number, dyUser: number) => {
       const base = baseRef.current;
       if (!base) return;
-      const w = base.w / scale;
-      const h = base.h / scale;
-      offset.current.x = Math.min(base.w - w, Math.max(0, offset.current.x - dxUser));
-      offset.current.y = Math.min(base.h - h, Math.max(0, offset.current.y - dyUser));
+      const next = clampZoomOffset(
+        base,
+        scale,
+        offset.current.x - dxUser,
+        offset.current.y - dyUser
+      );
+      offset.current = next;
       apply(scale, offset.current.x, offset.current.y);
       emitViewport(scale, offset.current.x, offset.current.y);
     },
@@ -133,15 +153,6 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
   const shouldStartPan = useCallback(
     (event: ReactPointerEvent) => event.button === 1 || event.altKey || spaceDownRef.current,
     []
-  );
-
-  const onWheel = useCallback(
-    (event: React.WheelEvent) => {
-      event.preventDefault();
-      if (event.deltaY < 0) zoomIn();
-      else zoomOut();
-    },
-    [zoomIn, zoomOut]
   );
 
   const onPointerDown = useCallback(
@@ -190,7 +201,6 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
     reset,
     setZoom,
     pan,
-    onWheel,
     onPointerDown,
     onPointerMove,
     onPointerUp,

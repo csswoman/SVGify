@@ -28,8 +28,12 @@ export interface SvgZoomViewport {
   offsetY: number;
 }
 
+export const MIN_ZOOM_SCALE = 0.25;
+export const MAX_ZOOM_SCALE = 8;
+export const DEFAULT_ZOOM_SCALE = 1.0;
+
 export const DEFAULT_ZOOM_VIEWPORT: SvgZoomViewport = {
-  scale: 1,
+  scale: DEFAULT_ZOOM_SCALE,
   offsetX: 0,
   offsetY: 0,
 };
