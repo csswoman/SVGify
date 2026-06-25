@@ -76,7 +76,7 @@ function SvgPreviewInner({ svgString, displaySize, onPathClick, onSvgMount }: Sv
   return (
     <div
       className={`transparent-preview relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700${
-        displaySize ? ' mx-auto w-fit max-w-full' : ' w-full min-h-72'
+        displaySize ? ' mx-auto w-fit max-w-full' : ' w-full h-full'
       }`}
       style={
         displaySize ? { width: displaySize.width, height: displaySize.height } : undefined
