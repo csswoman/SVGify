@@ -14,7 +14,8 @@ import { useSvgColors } from '@/hooks/useSvgColors';
 import { useCanvasDisplaySize } from '@/hooks/useCanvasDisplaySize';
 import { useCanvasToolInteraction } from '@/hooks/useCanvasToolInteraction';
 import type { CanvasStatusEvent } from '@/lib/canvasToolInteraction';
-import { useVectorizePreviewSizes } from '@/hooks/useVectorizePreviewSizes';
+import { useSvgZoom } from '@/hooks/useSvgZoom';
+import { useImageZoom } from '@/hooks/useImageZoom';
 import type { RGBColor } from '@/types/svg.types';
 import type { WorkspaceTool } from '@/types/workspace.types';
 import type { useVectorizeSession } from '@/hooks/useVectorizeSession';
@@ -71,20 +72,23 @@ export function Canvas({
 }: CanvasProps) {
   const { t } = useI18n();
   const canvasPanelRef = useRef<HTMLElement>(null);
-  const vectorizePanelRef = useRef<HTMLElement>(null);
   const [showOriginalPreview, setShowOriginalPreview] = useState(false);
   const displaySize = useCanvasDisplaySize({
     svgEl: editor?.svgEl ?? null,
   });
   const isVectorizeView = activeTool === 'vectorize';
   const canEdit = svgString !== null && editor !== null;
-  const vectorizePreviewSizes = useVectorizePreviewSizes({
-    panelRef: vectorizePanelRef,
-    imageData: isVectorizeView ? vectorizeSession.processedImageData : null,
-    svgString: isVectorizeView ? vectorizeSession.svg : null,
-    twoColumns: showOriginalPreview,
-  });
   const { replaceColor } = useSvgColors(editor?.svgEl ?? null);
+  const vectorizeContainerRef = useRef<HTMLDivElement>(null);
+  const vectorizeZoom = useSvgZoom({ containerRef: vectorizeContainerRef });
+  const imageZoom = useImageZoom();
+
+  const handleVectorizeSvgMount = useCallback(
+    (svg: SVGSVGElement | null) => {
+      if (svg) vectorizeZoom.attach(svg);
+    },
+    [vectorizeZoom.attach]
+  );
   const handleCanvasStatusMessage = useCallback(
     (event: CanvasStatusEvent, detail?: string) => {
       if (event === 'colorPicked' && detail) {
@@ -164,9 +168,9 @@ export function Canvas({
 
   return (
     <section
-      ref={isVectorizeView ? vectorizePanelRef : canvasPanelRef}
+      ref={canvasPanelRef}
       aria-label={t('workspace.canvas')}
-      className="relative min-w-0 flex-1 overflow-y-auto bg-gray-200/60 p-4 dark:bg-gray-950/60"
+      className="relative min-w-0 flex-1 overflow-hidden bg-gray-200/60 p-4 flex flex-col dark:bg-gray-950/60"
     >
       {isVectorizeView && (
         <>
@@ -179,38 +183,79 @@ export function Canvas({
             </div>
           )}
           {processedImageData && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-                    {t('vec.vector')}
-                    {svg && (
-                      <span className="ml-2 font-normal text-gray-500 dark:text-gray-400">
-                        ({formatBytes(svgByteSize(svg))})
-                      </span>
-                    )}
-                  </p>
+            <div className="flex flex-col h-full gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                  {t('vec.vector')}
+                  {svg && (
+                    <span className="ml-2 font-normal text-gray-500 dark:text-gray-400">
+                      ({formatBytes(svgByteSize(svg))})
+                    </span>
+                  )}
+                </p>
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setShowOriginalPreview((value) => !value)}
+                    onClick={() => showOriginalPreview ? imageZoom.reset() : vectorizeZoom.reset()}
+                    className="focus-ring rounded border border-gray-300 bg-white px-2 py-1 text-xs font-mono text-gray-600 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                    aria-label="Reset zoom"
+                  >
+                    {Math.round((showOriginalPreview ? imageZoom.scale : vectorizeZoom.scale) * 100)}%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { if (!showOriginalPreview) vectorizeZoom.zoomIn(); }}
+                    className="focus-ring rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-600 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                    aria-label="Zoom in"
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { if (!showOriginalPreview) vectorizeZoom.zoomOut(); }}
+                    className="focus-ring rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-600 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                    aria-label="Zoom out"
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowOriginalPreview((v) => !v)}
                     className="focus-ring rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                     aria-expanded={showOriginalPreview}
                   >
                     {showOriginalPreview ? t('vec.hideOriginal') : t('vec.showOriginal')}
                   </button>
                 </div>
-                <SvgPreview svgString={svg} displaySize={vectorizePreviewSizes.svg} />
               </div>
-              {showOriginalPreview && (
-                <ImagePreview
-                  imageData={processedImageData}
-                  displaySize={vectorizePreviewSizes.image}
-                  label={removeBg ? t('vec.originalPick') : t('vec.original')}
-                  onPick={removeBg ? handlePick : undefined}
-                  seeds={removeBg ? seeds : undefined}
-                />
-              )}
-              <PalettePreview svg={svg} />
+
+              <div className="relative flex-1 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 transparent-preview">
+                <div
+                  ref={vectorizeContainerRef}
+                  className="w-full h-full"
+                  style={{ visibility: showOriginalPreview ? 'hidden' : 'visible' }}
+                  onPointerDown={vectorizeZoom.onPointerDown}
+                  onPointerMove={vectorizeZoom.onPointerMove}
+                  onPointerUp={vectorizeZoom.onPointerUp}
+                  onPointerCancel={vectorizeZoom.onPointerUp}
+                >
+                  <SvgPreview svgString={svg} onSvgMount={handleVectorizeSvgMount} />
+                </div>
+
+                {showOriginalPreview && (
+                  <ImagePreview
+                    imageData={processedImageData}
+                    label={removeBg ? t('vec.originalPick') : t('vec.original')}
+                    onPick={removeBg ? handlePick : undefined}
+                    seeds={removeBg ? seeds : undefined}
+                    zoomTransform={imageZoom.transform}
+                    onPointerDown={imageZoom.onPointerDown}
+                    onPointerMove={imageZoom.onPointerMove}
+                    onPointerUp={imageZoom.onPointerUp}
+                    onWheel={imageZoom.onWheel}
+                  />
+                )}
+              </div>
             </div>
           )}
         </>
