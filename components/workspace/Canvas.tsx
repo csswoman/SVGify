@@ -23,6 +23,7 @@ import type { useWorkspaceSvg } from '@/hooks/useWorkspaceSvg';
 import type { useWorkspaceShapeTools } from '@/hooks/useWorkspaceShapeTools';
 import type { useWorkspaceLabels } from '@/hooks/useWorkspaceLabels';
 import { useI18n } from '@/lib/i18n';
+import { CanvasOverlay } from '@/components/shared/CanvasOverlay';
 
 const CHECKERBOARD_BG: React.CSSProperties = {
   backgroundImage: 'repeating-conic-gradient(#f3f4f6 0% 25%, #ffffff 0% 50%)',
@@ -154,7 +155,7 @@ export function Canvas({
     );
   }
 
-  const { processedImageData, svg, removeBg, handlePick, seeds, error } = vectorizeSession;
+  const { processedImageData, svg, removeBg, handlePick, seeds, error, isLoading } = vectorizeSession;
   const previewStyle = previewBackground === 'black' ? BLACK_BG : CHECKERBOARD_BG;
   const { containerRef, zoom, pushSnapshot, svgEl } = editor ?? {
     containerRef: { current: null },
@@ -230,6 +231,7 @@ export function Canvas({
               </div>
 
               <div className="relative flex-1 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 transparent-preview">
+                <CanvasOverlay isVisible={isLoading} />
                 <div
                   ref={vectorizeContainerRef}
                   className="w-full h-full"
@@ -263,7 +265,9 @@ export function Canvas({
 
       {canEdit && zoom && (
         <div className={isVectorizeView ? 'hidden' : undefined} aria-hidden={isVectorizeView}>
-          <ZoomableSvgViewport
+          <div className="relative">
+            <CanvasOverlay isVisible={editor?.isBusy ?? false} />
+            <ZoomableSvgViewport
             containerRef={containerRef}
             zoom={zoom}
             displaySize={displaySize}
@@ -276,6 +280,7 @@ export function Canvas({
             }}
             aria-label="SVG editor canvas"
           />
+          </div>
           {showEditorSurface &&
             svgForPortals &&
             activeTool === 'nodes' &&
