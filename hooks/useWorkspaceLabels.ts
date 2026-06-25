@@ -23,6 +23,7 @@ export function useWorkspaceLabels(
 
   useEffect(() => {
     if (!isLabelMode) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- leaving label mode clears transient editor selection
       setEditingPath(null);
       clearSelection();
     }
@@ -36,7 +37,7 @@ export function useWorkspaceLabels(
       clearSelection();
       editor.pushSnapshot();
     },
-    [editingPath, addLabel, clearSelection, editor.pushSnapshot]
+    [editingPath, addLabel, clearSelection, editor]
   );
 
   const handleLabelClick = useCallback(

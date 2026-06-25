@@ -24,6 +24,8 @@
 .DS_Store
 *.pem
 .superpowers/
+.cursor/
+.impeccable/
 
 # debug
 npm-debug.log*

@@ -3,7 +3,7 @@
 // connected pixels matching that color (within a tolerance) to transparent.
 // Pure client-side, operates on a copy of the ImageData — never mutates input.
 
-/** Squared color distance in RGB space (cheaper than sqrt). */
+import { isNearWhite } from './paletteExtraction';
 function colorDistanceSq(
   data: Uint8ClampedArray,
   i: number,
@@ -149,6 +149,57 @@ export function removeBackground(
     if (x < width - 1) stack.push(p + 1);
     if (y > 0) stack.push(p - width);
     if (y < height - 1) stack.push(p + width);
+  }
+
+  return out;
+}
+
+/**
+ * Remove near-white pixels exposed to transparency (background halos / fringe).
+ * Enclosed white fills surrounded by other colors are preserved.
+ */
+export function removeExposedNearWhiteFringe(
+  imageData: ImageData,
+  threshold = 244
+): ImageData {
+  const { width, height } = imageData;
+  const out = new ImageData(new Uint8ClampedArray(imageData.data), width, height);
+  const data = out.data;
+  const peel = new Uint8Array(width * height);
+  const queue: number[] = [];
+
+  const tryPeel = (p: number) => {
+    if (peel[p]) return;
+    const i = p * 4;
+    if (data[i + 3] < 16) return;
+    if (!isNearWhite({ r: data[i], g: data[i + 1], b: data[i + 2] }, threshold)) return;
+    peel[p] = 1;
+    queue.push(p);
+  };
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const p = y * width + x;
+      if (data[p * 4 + 3] >= 16) continue;
+      if (x > 0) tryPeel(p - 1);
+      if (x < width - 1) tryPeel(p + 1);
+      if (y > 0) tryPeel(p - width);
+      if (y < height - 1) tryPeel(p + width);
+    }
+  }
+
+  while (queue.length > 0) {
+    const p = queue.pop() as number;
+    const x = p % width;
+    const y = (p - x) / width;
+    if (x > 0) tryPeel(p - 1);
+    if (x < width - 1) tryPeel(p + 1);
+    if (y > 0) tryPeel(p - width);
+    if (y < height - 1) tryPeel(p + width);
+  }
+
+  for (let p = 0; p < width * height; p++) {
+    if (peel[p]) data[p * 4 + 3] = 0;
   }
 
   return out;

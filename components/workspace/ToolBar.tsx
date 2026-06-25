@@ -6,7 +6,6 @@ import {
   ImageSquare,
   Lightning,
   MagicWand,
-  MagnifyingGlass,
   PaintBrush,
   PaintBucket,
   PenNib,
@@ -28,7 +27,6 @@ const TOOL_ICONS: Record<WorkspaceTool, Icon> = {
   nodes: PenNib,
   labels: Tag,
   optimize: Lightning,
-  zoom: MagnifyingGlass,
 };
 
 interface ToolBarProps {

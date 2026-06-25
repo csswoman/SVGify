@@ -1,8 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   countPalettePixels,
+  countColorOuterEdgePixels,
   createColorMask,
   downscaleForTrace,
+  pickOuterBorderColor,
   smoothColorMask,
   traceIconByColorLayers,
 } from './iconLayerTrace';
@@ -79,6 +81,27 @@ describe('icon layer trace helpers', () => {
     const output = smoothColorMask(input, 0);
 
     expect([...output.data.slice(4, 8)]).toEqual([0, 0, 0, 0]);
+  });
+
+  it('detects the palette color that touches transparency', () => {
+    const cream = { r: 255, g: 246, b: 214 };
+    const purple = { r: 120, g: 60, b: 200 };
+    const transparent = [0, 0, 0, 0];
+    const c = [255, 246, 214, 255];
+    const p = [120, 60, 200, 255];
+    const input = new ImageData(
+      new Uint8ClampedArray([
+        ...transparent, ...c, ...c, ...transparent,
+        ...c, ...p, ...p, ...c,
+        ...transparent, ...c, ...c, ...transparent,
+      ]),
+      4,
+      3
+    );
+
+    expect(pickOuterBorderColor(input, [cream, purple])).toEqual(cream);
+    expect(countColorOuterEdgePixels(input, cream, [cream, purple])).toBeGreaterThan(0);
+    expect(countColorOuterEdgePixels(input, purple, [cream, purple])).toBe(0);
   });
 
   it('does not recolor transparent layer backgrounds as visible rectangles', () => {

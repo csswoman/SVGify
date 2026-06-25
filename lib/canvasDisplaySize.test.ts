@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { computeCanvasDisplaySize, MIN_CANVAS_PX } from './canvasDisplaySize';
+import {
+  computeCanvasDisplaySize,
+  computeVectorizePreviewSize,
+  ICON_EDITOR_VIEWPORT,
+  MIN_CANVAS_PX,
+} from './canvasDisplaySize';
 
 describe('computeCanvasDisplaySize', () => {
   const bounds = { maxWidth: 900, maxHeight: 600 };
@@ -36,6 +41,30 @@ describe('computeCanvasDisplaySize', () => {
     expect(computeCanvasDisplaySize({ w: 0, h: 100 }, bounds)).toEqual({
       width: MIN_CANVAS_PX,
       height: MIN_CANVAS_PX,
+    });
+  });
+});
+
+describe('ICON_EDITOR_VIEWPORT', () => {
+  it('uses the requested fixed editor dimensions', () => {
+    expect(ICON_EDITOR_VIEWPORT).toEqual({ width: 700, height: 650 });
+  });
+});
+
+describe('computeVectorizePreviewSize', () => {
+  const bounds = { maxWidth: 420, maxHeight: 300 };
+
+  it('scales large images down to fit vectorize preview bounds', () => {
+    expect(computeVectorizePreviewSize({ w: 3000, h: 2000 }, bounds)).toEqual({
+      width: 420,
+      height: 280,
+    });
+  });
+
+  it('uses a smaller minimum for tiny icons in split view', () => {
+    expect(computeVectorizePreviewSize({ w: 64, h: 64 }, bounds)).toEqual({
+      width: 120,
+      height: 120,
     });
   });
 });

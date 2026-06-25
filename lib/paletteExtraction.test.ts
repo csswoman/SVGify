@@ -104,6 +104,115 @@ describe('palette extraction', () => {
     ]);
   });
 
+  it('suggests the dominant gray drop-shadow color from the raster', () => {
+    const input = new ImageData(
+      new Uint8ClampedArray([
+        182, 182, 182, 255,
+        182, 182, 182, 255,
+        18, 18, 20, 255,
+        255, 246, 214, 255,
+      ]),
+      4,
+      1
+    );
+
+    const palette = suggestPaletteFromImage(input, 5);
+
+    expect(palette).toContainEqual({ r: 182, g: 182, b: 182, a: 255 });
+  });
+
+  it('keeps gray drop shadows out of black when quantizing', () => {
+    const palette = [
+      { r: 18, g: 18, b: 20 },
+      { r: 182, g: 182, b: 182 },
+      { r: 255, g: 246, b: 214 },
+    ];
+    const input = new ImageData(
+      new Uint8ClampedArray([
+        176, 176, 176, 255,
+        18, 18, 20, 255,
+      ]),
+      2,
+      1
+    );
+
+    const output = quantizeImageToPalette(input, palette);
+
+    expect([...output.data.slice(0, 4)]).toEqual([182, 182, 182, 255]);
+    expect([...output.data.slice(4, 8)]).toEqual([18, 18, 20, 255]);
+  });
+
+  it('keeps dark saturated colors separate from black in the suggested palette', () => {
+    const input = new ImageData(
+      new Uint8ClampedArray([
+        4, 18, 38, 255,
+        4, 18, 38, 255,
+        18, 18, 20, 255,
+        198, 176, 128, 255,
+      ]),
+      4,
+      1
+    );
+
+    const palette = suggestPaletteFromImage(input, 6);
+
+    expect(palette).toContainEqual({ r: 4, g: 18, b: 38, a: 255 });
+    expect(palette).toContainEqual({ r: 18, g: 18, b: 20, a: 255 });
+  });
+
+  it('returns a richer palette when the requested color count is high', () => {
+    const pixels: number[] = [];
+    const colors = [
+      [8, 18, 38],
+      [18, 18, 20],
+      [42, 72, 126],
+      [76, 154, 202],
+      [196, 166, 112],
+      [180, 128, 90],
+      [126, 88, 52],
+      [214, 190, 126],
+      [204, 142, 122],
+      [112, 160, 154],
+      [154, 138, 112],
+      [88, 66, 44],
+    ];
+
+    for (const [r, g, b] of colors) {
+      pixels.push(r, g, b, 255, r, g, b, 255);
+    }
+
+    const palette = suggestPaletteFromImage(
+      new ImageData(new Uint8ClampedArray(pixels), colors.length * 2, 1),
+      18
+    );
+
+    expect(palette.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('preserves soft gray shadow alpha when applying the silhouette mask', () => {
+    const color = new ImageData(
+      new Uint8ClampedArray([
+        180, 180, 180, 96,
+        255, 246, 214, 255,
+      ]),
+      2,
+      1
+    );
+    const mask = new ImageData(
+      new Uint8ClampedArray([
+        180, 180, 180, 0,
+        255, 246, 214, 255,
+      ]),
+      2,
+      1
+    );
+
+    const output = applyAlphaMask(color, mask);
+
+    expect(output.data[3]).toBe(255);
+    expect(output.data[7]).toBe(255);
+  });
+
   it('keeps crisp quantized colors but takes the silhouette alpha from the mask', () => {
     const color = new ImageData(
       new Uint8ClampedArray([

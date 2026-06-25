@@ -1,10 +1,8 @@
 'use client';
 
 import type { RefObject } from 'react';
-import { ZoomControls } from '@/components/shared/ZoomControls';
 import type { CanvasDisplaySize } from '@/lib/canvasDisplaySize';
 import { useSvgZoom } from '@/hooks/useSvgZoom';
-import { useI18n } from '@/lib/i18n';
 
 interface ZoomableSvgViewportProps {
   containerRef: RefObject<HTMLDivElement | null>;
@@ -27,8 +25,6 @@ export function ZoomableSvgViewport({
   onMouseMove,
   'aria-label': ariaLabel,
 }: ZoomableSvgViewportProps) {
-  const { t } = useI18n();
-
   return (
     <div className="relative mx-auto w-fit">
       <div
@@ -50,15 +46,6 @@ export function ZoomableSvgViewport({
         }}
         aria-label={ariaLabel}
       />
-      <div className="absolute top-2 right-2 z-10">
-        <ZoomControls
-          scale={zoom.scale}
-          onZoomIn={zoom.zoomIn}
-          onZoomOut={zoom.zoomOut}
-          onReset={zoom.reset}
-        />
-      </div>
-      <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">{t('zoom.panHint')}</p>
     </div>
   );
 }

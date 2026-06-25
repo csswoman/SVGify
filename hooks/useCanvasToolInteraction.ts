@@ -55,7 +55,7 @@ export function useCanvasToolInteraction({
 
   const handleCanvasClick = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
-      if (activeTool === 'brush' || activeTool === 'optimize' || activeTool === 'zoom') return;
+      if (activeTool === 'brush' || activeTool === 'optimize') return;
 
       const path = resolvePathFromEvent(event.target, containerRef.current);
       const ctx = buildCtx();

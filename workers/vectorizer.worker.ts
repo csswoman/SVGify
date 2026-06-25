@@ -1,24 +1,28 @@
 import { WorkerMessage, WorkerResponse, VectorizeSettings, VECTORIZE_DEFAULTS } from '@/types/svg.types';
-import { optimizeSvg } from '@/lib/optimizeSvg';
+import { optimizeSvg, svgByteSize } from '@/lib/optimizeSvg';
 import { applyBlur, buildIconSilhouette } from '@/lib/imageFilters';
 import { downscaleForTrace, traceIconByColorLayers } from '@/lib/iconLayerTrace';
 import {
   quantizeImageToIconPalette,
-  prepareIconSourceImage,
-  removeNearWhiteSvgPaths,
+  removeSmallNearWhiteSvgPaths,
   removeSmallSvgPathsByBounds,
   snapSvgToIconPalette,
 } from '@/lib/iconVectorization';
+import { simplifySvgPaths } from '@/lib/simplifyPath';
+import { compactSvgPaths } from '@/lib/svgPathCompaction';
 import {
   applyAlphaMask,
   mergeSimilarPaletteColors,
   smoothQuantizedPalette,
   suggestPaletteFromImage,
+  isDropShadowColor,
   type TracePaletteColor as IconTracePaletteColor,
 } from '@/lib/paletteExtraction';
 
 // Notify main thread that worker is ready
 self.postMessage({ type: 'ready' } satisfies WorkerResponse);
+
+const TARGET_SVG_BYTES = 50 * 1024;
 
 let activeRequestId = 0;
 
@@ -44,14 +48,53 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
   }
 };
 
+function optimizeWithinBudget(svg: string, coordDecimals: number): string {
+  const optimized = optimizeSvg(svg, {
+    dropDefaultOpacity: true,
+    coordDecimals,
+    removeStroke: true,
+  });
+
+  if (svgByteSize(optimized) <= TARGET_SVG_BYTES) return optimized;
+
+  const attempts = [
+    { epsilon: 0.18, decimals: Math.min(coordDecimals, 1) },
+    { epsilon: 0.28, decimals: Math.min(coordDecimals, 1) },
+    { epsilon: 0.4, decimals: 0 },
+    { epsilon: 0.55, decimals: 0 },
+  ];
+
+  let best = optimized;
+  let bestSize = svgByteSize(best);
+
+  for (const attempt of attempts) {
+    const simplified = simplifySvgPaths(svg, attempt.epsilon, attempt.decimals);
+    const candidate = optimizeSvg(simplified, {
+      dropDefaultOpacity: true,
+      coordDecimals: attempt.decimals,
+      removeStroke: true,
+    });
+    const candidateSize = svgByteSize(candidate);
+
+    if (candidateSize < bestSize) {
+      best = candidate;
+      bestSize = candidateSize;
+    }
+    if (candidateSize <= TARGET_SVG_BYTES) return candidate;
+  }
+
+  return best;
+}
+
 function vectorizeIcon(withoutWhite: ImageData, settings: VectorizeSettings): string {
   const source = downscaleForTrace(withoutWhite);
-  const targetColors = Math.max(2, Math.min(settings.numberofcolors, 12));
+  const targetColors = Math.max(2, Math.min(settings.numberofcolors, 24));
   const rawTraceColors: IconTracePaletteColor[] =
     settings.customPalette && settings.customPalette.length > 0
       ? settings.customPalette.slice(0, targetColors).map((color) => ({ ...color, a: 255 }))
       : suggestPaletteFromImage(source, targetColors);
-  const traceColors = mergeSimilarPaletteColors(rawTraceColors, 22).map((color) => ({
+  const mergeThreshold = targetColors >= 18 ? 8 : targetColors >= 12 ? 14 : 22;
+  const traceColors = mergeSimilarPaletteColors(rawTraceColors, mergeThreshold).map((color) => ({
     ...color,
     a: 255 as const,
   }));
@@ -66,31 +109,27 @@ function vectorizeIcon(withoutWhite: ImageData, settings: VectorizeSettings): st
   const svgString = traceIconByColorLayers(iconRaster, traceColors, settings);
 
   const withoutTransparent = removeTransparentPaths(svgString);
-  const withoutWhitePaths = removeNearWhiteSvgPaths(withoutTransparent);
-  const snapped = snapSvgToIconPalette(withoutWhitePaths, traceColors);
-  const minPathArea = Math.max(12, Math.round(settings.pathomit * 0.5));
-  const withoutSpeckles = removeSmallSvgPathsByBounds(snapped, minPathArea);
-  const coordDecimals = Math.max(2, settings.roundcoords);
+  const snapped = snapSvgToIconPalette(withoutTransparent, traceColors);
+  const minPathArea = Math.max(8, Math.round(settings.pathomit * 0.4));
+  const shadowColors = traceColors.filter((color) => isDropShadowColor(color));
+  const withoutWhiteSpeckles = removeSmallNearWhiteSvgPaths(snapped, minPathArea);
+  const withoutSpeckles = removeSmallSvgPathsByBounds(withoutWhiteSpeckles, minPathArea, shadowColors);
+  const coordDecimals = Math.max(0, settings.roundcoords);
 
-  // Keep ImageTracer curve commands intact. Aggressive Douglas–Peucker
-  // simplification is only applied via "Optimize to the max" in the UI.
-  return optimizeSvg(withoutSpeckles, {
-    dropDefaultOpacity: true,
-    coordDecimals,
-    removeStroke: true,
-    sealSeams: 0.35,
-  });
+  const compacted = compactSvgPaths(withoutSpeckles, 50);
+
+  return optimizeWithinBudget(compacted, coordDecimals);
 }
 
 function vectorizeImage(imageData: ImageData, settings: VectorizeSettings, requestId: number): void {
   try {
     const options = { ...VECTORIZE_DEFAULTS, ...settings };
 
-    const prepared = prepareIconSourceImage(imageData);
-    const optimized = vectorizeIcon(prepared, {
+    const optimized = vectorizeIcon(imageData, {
       ...options,
-      numberofcolors: Math.max(2, Math.min(options.numberofcolors, 12)),
-      pathomit: Math.max(12, Math.min(options.pathomit, 24)),
+      numberofcolors: Math.max(2, Math.min(options.numberofcolors, 24)),
+      pathomit: Math.max(0, Math.min(options.pathomit, 40)),
+      roundcoords: Math.max(0, Math.min(options.roundcoords, 3)),
     });
 
     if (requestId !== activeRequestId) return;

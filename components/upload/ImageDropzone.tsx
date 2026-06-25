@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { validateFile, fileToImageData } from '@/lib/fileUtils';
 import { useI18n } from '@/lib/i18n';
 
@@ -12,6 +12,7 @@ interface ImageDropzoneProps {
 export function ImageDropzone({ onImageData, onError }: ImageDropzoneProps) {
   const { t } = useI18n();
   const [isDragging, setIsDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -51,32 +52,37 @@ export function ImageDropzone({ onImageData, onError }: ImageDropzoneProps) {
   return (
     <div
       role="region"
-      aria-label="Image upload area"
+      aria-label={t('upload.drop')}
       onDragEnter={() => setIsDragging(true)}
       onDragOver={(e) => e.preventDefault()}
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
-      className={`border-4 border-dashed rounded-xl p-16 text-center transition-colors ${
+      onClick={() => inputRef.current?.click()}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          inputRef.current?.click();
+        }
+      }}
+      tabIndex={0}
+      className={[
+        'cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-colors outline-none',
+        'focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2',
         isDragging
           ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10'
-          : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 hover:border-gray-400 dark:hover:border-gray-500'
-      }`}
+          : 'border-gray-300 bg-gray-50 hover:border-gray-400 dark:border-gray-600 dark:bg-gray-700/50 dark:hover:border-gray-500',
+      ].join(' ')}
     >
-      <div className="text-5xl mb-4 select-none">🖼️</div>
-      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">{t('upload.drop')}</h2>
-      <label>
-        <input
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          onChange={handleInputChange}
-          className="sr-only"
-          aria-label={t('upload.drop')}
-        />
-        <span className="cursor-pointer inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
-          {t('upload.title')}
-        </span>
-      </label>
-      <p className="text-sm text-gray-400 dark:text-gray-500 mt-6">{t('upload.formats')}</p>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        onChange={handleInputChange}
+        className="sr-only"
+        aria-hidden
+        tabIndex={-1}
+      />
+      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('upload.drop')}</p>
     </div>
   );
 }

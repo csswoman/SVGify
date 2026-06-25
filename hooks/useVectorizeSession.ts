@@ -1,31 +1,41 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useVectorizer } from '@/hooks/useVectorizer';
 import { VectorizeSettings, VECTORIZE_DEFAULTS } from '@/types/svg.types';
 import { removeBackground, type SeedPoint } from '@/lib/backgroundRemoval';
 import { suggestPaletteFromImage } from '@/lib/paletteExtraction';
+import { useEditablePalette } from '@/hooks/useEditablePalette';
 
 interface UseVectorizeSessionOptions {
   imageData: ImageData | null;
-  onSvgReady?: (svg: string) => void;
+  /** When false, skips live re-vectorization (e.g. while editing the traced SVG). */
+  enabled?: boolean;
 }
 
-export function useVectorizeSession({ imageData, onSvgReady }: UseVectorizeSessionOptions) {
+export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeSessionOptions) {
   const [settings, setSettings] = useState<VectorizeSettings>(VECTORIZE_DEFAULTS);
   const [removeBg, setRemoveBg] = useState(false);
   const [bgTolerance, setBgTolerance] = useState(48);
   const [contiguous, setContiguous] = useState(true);
   const [seeds, setSeeds] = useState<SeedPoint[]>([]);
   const { svg, isLoading, error, vectorize } = useVectorizer();
-  const hasAutoAdvanced = useRef(false);
+  const {
+    colors: paletteColors,
+    selectedColor: selectedPaletteColor,
+    replacePalette,
+    selectColor: selectPaletteColor,
+    updateSelectedColor: updateSelectedPaletteColor,
+    deleteColor: deletePaletteColor,
+    mergeSimilar: mergeSimilarPaletteColors,
+  } = useEditablePalette();
 
   const updateSettings = useCallback((next: VectorizeSettings) => {
     setSettings({
       ...next,
-      numberofcolors: Math.min(12, Math.max(2, next.numberofcolors)),
-      pathomit: Math.max(12, Math.min(24, next.pathomit)),
-      roundcoords: Math.max(2, next.roundcoords),
+      numberofcolors: Math.min(24, Math.max(2, next.numberofcolors)),
+      pathomit: Math.max(0, Math.min(40, next.pathomit)),
+      roundcoords: Math.max(0, Math.min(3, next.roundcoords)),
     });
   }, []);
 
@@ -48,12 +58,16 @@ export function useVectorizeSession({ imageData, onSvgReady }: UseVectorizeSessi
     }));
   }, [processedImageData, settings.numberofcolors]);
 
+  useEffect(() => {
+    replacePalette(suggestedPalette);
+  }, [replacePalette, suggestedPalette]);
+
   const settingsWithPalette = useMemo(
     () => ({
       ...settings,
-      customPalette: suggestedPalette.map((color) => ({ ...color })),
+      customPalette: paletteColors.map((color) => ({ ...color })),
     }),
-    [settings, suggestedPalette]
+    [settings, paletteColors]
   );
 
   const handlePick = useCallback((point: SeedPoint) => {
@@ -61,20 +75,10 @@ export function useVectorizeSession({ imageData, onSvgReady }: UseVectorizeSessi
   }, []);
 
   useEffect(() => {
-    hasAutoAdvanced.current = false;
-  }, [imageData]);
-
-  useEffect(() => {
-    if (!processedImageData) return;
+    if (!enabled || !processedImageData) return;
     const timer = setTimeout(() => vectorize(processedImageData, settingsWithPalette), 300);
     return () => clearTimeout(timer);
-  }, [processedImageData, settingsWithPalette, vectorize]);
-
-  useEffect(() => {
-    if (!svg || !onSvgReady || hasAutoAdvanced.current) return;
-    hasAutoAdvanced.current = true;
-    onSvgReady(svg);
-  }, [svg, onSvgReady]);
+  }, [enabled, processedImageData, settingsWithPalette, vectorize]);
 
   return {
     settings,
@@ -90,6 +94,13 @@ export function useVectorizeSession({ imageData, onSvgReady }: UseVectorizeSessi
     handlePick,
     processedImageData,
     suggestedPalette,
+    paletteColors,
+    selectedPaletteColor,
+    selectPaletteColor,
+    updateSelectedPaletteColor,
+    deletePaletteColor,
+    mergeSimilarPaletteColors: () => mergeSimilarPaletteColors(64),
+    resetPalette: () => replacePalette(suggestedPalette),
     svg,
     isLoading,
     error,

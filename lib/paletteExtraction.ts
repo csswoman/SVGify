@@ -298,6 +298,14 @@ function countOpaqueNearWhitePixels(imageData: ImageData, threshold = 244): numb
   return count;
 }
 
+function totalOpaquePixels(imageData: ImageData): number {
+  let count = 0;
+  for (let i = 3; i < imageData.data.length; i += 4) {
+    if (imageData.data[i] >= 16) count++;
+  }
+  return count;
+}
+
 function collectVisibleColorBuckets(imageData: ImageData): ColorCandidate[] {
   const buckets = new Map<number, ColorBucket>();
 
@@ -333,53 +341,82 @@ function collectVisibleColorBuckets(imageData: ImageData): ColorCandidate[] {
 }
 
 export function suggestPaletteFromImage(imageData: ImageData, maxColors: number): TracePaletteColor[] {
-  const limit = Math.max(2, Math.min(12, Math.floor(maxColors)));
+  const limit = Math.max(2, Math.min(24, Math.floor(maxColors)));
   const candidates = collectVisibleColorBuckets(imageData);
   const selected: RGBColor[] = [];
-  const addColor = (color: RGBColor) => {
+  const defaultThreshold = limit >= 18 ? 10 : limit >= 12 ? 18 : 32;
+  const addColor = (color: RGBColor, threshold = defaultThreshold) => {
     if (selected.length >= limit) return;
-    if (!isSimilarToAny(color, selected)) selected.push({ ...color });
+    if (!isSimilarToAny(color, selected, threshold)) selected.push({ ...color });
   };
 
-  if (candidates.some((color) => isTrueBlackFill(color))) addColor(ICON_BASE_PALETTE[0].color);
-  if (candidates.some((color) => colorDistanceSq(color, ICON_BASE_PALETTE[1].color) <= 56 * 56)) {
-    addColor(ICON_BASE_PALETTE[1].color);
-  }
+  const totalOpaque = totalOpaquePixels(imageData);
+  const minProminentCount = Math.max(3, Math.ceil(totalOpaque * (limit >= 18 ? 0.0015 : 0.003)));
+  const prominent = candidates.filter((color) => color.count >= minProminentCount);
+  const source = prominent.length >= Math.min(limit, 4) ? prominent : candidates;
 
   // Enclosed white fills (face, belly, highlights) survive edge flood-fill — keep them in the palette.
   const nearWhitePixels = countOpaqueNearWhitePixels(imageData);
-  const totalOpaque = imageData.data.filter((_, i) => i % 4 === 3 && imageData.data[i] >= 16).length;
   if (nearWhitePixels > 0 && nearWhitePixels / Math.max(1, totalOpaque) >= 0.02) {
     addColor({ r: 255, g: 255, b: 255 });
   }
 
-  const shadowCandidates = candidates
+  const shadowCandidates = source
     .filter((color) => isDropShadowColor(color))
     .sort((a, b) => b.count - a.count);
   if (shadowCandidates[0]) {
     addColor(toRgb(shadowCandidates[0]));
   }
 
-  for (const color of candidates) {
+  const blackCandidates = source
+    .filter((color) => isTrueBlackFill(color))
+    .sort((a, b) => b.count - a.count);
+  if (blackCandidates[0]) {
+    addColor(toRgb(blackCandidates[0]), 14);
+  }
+
+  for (const color of source) {
     if (selected.length >= limit) break;
     const isAccent = saturationRange(color) >= 36 && luminance(color) > 45;
     const isCream = colorDistanceSq(color, ICON_BASE_PALETTE[1].color) <= 56 * 56;
     if (isAccent && !isCream) addColor(toRgb(color));
   }
 
+  const largeDarkAccentCount = Math.max(minProminentCount * 3, Math.ceil(totalOpaque * 0.01));
+  for (const color of source) {
+    if (selected.length >= limit) break;
+    const isDarkAccent = saturationRange(color) >= 30 && luminance(color) <= 55;
+    if (isDarkAccent && !isTrueBlackFill(color) && color.count >= largeDarkAccentCount) {
+      addColor(toRgb(color), 14);
+    }
+  }
+
   if (
     shadowCandidates.length === 0 &&
-    candidates.some((color) => {
+    source.some((color) => {
       const lightness = luminance(color);
       return saturationRange(color) <= 28 && lightness > 70 && lightness < 220;
     })
   ) {
-    addColor(ICON_BASE_PALETTE[3].color);
+    const neutral = source.find((color) => {
+      const lightness = luminance(color);
+      return saturationRange(color) <= 28 && lightness > 70 && lightness < 220;
+    });
+    if (neutral) addColor(toRgb(neutral));
   }
 
-  for (const color of candidates) {
+  for (const color of source) {
     if (selected.length >= limit) break;
-    addColor(toRgb(color));
+    const isDarkAccent = saturationRange(color) >= 30 && luminance(color) <= 55;
+    addColor(toRgb(color), isDarkAccent ? 14 : defaultThreshold);
+  }
+
+  if (selected.length < limit && limit >= 12) {
+    for (const color of source) {
+      if (selected.length >= limit) break;
+      const isDarkAccent = saturationRange(color) >= 30 && luminance(color) <= 55;
+      addColor(toRgb(color), isDarkAccent ? 10 : 4);
+    }
   }
 
   if (selected.length === 0) addColor(ICON_BASE_PALETTE[0].color);

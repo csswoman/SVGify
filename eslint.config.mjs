@@ -11,6 +11,9 @@ const eslintConfig = defineConfig([
     ".next/**",
     "out/**",
     "build/**",
+    ".cursor/**",
+    ".impeccable/**",
+    ".superpowers/**",
     "next-env.d.ts",
     // One-off Node smoke-test script, not part of the app build.
     "smoke-test.js",

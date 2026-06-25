@@ -7,8 +7,7 @@ export type WorkspaceTool =
   | 'brush'
   | 'nodes'
   | 'labels'
-  | 'optimize'
-  | 'zoom';
+  | 'optimize';
 
 export interface WorkspaceDocument {
   imageData: ImageData | null;

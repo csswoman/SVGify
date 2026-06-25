@@ -113,10 +113,73 @@ export function createColorMask(
   return new ImageData(out, width, height);
 }
 
+/** Pixels of `color` with at least one transparent neighbor (outer edge). */
+export function countColorOuterEdgePixels(
+  imageData: ImageData,
+  color: RGBColor,
+  palette: readonly RGBColor[]
+): number {
+  const { width, height, data } = imageData;
+  let count = 0;
+
+  const matches = (x: number, y: number) => {
+    const i = (y * width + x) * 4;
+    if (data[i + 3] < 16) return false;
+    const snapped = nearestPaletteColor({ r: data[i], g: data[i + 1], b: data[i + 2] }, palette);
+    return snapped.r === color.r && snapped.g === color.g && snapped.b === color.b;
+  };
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (!matches(x, y)) continue;
+      const touchesTransparent =
+        x === 0 ||
+        y === 0 ||
+        x === width - 1 ||
+        y === height - 1 ||
+        (y > 0 && data[((y - 1) * width + x) * 4 + 3] < 16) ||
+        (y < height - 1 && data[((y + 1) * width + x) * 4 + 3] < 16) ||
+        (x > 0 && data[(y * width + (x - 1)) * 4 + 3] < 16) ||
+        (x < width - 1 && data[(y * width + (x + 1)) * 4 + 3] < 16);
+      if (touchesTransparent) count++;
+    }
+  }
+
+  return count;
+}
+
+/** The palette color that forms the visible outer shell (most pixels on the edge). */
+export function pickOuterBorderColor(
+  imageData: ImageData,
+  palette: readonly RGBColor[]
+): RGBColor | null {
+  let best: RGBColor | null = null;
+  let bestEdge = 0;
+
+  for (const color of palette) {
+    const edge = countColorOuterEdgePixels(imageData, color, palette);
+    if (edge > bestEdge) {
+      bestEdge = edge;
+      best = color;
+    }
+  }
+
+  return bestEdge > 0 ? best : null;
+}
+
+function prepareLayerMask(
+  iconRaster: ImageData,
+  color: RGBColor,
+  palette: readonly RGBColor[],
+  settings: VectorizeSettings
+): ImageData {
+  const mask = createColorMask(iconRaster, color, palette);
+  return smoothColorMask(mask, settings.blurRadius);
+}
+
 export function smoothColorMask(mask: ImageData, blurRadius: number): ImageData {
   let working = mask;
-  // Only remove single-pixel speckles. Blurring binary masks before trace
-  // creates chunky stair-stepped edges in the final SVG.
+  // Only remove single-pixel speckles — no blur, to keep sharp traced edges.
   const openRadius = blurRadius >= 4 ? 1 : 0;
   if (openRadius > 0) {
     working = morphOpenAlpha(working, openRadius);
@@ -156,7 +219,6 @@ function buildTraceOptions(settings: VectorizeSettings, rasterSize: number) {
     colorquantcycles: 1,
     mincolorratio: 0,
     colorsampling: 0,
-    // Lower ltres/qtres keep more curve detail (sharper silhouettes).
     ltres: Math.min(settings.ltres + blurBoost, 2),
     qtres: Math.min(settings.qtres + blurBoost, 1.8),
     pathomit: Math.min(10, Math.max(3, Math.round(settings.pathomit / (4 * sizeFactor)))),
@@ -164,7 +226,7 @@ function buildTraceOptions(settings: VectorizeSettings, rasterSize: number) {
     linefilter: false,
     strokewidth: 0,
     scale: settings.scale,
-    roundcoords: Math.max(2, settings.roundcoords),
+    roundcoords: Math.max(0, settings.roundcoords),
     viewbox: true,
     desc: false,
     blurradius: 0,
@@ -186,7 +248,7 @@ function buildCombinedTraceOptions(settings: VectorizeSettings, palette: TracePa
     linefilter: false,
     strokewidth: 0,
     scale: settings.scale,
-    roundcoords: Math.max(2, settings.roundcoords),
+    roundcoords: Math.max(0, settings.roundcoords),
     viewbox: true,
     desc: false,
   };
@@ -202,8 +264,7 @@ export function traceIconCombined(
 }
 
 /**
- * Trace each palette color as its own smoothed binary layer. This avoids the
- * jagged shared boundaries that multi-color ImageTracer runs produce on icons.
+ * Trace each palette color as its own smoothed binary layer.
  */
 export function traceIconByColorLayers(
   iconRaster: ImageData,
@@ -220,7 +281,7 @@ export function traceIconByColorLayers(
   for (const color of colorsByArea) {
     if (countPalettePixels(iconRaster, color, palette) === 0) continue;
 
-    const mask = smoothColorMask(createColorMask(iconRaster, color, palette), settings.blurRadius);
+    const mask = prepareLayerMask(iconRaster, color, palette, settings);
     const layerSvg = ImageTracer.imagedataToSVG(mask, traceOptions);
     pathTags.push(...recolorLayerPaths(layerSvg, color));
   }

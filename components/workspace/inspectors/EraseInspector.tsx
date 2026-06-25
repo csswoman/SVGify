@@ -19,7 +19,7 @@ export function EraseInspector({ pathItems, onHover, onDelete }: EraseInspectorP
         <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('tool.erase')}</h2>
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('shape.deleteSub')}</p>
       </div>
-      <p className="flex items-center text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+      <p className="flex items-center text-xs font-semibold text-gray-600 dark:text-gray-400">
         {t('shape.shapes')} ({pathItems.length})
         <Tooltip text={t('shape.list.help')} label={t('shape.shapes')} />
       </p>

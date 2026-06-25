@@ -5,24 +5,58 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* SVGcraft design tokens (from DESIGN.md) */
+  --color-action-blue: #2563eb;
+  --color-action-blue-surface: #eff6ff;
+  --color-action-green: #16a34a;
+  --color-action-green-hover: #15803d;
+  --color-canvas-bg: #f3f4f6;
+  --color-surface: #ffffff;
+  --color-ink: #111827;
+  --color-ink-muted: #6b7280;
+  --color-ink-subtle: #9ca3af;
+  --color-border: #e5e7eb;
+  --color-dark-canvas-bg: #111827;
+  --color-dark-surface: #1f2937;
+  --color-dark-ink: #f3f4f6;
+  --color-dark-ink-muted: #9ca3af;
+  --color-dark-border: #374151;
+}
+
+@layer utilities {
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 .transparent-preview {
-  background-color: #fff;
+  background-color: var(--color-surface);
   background-image:
-    linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
-    linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
-    linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+    linear-gradient(45deg, var(--color-border) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--color-border) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--color-border) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--color-border) 75%);
   background-position: 0 0, 0 8px, 8px -8px, -8px 0;
   background-size: 16px 16px;
 }
 
 .dark .transparent-preview {
-  background-color: #111827;
+  background-color: var(--color-dark-canvas-bg);
   background-image:
-    linear-gradient(45deg, #1f2937 25%, transparent 25%),
-    linear-gradient(-45deg, #1f2937 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #1f2937 75%),
-    linear-gradient(-45deg, transparent 75%, #1f2937 75%);
+    linear-gradient(45deg, var(--color-dark-surface) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--color-dark-surface) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--color-dark-surface) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--color-dark-surface) 75%);
 }

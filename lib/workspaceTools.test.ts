@@ -24,7 +24,7 @@ describe('isToolEnabled', () => {
 });
 
 describe('toolFromKeyboard', () => {
-  it('maps i/g/e/b/a/l/z to tools', () => {
+  it('maps i/g/e/b/a/l to tools', () => {
     expect(toolFromKeyboard('v')).toBeNull();
     expect(toolFromKeyboard('I')).toBe('eyedropper');
     expect(toolFromKeyboard('g')).toBe('fill');
@@ -32,7 +32,7 @@ describe('toolFromKeyboard', () => {
     expect(toolFromKeyboard('b')).toBe('brush');
     expect(toolFromKeyboard('a')).toBe('nodes');
     expect(toolFromKeyboard('l')).toBe('labels');
-    expect(toolFromKeyboard('z')).toBe('zoom');
+    expect(toolFromKeyboard('z')).toBeNull();
   });
   it('returns null for unrelated keys', () => {
     expect(toolFromKeyboard('x')).toBeNull();

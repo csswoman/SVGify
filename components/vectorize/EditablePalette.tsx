@@ -29,7 +29,7 @@ export function EditablePalette({
   return (
     <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
       <div>
-        <p className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+        <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
           {t('vec.paletteEditor')}
         </p>
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">

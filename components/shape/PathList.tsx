@@ -6,6 +6,8 @@ export interface PathItem {
   el: SVGPathElement;
   id: number;
   fill: string;
+  area: number;
+  nodeCount: number;
 }
 
 interface PathListProps {
@@ -39,7 +41,7 @@ export function PathList({ items, onHover, onDelete }: PathListProps) {
             style={{ backgroundColor: item.fill }}
           />
           <span className="font-mono text-xs text-gray-500 dark:text-gray-400 flex-1 truncate">
-            {t('shape.shape')} {item.id + 1} · {item.fill}
+            {t('shape.shape')} {item.id + 1} · {item.nodeCount} {t('shape.nodesShort')} · {item.fill}
           </span>
           <button
             onClick={() => onDelete(item)}

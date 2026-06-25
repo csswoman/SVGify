@@ -14,6 +14,8 @@ interface OptimizeOptions {
   coordDecimals?: number;
   /** Compress whitespace inside path `d` attributes (default true). */
   compressPaths?: boolean;
+  /** Convert rgb(r,g,b) color attributes to shorter hex notation (default true). */
+  minifyColors?: boolean;
   /**
    * Seal hairline gaps between adjacent shapes by giving each path a thin stroke
    * of its own fill color. When set, this overrides removeStroke. The number is
@@ -35,6 +37,21 @@ function compressPathData(d: string): string {
     .trim();
 }
 
+function toHexByte(value: number): string {
+  return Math.max(0, Math.min(255, value)).toString(16).padStart(2, '0');
+}
+
+function minifyRgbColors(svg: string): string {
+  return svg.replace(/(fill|stroke)="rgb\((\d+),\s*(\d+),\s*(\d+)\)"/g, (_full, attr, r, g, b) => {
+    const rr = toHexByte(Number(r));
+    const gg = toHexByte(Number(g));
+    const bb = toHexByte(Number(b));
+    const canShorten = rr[0] === rr[1] && gg[0] === gg[1] && bb[0] === bb[1];
+    const hex = canShorten ? `#${rr[0]}${gg[0]}${bb[0]}` : `#${rr}${gg}${bb}`;
+    return `${attr}="${hex}"`;
+  });
+}
+
 /**
  * Optimize an imagetracerjs SVG string. Operates on the raw string with
  * targeted regexes (the structure is known and machine-generated), so it is
@@ -46,6 +63,7 @@ export function optimizeSvg(svg: string, opts: OptimizeOptions = {}): string {
     dropDefaultOpacity = true,
     coordDecimals,
     compressPaths = true,
+    minifyColors = true,
     sealSeams,
   } = opts;
 
@@ -84,8 +102,15 @@ export function optimizeSvg(svg: string, opts: OptimizeOptions = {}): string {
     out = out.replace(/d="([^"]*)"/g, (_full, d: string) => `d="${compressPathData(d)}"`);
   }
 
+  if (minifyColors) {
+    out = minifyRgbColors(out);
+  }
+
   // Collapse runs of whitespace between tags/attributes that the above may leave.
-  out = out.replace(/[ \t]{2,}/g, ' ');
+  out = out
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/>\s+</g, '><')
+    .trim();
 
   return out;
 }

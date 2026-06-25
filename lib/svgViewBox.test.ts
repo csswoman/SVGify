@@ -1,5 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { readSvgViewBox, serializeSvgAtBaseViewBox } from './svgViewBox';
+import {
+  centeredZoomOffset,
+  clampZoomOffset,
+  readSvgViewBox,
+  serializeSvgAtBaseViewBox,
+  zoomOffsetPreservingCenter,
+} from './svgViewBox';
 
 class TestSVGElement {
   viewBox = { baseVal: { x: 0, y: 0, width: 100, height: 80 } };
@@ -51,5 +57,32 @@ describe('svgViewBox helpers', () => {
     svg.setAttribute('viewBox', '0 0 64 64');
 
     expect(readSvgViewBox(svg)).toEqual({ x: 0, y: 0, w: 64, h: 64 });
+  });
+
+  it('centers the zoom window when scale is below 1', () => {
+    const base = { x: 0, y: 0, w: 100, h: 80 };
+
+    expect(centeredZoomOffset(base, 0.8)).toEqual({ x: -12.5, y: -10 });
+  });
+
+  it('centers the zoom window when scale is above 1', () => {
+    const base = { x: 0, y: 0, w: 100, h: 80 };
+
+    expect(centeredZoomOffset(base, 2)).toEqual({ x: 25, y: 20 });
+  });
+
+  it('preserves the viewport center when zooming in', () => {
+    const base = { x: 0, y: 0, w: 100, h: 80 };
+    const panned = { x: 30, y: 20 };
+
+    expect(zoomOffsetPreservingCenter(base, 2, 4, panned)).toEqual({ x: 42.5, y: 30 });
+  });
+
+  it('clamps pan offsets for zoomed-out and zoomed-in windows', () => {
+    const base = { x: 0, y: 0, w: 100, h: 80 };
+
+    expect(clampZoomOffset(base, 0.8, 0, 0)).toEqual({ x: 0, y: 0 });
+    expect(clampZoomOffset(base, 0.8, -30, -30)).toEqual({ x: -25, y: -20 });
+    expect(clampZoomOffset(base, 2, 100, 100)).toEqual({ x: 50, y: 40 });
   });
 });

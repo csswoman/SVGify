@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { removeExposedNearWhiteFringe } from './backgroundRemoval';
 import {
   buildIconTracePalette,
   ICON_VECTOR_PALETTE,
@@ -9,6 +10,7 @@ import {
   quantizeImageToIconPalette,
   removeNearWhitePixels,
   removeNearWhiteSvgPaths,
+  removeSmallNearWhiteSvgPaths,
   removeSmallSvgPathsByBounds,
   snapSvgToIconPalette,
 } from './iconVectorization';
@@ -103,6 +105,66 @@ describe('icon vectorization helpers', () => {
     expect(output.data[3]).toBe(0);
     expect(output.data[4 * 4 + 3]).toBe(255);
     expect(output.data[4 * 4]).toBe(255);
+  });
+
+  it('preserves internal near-white fills surrounded by other colors', () => {
+    const white = [255, 255, 255, 255] as const;
+    const red = [200, 50, 50, 255] as const;
+    const pixels: number[] = [];
+
+    // 5×5: white border, red ring, internal white center enclosed by red.
+    for (let y = 0; y < 5; y++) {
+      for (let x = 0; x < 5; x++) {
+        const onBorder = x === 0 || y === 0 || x === 4 || y === 4;
+        const onRedRing = !onBorder && (x === 1 || x === 3 || y === 1 || y === 3);
+        const isCenter = x === 2 && y === 2;
+        const color = onBorder ? white : onRedRing ? red : isCenter ? white : red;
+        pixels.push(...color);
+      }
+    }
+
+    const input = new ImageData(new Uint8ClampedArray(pixels), 5, 5);
+    const output = prepareIconSourceImage(input);
+
+    // External white border removed
+    expect(output.data[3]).toBe(0);
+    // Internal white center preserved
+    const center = (2 * 5 + 2) * 4;
+    expect(output.data[center]).toBe(255);
+    expect(output.data[center + 1]).toBe(255);
+    expect(output.data[center + 2]).toBe(255);
+    expect(output.data[center + 3]).toBe(255);
+  });
+
+  it('peels exposed near-white halos touching transparency', () => {
+    const input = new ImageData(
+      new Uint8ClampedArray([
+        0, 0, 0, 0, 252, 252, 250, 255, 255, 246, 214, 255,
+      ]),
+      3,
+      1
+    );
+
+    const output = removeExposedNearWhiteFringe(input);
+
+    expect(output.data[7]).toBe(0);
+    expect(output.data[11]).toBe(255);
+  });
+
+  it('removes only small near-white SVG paths', () => {
+    const svg = [
+      '<svg viewBox="0 0 10 10">',
+      '<path fill="rgb(255,255,255)" d="M0 0L1 0L1 1Z"/>',
+      '<path fill="rgb(255,255,255)" d="M0 0L100 0L100 80L0 80Z"/>',
+      '<path fill="rgb(18,18,20)" d="M2 0L3 0L3 1Z"/>',
+      '</svg>',
+    ].join('');
+
+    const cleaned = removeSmallNearWhiteSvgPaths(svg, 2);
+
+    expect(cleaned).not.toContain('fill="rgb(255,255,255)" d="M0 0L1 0L1 1Z"');
+    expect(cleaned).toContain('M0 0L100 0L100 80L0 80Z');
+    expect(cleaned).toContain('rgb(18,18,20)');
   });
 
   it('quantizes visible pixels to icon palette colors without mutating input image data', () => {
@@ -228,6 +290,15 @@ describe('icon vectorization helpers', () => {
     const svg = `<svg viewBox="0 0 100 80">${largePath}</svg>`;
 
     expect(removeSmallSvgPathsByBounds(svg, 2)).toBe(svg);
+  });
+
+  it('preserves small paths painted with drop-shadow grays', () => {
+    const shadowPath = '<path fill="rgb(180,180,180)" d="M0 0L1 0L1 1Z"/>';
+    const svg = `<svg viewBox="0 0 10 10">${shadowPath}</svg>`;
+    const shadow = [{ r: 180, g: 180, b: 180 }];
+
+    expect(removeSmallSvgPathsByBounds(svg, 24, shadow)).toContain(shadowPath);
+    expect(removeSmallSvgPathsByBounds(svg, 24)).not.toContain('<path');
   });
 
   it('returns the trace palette with full alpha', () => {

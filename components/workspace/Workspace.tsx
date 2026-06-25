@@ -29,16 +29,18 @@ export function Workspace() {
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  const handleSvgReady = useCallback((svg: string) => {
-    setSvgString(svg);
-    setZoomViewport(DEFAULT_ZOOM_VIEWPORT);
-    setActiveTool('eyedropper');
-  }, []);
-
   const vectorizeSession = useVectorizeSession({
     imageData,
-    onSvgReady: handleSvgReady,
+    enabled: activeTool === 'vectorize',
   });
+
+  const handleResetDocument = useCallback(() => {
+    setImageData(null);
+    setSvgString(null);
+    setSelectedColor(null);
+    setZoomViewport(DEFAULT_ZOOM_VIEWPORT);
+    setActiveTool('import');
+  }, []);
 
   const editor = useWorkspaceSvg({
     svgString,
@@ -47,14 +49,20 @@ export function Workspace() {
     onSvgChange: setSvgString,
   });
 
-  const shapeTools = useWorkspaceShapeTools(editor, activeTool);
+  const shapeTools = useWorkspaceShapeTools(editor);
   const labelTools = useWorkspaceLabels(editor, activeTool);
   const document = { imageData, svgString };
 
-  const handleToolChange = useCallback((tool: WorkspaceTool) => {
-    setActiveTool(tool);
-    setInspectorOpen(true);
-  }, []);
+  const handleToolChange = useCallback(
+    (tool: WorkspaceTool) => {
+      if (activeTool === 'vectorize' && tool !== 'vectorize' && vectorizeSession.svg) {
+        setSvgString(vectorizeSession.svg);
+      }
+      setActiveTool(tool);
+      setInspectorOpen(true);
+    },
+    [activeTool, vectorizeSession.svg]
+  );
 
   useWorkspaceShortcuts({
     document,
@@ -66,11 +74,10 @@ export function Workspace() {
 
   const pathCount = svgString ? countPaths(svgString) : 0;
   const byteSize = svgString ? svgByteSize(svgString) : 0;
-  const zoomPercent = Math.round(zoomViewport.scale * 100);
 
   return (
     <ErrorBoundary>
-      <div className="flex h-[calc(100vh-7rem)] min-h-[32rem] flex-col overflow-hidden rounded-xl border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900">
+      <div className="flex h-[calc(100vh-7rem)] min-h-[46rem] flex-col overflow-hidden rounded-xl border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900">
         <TopBar
           svgString={svgString}
           labels={labelTools.labels}
@@ -112,15 +119,13 @@ export function Workspace() {
             editor={svgString ? editor : null}
             shapeTools={shapeTools}
             labelTools={labelTools}
-            previewBackground={previewBackground}
             selectedColor={selectedColor}
             fillColor={fillColor}
             open={inspectorOpen}
             onClose={() => setInspectorOpen(false)}
             onSelectedColorChange={setSelectedColor}
             onFillColorChange={setFillColor}
-            onPreviewBackgroundChange={setPreviewBackground}
-            onImageData={setImageData}
+            onResetDocument={handleResetDocument}
             onSvgString={setSvgString}
             onToolChange={handleToolChange}
           />
@@ -128,9 +133,15 @@ export function Workspace() {
         <StatusBar
           pathCount={pathCount}
           byteSize={byteSize}
-          zoomPercent={zoomPercent}
           activeTool={activeTool}
           statusMessage={statusMessage}
+          hasSvg={svgString !== null}
+          zoomScale={editor?.zoom.scale}
+          onZoomIn={editor ? () => editor.zoom.zoomIn() : undefined}
+          onZoomOut={editor ? () => editor.zoom.zoomOut() : undefined}
+          onZoomReset={editor ? () => editor.zoom.reset() : undefined}
+          previewBackground={previewBackground}
+          onPreviewBackgroundChange={setPreviewBackground}
         />
       </div>
     </ErrorBoundary>

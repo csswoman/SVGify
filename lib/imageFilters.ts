@@ -102,6 +102,11 @@ export function morphOpenAlpha(imageData: ImageData, radius: number): ImageData 
   return morphAlpha(morphAlpha(imageData, radius, 'erode'), radius, 'dilate');
 }
 
+export function morphErodeAlpha(imageData: ImageData, radius: number): ImageData {
+  if (radius <= 0) return imageData;
+  return morphAlpha(imageData, radius, 'erode');
+}
+
 export function morphCloseAlpha(imageData: ImageData, radius: number): ImageData {
   if (radius <= 0) return imageData;
   return morphAlpha(morphAlpha(imageData, radius, 'dilate'), radius, 'erode');
@@ -109,13 +114,15 @@ export function morphCloseAlpha(imageData: ImageData, radius: number): ImageData
 
 /** Blur + close + binarize alpha for a cleaner outer silhouette. */
 export function buildIconSilhouette(imageData: ImageData, blurRadius: number): ImageData {
-  const blurred = applyBlur(imageData, blurRadius);
-  const morphRadius = blurRadius > 0 ? Math.min(2, Math.ceil(blurRadius / 2)) : 0;
+  // Expand semi-transparent pixels first so drop shadows survive edge blur.
+  const expanded = morphCloseAlpha(imageData, 1);
+  const blurred = blurRadius > 0 ? applyBlur(expanded, blurRadius) : expanded;
+  const morphRadius = blurRadius > 0 ? Math.min(2, Math.ceil(blurRadius / 2)) : 1;
   const closed = morphCloseAlpha(blurred, morphRadius);
   const out = new ImageData(new Uint8ClampedArray(closed.data), closed.width, closed.height);
 
   for (let i = 0; i < out.data.length; i += 4) {
-    out.data[i + 3] = out.data[i + 3] >= 128 ? 255 : 0;
+    out.data[i + 3] = out.data[i + 3] >= 40 ? 255 : 0;
   }
 
   return out;

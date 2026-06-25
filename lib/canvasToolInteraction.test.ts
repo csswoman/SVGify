@@ -21,6 +21,9 @@ describe('parsePathFill', () => {
   it('returns null for missing fill', () => {
     expect(parsePathFill(mockPath('none'))).toBeNull();
   });
+  it('parses hex fill', () => {
+    expect(parsePathFill(mockPath('#ff0000'))).toEqual(red);
+  });
 });
 
 describe('routePathClick', () => {

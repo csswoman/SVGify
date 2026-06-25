@@ -2,14 +2,16 @@
 
 import { useEffect, useRef } from 'react';
 import { sanitizeSvgString } from '@/lib/sanitize';
+import type { CanvasDisplaySize } from '@/lib/canvasDisplaySize';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 interface SvgPreviewProps {
   svgString: string | null;
+  displaySize?: CanvasDisplaySize | null;
   onPathClick?: (pathEl: SVGPathElement) => void;
 }
 
-function SvgPreviewInner({ svgString, onPathClick }: SvgPreviewProps) {
+function SvgPreviewInner({ svgString, displaySize, onPathClick }: SvgPreviewProps) {
   // Separate refs: one for the imperative SVG mount zone, one for the placeholder
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -69,9 +71,13 @@ function SvgPreviewInner({ svgString, onPathClick }: SvgPreviewProps) {
   }, [svgString, onPathClick]);
 
   return (
-    // Outer wrapper: React owns this level (no ref, no imperative mutation)
     <div
-      className="transparent-preview w-full min-h-72 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden relative"
+      className={`transparent-preview relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700${
+        displaySize ? ' mx-auto w-fit max-w-full' : ' w-full min-h-72'
+      }`}
+      style={
+        displaySize ? { width: displaySize.width, height: displaySize.height } : undefined
+      }
       aria-label="SVG preview"
     >
       {/* Placeholder: React-managed, shown only when there is no SVG yet */}

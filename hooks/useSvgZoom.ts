@@ -10,6 +10,7 @@ import {
   clampZoomOffset,
   readSvgViewBox,
   serializeSvgAtBaseViewBox,
+  zoomOffsetPreservingCenter,
   zoomViewBoxSize,
   type SvgBaseViewBox,
 } from '@/lib/svgViewBox';
@@ -43,6 +44,7 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
   const panRef = useRef<{ active: boolean; x: number; y: number }>({ active: false, x: 0, y: 0 });
 
   const [scale, setScale] = useState(initialViewport.scale);
+  const scaleRef = useRef(initialViewport.scale);
   const offset = useRef({ x: initialViewport.offsetX, y: initialViewport.offsetY });
 
   useEffect(() => {
@@ -92,6 +94,7 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
         isDefaultOffset && nextScale <= 1
           ? centeredZoomOffset(base, nextScale)
           : clampZoomOffset(base, nextScale, viewport.offsetX, viewport.offsetY);
+      scaleRef.current = nextScale;
       setScale(nextScale);
       svg.setAttribute('viewBox', `${base.x} ${base.y} ${base.w} ${base.h}`);
       apply(nextScale, offset.current.x, offset.current.y);
@@ -103,12 +106,16 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
   );
 
   const setZoom = useCallback(
-    (next: number) => {
+    (next: number, options?: { recenter?: boolean }) => {
       const clamped = Math.min(MAX_ZOOM_SCALE, Math.max(MIN_ZOOM_SCALE, next));
       const base = baseRef.current;
+      const previousScale = scaleRef.current;
       if (base) {
-        offset.current = centeredZoomOffset(base, clamped);
+        offset.current = options?.recenter
+          ? centeredZoomOffset(base, clamped)
+          : zoomOffsetPreservingCenter(base, previousScale, clamped, offset.current);
       }
+      scaleRef.current = clamped;
       setScale(clamped);
       apply(clamped, offset.current.x, offset.current.y);
       emitViewport(clamped, offset.current.x, offset.current.y);
@@ -116,10 +123,10 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
     [apply, emitViewport]
   );
 
-  const zoomIn = useCallback(() => setZoom(scale * 1.3), [scale, setZoom]);
-  const zoomOut = useCallback(() => setZoom(scale / 1.3), [scale, setZoom]);
+  const zoomIn = useCallback(() => setZoom(scaleRef.current * 1.3), [setZoom]);
+  const zoomOut = useCallback(() => setZoom(scaleRef.current / 1.3), [setZoom]);
   const reset = useCallback(() => {
-    setZoom(DEFAULT_ZOOM_SCALE);
+    setZoom(DEFAULT_ZOOM_SCALE, { recenter: true });
   }, [setZoom]);
 
   const pan = useCallback(

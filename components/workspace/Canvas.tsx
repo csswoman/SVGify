@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ImageDropzone } from '@/components/upload/ImageDropzone';
 import { ImagePreview } from '@/components/vectorize/ImagePreview';
@@ -72,14 +72,17 @@ export function Canvas({
   const { t } = useI18n();
   const canvasPanelRef = useRef<HTMLElement>(null);
   const vectorizePanelRef = useRef<HTMLElement>(null);
+  const [showOriginalPreview, setShowOriginalPreview] = useState(false);
   const displaySize = useCanvasDisplaySize({
     svgEl: editor?.svgEl ?? null,
-    panelRef: canvasPanelRef,
   });
+  const isVectorizeView = activeTool === 'vectorize';
+  const canEdit = svgString !== null && editor !== null;
   const vectorizePreviewSizes = useVectorizePreviewSizes({
     panelRef: vectorizePanelRef,
-    imageData: activeTool === 'vectorize' ? vectorizeSession.processedImageData : null,
-    svgString: activeTool === 'vectorize' ? vectorizeSession.svg : null,
+    imageData: isVectorizeView ? vectorizeSession.processedImageData : null,
+    svgString: isVectorizeView ? vectorizeSession.svg : null,
+    twoColumns: showOriginalPreview,
   });
   const { replaceColor } = useSvgColors(editor?.svgEl ?? null);
   const handleCanvasStatusMessage = useCallback(
@@ -130,62 +133,13 @@ export function Canvas({
           </div>
         )}
         <div className="w-full max-w-lg">
-          <ImageDropzone
-            onImageData={handleUpload}
-            onError={onUploadError}
-          />
+          <ImageDropzone onImageData={handleUpload} onError={onUploadError} />
         </div>
       </section>
     );
   }
 
-  if (activeTool === 'vectorize') {
-    const { processedImageData, svg, removeBg, handlePick, seeds, error } = vectorizeSession;
-
-    return (
-      <section
-        ref={vectorizePanelRef}
-        aria-label={t('workspace.canvas')}
-        className="min-w-0 flex-1 overflow-y-auto bg-gray-200/60 p-4 dark:bg-gray-950/60"
-      >
-        {error && (
-          <div
-            role="alert"
-            className="mb-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300"
-          >
-            {error}
-          </div>
-        )}
-        {processedImageData && (
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <ImagePreview
-              imageData={processedImageData}
-              displaySize={vectorizePreviewSizes.image}
-              label={removeBg ? t('vec.originalPick') : t('vec.original')}
-              onPick={removeBg ? handlePick : undefined}
-              seeds={removeBg ? seeds : undefined}
-            />
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-                {t('vec.vector')}
-                {svg && (
-                  <span className="ml-2 font-normal text-gray-500 dark:text-gray-400">
-                    ({formatBytes(svgByteSize(svg))})
-                  </span>
-                )}
-              </p>
-              <SvgPreview svgString={svg} displaySize={vectorizePreviewSizes.svg} />
-            </div>
-            <div className="xl:col-span-2">
-              <PalettePreview svg={svg} />
-            </div>
-          </div>
-        )}
-      </section>
-    );
-  }
-
-  if (!svgString || !editor) {
+  if (!isVectorizeView && !canEdit) {
     return (
       <section
         aria-label={t('workspace.canvas')}
@@ -196,55 +150,109 @@ export function Canvas({
     );
   }
 
-  const { containerRef, zoom, pushSnapshot, svgEl } = editor;
-  const { selectedPath, brushColor, brushSize } = shapeTools;
+  const { processedImageData, svg, removeBg, handlePick, seeds, error } = vectorizeSession;
   const previewStyle = previewBackground === 'black' ? BLACK_BG : CHECKERBOARD_BG;
-  const useTransparent =
-    activeTool === 'zoom' ||
-    activeTool === 'eyedropper' ||
-    activeTool === 'labels';
-
+  const { containerRef, zoom, pushSnapshot, svgEl } = editor ?? {
+    containerRef: { current: null },
+    zoom: null,
+    pushSnapshot: () => {},
+    svgEl: null,
+  };
+  const { selectedPath, brushColor, brushSize } = shapeTools;
   const svgForPortals = svgEl as SVGSVGElement | null;
+  const showEditorSurface = canEdit && !isVectorizeView;
 
   return (
     <section
-      ref={canvasPanelRef}
+      ref={isVectorizeView ? vectorizePanelRef : canvasPanelRef}
       aria-label={t('workspace.canvas')}
-      className="min-w-0 flex-1 overflow-y-auto bg-gray-200/60 p-4 dark:bg-gray-950/60"
+      className="relative min-w-0 flex-1 overflow-y-auto bg-gray-200/60 p-4 dark:bg-gray-950/60"
     >
-      <ZoomableSvgViewport
-        containerRef={containerRef}
-        zoom={zoom}
-        displaySize={displaySize}
-        onClick={handleCanvasClick}
-        onMouseMove={handleCanvasMouseMove}
-        className={`relative flex items-center justify-center overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 ${
-          useTransparent ? 'transparent-preview' : ''
-        }`}
-        style={{
-          ...(useTransparent ? undefined : previewStyle),
-          cursor: activeTool === 'zoom' ? undefined : cursor,
-        }}
-        aria-label="SVG editor canvas"
-      />
-      {svgForPortals &&
-        activeTool === 'nodes' &&
-        selectedPath &&
-        createPortal(
-          <NodeEditor pathEl={selectedPath} svgEl={svgForPortals} onChange={pushSnapshot} />,
-          svgForPortals
-        )}
-      {svgForPortals &&
-        activeTool === 'brush' &&
-        createPortal(
-          <BrushEditor
-            svgEl={svgForPortals}
-            color={brushColor}
-            size={brushSize}
-            onChange={pushSnapshot}
-          />,
-          svgForPortals
-        )}
+      {isVectorizeView && (
+        <>
+          {error && (
+            <div
+              role="alert"
+              className="mb-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300"
+            >
+              {error}
+            </div>
+          )}
+          {processedImageData && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    {t('vec.vector')}
+                    {svg && (
+                      <span className="ml-2 font-normal text-gray-500 dark:text-gray-400">
+                        ({formatBytes(svgByteSize(svg))})
+                      </span>
+                    )}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowOriginalPreview((value) => !value)}
+                    className="focus-ring rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                    aria-expanded={showOriginalPreview}
+                  >
+                    {showOriginalPreview ? t('vec.hideOriginal') : t('vec.showOriginal')}
+                  </button>
+                </div>
+                <SvgPreview svgString={svg} displaySize={vectorizePreviewSizes.svg} />
+              </div>
+              {showOriginalPreview && (
+                <ImagePreview
+                  imageData={processedImageData}
+                  displaySize={vectorizePreviewSizes.image}
+                  label={removeBg ? t('vec.originalPick') : t('vec.original')}
+                  onPick={removeBg ? handlePick : undefined}
+                  seeds={removeBg ? seeds : undefined}
+                />
+              )}
+              <PalettePreview svg={svg} />
+            </div>
+          )}
+        </>
+      )}
+
+      {canEdit && zoom && (
+        <div className={isVectorizeView ? 'hidden' : undefined} aria-hidden={isVectorizeView}>
+          <ZoomableSvgViewport
+            containerRef={containerRef}
+            zoom={zoom}
+            displaySize={displaySize}
+            onClick={showEditorSurface ? handleCanvasClick : undefined}
+            onMouseMove={showEditorSurface ? handleCanvasMouseMove : undefined}
+            className="relative flex items-center justify-center overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
+            style={{
+              ...previewStyle,
+              cursor: showEditorSurface ? cursor : undefined,
+            }}
+            aria-label="SVG editor canvas"
+          />
+          {showEditorSurface &&
+            svgForPortals &&
+            activeTool === 'nodes' &&
+            selectedPath &&
+            createPortal(
+              <NodeEditor pathEl={selectedPath} svgEl={svgForPortals} onChange={pushSnapshot} />,
+              svgForPortals
+            )}
+          {showEditorSurface &&
+            svgForPortals &&
+            activeTool === 'brush' &&
+            createPortal(
+              <BrushEditor
+                svgEl={svgForPortals}
+                color={brushColor}
+                size={brushSize}
+                onChange={pushSnapshot}
+              />,
+              svgForPortals
+            )}
+        </div>
+      )}
     </section>
   );
 }

@@ -1,6 +1,6 @@
 import type { WorkspaceDocument, WorkspaceTool } from '@/types/workspace.types';
 
-export type ToolGroupId = 'file' | 'edit' | 'shape' | 'output' | 'view';
+export type ToolGroupId = 'file' | 'edit' | 'shape' | 'output';
 
 export interface WorkspaceToolMeta {
   id: WorkspaceTool;
@@ -29,6 +29,11 @@ export const WORKSPACE_TOOL_GROUPS: WorkspaceToolGroup[] = [
     ],
   },
   {
+    id: 'output',
+    requiresSvg: true,
+    tools: [{ id: 'optimize' }],
+  },
+  {
     id: 'shape',
     requiresSvg: true,
     tools: [
@@ -37,16 +42,6 @@ export const WORKSPACE_TOOL_GROUPS: WorkspaceToolGroup[] = [
       { id: 'nodes', shortcut: 'A' },
       { id: 'labels', shortcut: 'L' },
     ],
-  },
-  {
-    id: 'output',
-    requiresSvg: true,
-    tools: [{ id: 'optimize' }],
-  },
-  {
-    id: 'view',
-    requiresSvg: true,
-    tools: [{ id: 'zoom', shortcut: 'Z' }],
   },
 ];
 
@@ -60,7 +55,7 @@ const SVG_TOOLS = new Set<WorkspaceTool>(
 
 const KEY_MAP: Record<string, WorkspaceTool> = {
   i: 'eyedropper', g: 'fill', e: 'erase',
-  b: 'brush', a: 'nodes', l: 'labels', z: 'zoom',
+  b: 'brush', a: 'nodes', l: 'labels',
 };
 
 export function isToolEnabled(tool: WorkspaceTool, doc: WorkspaceDocument): boolean {

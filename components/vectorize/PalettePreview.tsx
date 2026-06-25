@@ -22,9 +22,9 @@ export function PalettePreview({ svg }: PalettePreviewProps) {
 
   return (
     <div className="space-y-2">
-      <p className="flex items-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+      <p className="flex items-center text-xs font-semibold text-gray-600 dark:text-gray-400">
         {t('vec.palette')}
-        <span className="ml-2 normal-case font-normal text-gray-400 dark:text-gray-500">
+        <span className="ml-2 font-normal text-gray-500 dark:text-gray-400">
           {palette.length} {palette.length === 1 ? t('vec.color') : t('vec.colors')}
         </span>
       </p>

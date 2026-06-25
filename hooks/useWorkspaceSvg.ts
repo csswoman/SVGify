@@ -84,14 +84,31 @@ export function useWorkspaceSvg({
   }, [serializeMountedSvg, onSvgChange]);
 
   useEffect(() => {
-    if (!svgString) return;
+    if (!svgString) {
+      containerRef.current?.replaceChildren();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- state mirrors the mounted SVG DOM lifecycle
+      setSvgEl(null);
+      setHistory([]);
+      historyRef.current = [];
+      setHistoryIndex(-1);
+      historyIndexRef.current = -1;
+      return;
+    }
+
+    const container = containerRef.current;
+    const hasLiveSvg = container?.querySelector('svg') != null;
+
+    if (hasLiveSvg) {
+      const mounted = serializeMountedSvg();
+      if (mounted === svgString) return;
+    }
+
     mountSvg(svgString);
     setHistory([svgString]);
     historyRef.current = [svgString];
     setHistoryIndex(0);
     historyIndexRef.current = 0;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when source document changes
-  }, [svgString]);
+  }, [svgString, mountSvg, serializeMountedSvg]);
 
   const restore = useCallback(
     (index: number) => {

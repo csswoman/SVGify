@@ -1,15 +1,18 @@
 'use client';
 
 import { VectorizeSettingsPanel } from '@/components/vectorize/VectorizeSettings';
+import { EditablePalette } from '@/components/vectorize/EditablePalette';
+import { WorkflowSteps } from '@/components/workspace/WorkflowSteps';
 import { Tooltip } from '@/components/shared/Tooltip';
 import type { useVectorizeSession } from '@/hooks/useVectorizeSession';
 import { useI18n } from '@/lib/i18n';
 
 interface VectorizeInspectorProps {
   session: ReturnType<typeof useVectorizeSession>;
+  onContinueToEdit: () => void;
 }
 
-export function VectorizeInspector({ session }: VectorizeInspectorProps) {
+export function VectorizeInspector({ session, onContinueToEdit }: VectorizeInspectorProps) {
   const { t } = useI18n();
   const {
     settings,
@@ -22,15 +25,26 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
     setContiguous,
     seeds,
     setSeeds,
+    paletteColors,
+    selectedPaletteColor,
+    selectPaletteColor,
+    updateSelectedPaletteColor,
+    deletePaletteColor,
+    mergeSimilarPaletteColors,
+    resetPalette,
+    svg,
     error,
     isLoading,
   } = session;
 
   return (
     <div className="space-y-5">
-      <div>
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('vec.title')}</h2>
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('vec.subtitle')}</p>
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('vec.title')}</h2>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('vec.subtitle')}</p>
+        </div>
+        <WorkflowSteps activeStep={2} />
       </div>
 
       {error && (
@@ -44,6 +58,16 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
 
       <VectorizeSettingsPanel settings={settings} onSettingsChange={updateSettings} />
 
+      <EditablePalette
+        colors={paletteColors}
+        selectedColor={selectedPaletteColor}
+        onSelectColor={selectPaletteColor}
+        onChangeSelectedColor={updateSelectedPaletteColor}
+        onDeleteColor={deletePaletteColor}
+        onMergeSimilar={mergeSimilarPaletteColors}
+        onReset={resetPalette}
+      />
+
       <div className="space-y-3 border-t border-gray-100 pt-4 dark:border-gray-700">
         <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
           <input
@@ -54,7 +78,7 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
           />
           {t('bg.remove')}
         </label>
-        <p className="text-xs text-gray-400 dark:text-gray-500">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           {seeds.length > 0 ? t('bg.picking') : t('bg.auto')}
         </p>
         {removeBg && (
@@ -88,7 +112,7 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
               <button
                 type="button"
                 onClick={() => setSeeds([])}
-                className="text-sm text-blue-600 transition hover:text-blue-800"
+                className="focus-ring rounded text-sm text-blue-600 transition hover:text-blue-800"
               >
                 ✕ {t('bg.clear')} ({seeds.length})
               </button>
@@ -97,9 +121,19 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
         )}
       </div>
 
-      <p className="text-center text-xs text-gray-400 dark:text-gray-500">
+      <p className="text-center text-xs text-gray-500 dark:text-gray-400">
         {isLoading ? t('vec.vectorizing') : t('vec.auto')}
       </p>
+
+      {svg && !isLoading && (
+        <button
+          type="button"
+          onClick={onContinueToEdit}
+          className="focus-ring w-full rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700"
+        >
+          {t('workspace.continueToColors')}
+        </button>
+      )}
     </div>
   );
 }

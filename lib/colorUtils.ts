@@ -1,6 +1,15 @@
 import { RGBColor } from '@/types/svg.types';
 
 export function hexToRgb(hex: string): RGBColor | null {
+  const short = /^#?([a-f\d])([a-f\d])([a-f\d])$/i.exec(hex);
+  if (short) {
+    return {
+      r: parseInt(short[1] + short[1], 16),
+      g: parseInt(short[2] + short[2], 16),
+      b: parseInt(short[3] + short[3], 16),
+    };
+  }
+
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) return null;
   return {
@@ -25,6 +34,9 @@ export function luminance(c: RGBColor): number {
 }
 
 export function parseRgbString(str: string): RGBColor | null {
+  const hex = hexToRgb(str);
+  if (hex) return hex;
+
   const match = /rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\s*\)/.exec(str);
   if (!match) return null;
   return {
@@ -74,10 +86,11 @@ export function extractColorsFromSvg(svg: SVGElement): RGBColor[] {
 function collectSvgStringColors(svg: string): RGBColor[] {
   const colors: RGBColor[] = [];
   const seen = new Set<string>();
-  const re = /\b(?:fill|stroke)="rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\s*\)"/g;
+  const re = /\b(?:fill|stroke)="(#[0-9a-f]{3}|#[0-9a-f]{6}|rgba?\(\s*\d+,\s*\d+,\s*\d+(?:,\s*[\d.]+)?\s*\))"/gi;
   let m: RegExpExecArray | null;
   while ((m = re.exec(svg)) !== null) {
-    const color = { r: Number(m[1]), g: Number(m[2]), b: Number(m[3]) };
+    const color = parseRgbString(m[1]);
+    if (!color) continue;
     const hex = rgbToHex(color);
     if (!seen.has(hex)) {
       seen.add(hex);
@@ -156,10 +169,11 @@ export function buildColorMergeMap(
 ): Map<string, RGBColor> {
   // Count usage of each color so the dominant shade wins.
   const counts = new Map<string, { color: RGBColor; n: number }>();
-  const re = /fill="rgb\((\d+),\s*(\d+),\s*(\d+)\)"/g;
+  const re = /fill="(#[0-9a-f]{3}|#[0-9a-f]{6}|rgb\(\s*\d+,\s*\d+,\s*\d+\s*\))"/gi;
   let m: RegExpExecArray | null;
   while ((m = re.exec(svg)) !== null) {
-    const color = { r: Number(m[1]), g: Number(m[2]), b: Number(m[3]) };
+    const color = parseRgbString(m[1]);
+    if (!color) continue;
     const hex = rgbToHex(color);
     const entry = counts.get(hex);
     if (entry) entry.n++;
@@ -192,9 +206,11 @@ export function applyColorMergeToSvgString(
   map: Map<string, RGBColor>
 ): string {
   return svg.replace(
-    /(fill|stroke)="rgb\((\d+),\s*(\d+),\s*(\d+)\)"/g,
-    (full, attr: string, r: string, g: string, b: string) => {
-      const hex = rgbToHex({ r: Number(r), g: Number(g), b: Number(b) });
+    /(fill|stroke)="(#[0-9a-f]{3}|#[0-9a-f]{6}|rgb\(\s*\d+,\s*\d+,\s*\d+\s*\))"/gi,
+    (full, attr: string, value: string) => {
+      const color = parseRgbString(value);
+      if (!color) return full;
+      const hex = rgbToHex(color);
       const rep = map.get(hex);
       return rep ? `${attr}="${rgbToString(rep)}"` : full;
     }

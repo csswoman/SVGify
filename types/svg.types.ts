@@ -39,7 +39,7 @@ export const DEFAULT_ZOOM_VIEWPORT: SvgZoomViewport = {
 };
 
 export interface VectorizeSettings {
-  numberofcolors: number;      // 2-12
+  numberofcolors: number;      // 2-24
   customPalette?: RGBColor[];  // User-approved palette for icon mode
   ltres: number;               // 0.1-5
   qtres: number;               // 0.1-5
@@ -51,14 +51,14 @@ export interface VectorizeSettings {
 }
 
 export const VECTORIZE_DEFAULTS: VectorizeSettings = {
-  numberofcolors: 5,
+  numberofcolors: 12,
   ltres: 1.2,
   qtres: 1,
   strokewidth: 1,
   scale: 1,
-  pathomit: 36,
-  roundcoords: 2,
-  blurRadius: 2,
+  pathomit: 18,
+  roundcoords: 1,
+  blurRadius: 1,
 };
 
 export interface WorkerMessage {

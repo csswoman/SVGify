@@ -18,7 +18,7 @@ export function VectorizeSettingsPanel({ settings, onSettingsChange }: Vectorize
     <div className="space-y-6">
       {/* ── Basic ── */}
       <div className="space-y-4">
-        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">{t('set.basic')}</p>
+        <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">{t('set.basic')}</p>
 
         <div>
           <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
@@ -46,7 +46,7 @@ export function VectorizeSettingsPanel({ settings, onSettingsChange }: Vectorize
           <input
             type="range"
             min={2}
-            max={12}
+            max={24}
             value={settings.numberofcolors}
             onChange={(e) =>
               onSettingsChange({ ...settings, numberofcolors: Number(e.target.value) })
@@ -65,7 +65,7 @@ export function VectorizeSettingsPanel({ settings, onSettingsChange }: Vectorize
       <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
         <button
           onClick={() => setShowAdvanced((v) => !v)}
-          className="flex items-center w-full text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide hover:text-gray-600 dark:hover:text-gray-300 transition"
+          className="focus-ring flex w-full items-center text-xs font-semibold text-gray-600 transition hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
           aria-expanded={showAdvanced}
         >
           <span className="mr-1">{showAdvanced ? '▾' : '▸'}</span>
@@ -105,24 +105,6 @@ export function VectorizeSettingsPanel({ settings, onSettingsChange }: Vectorize
                 onChange={(e) => onSettingsChange({ ...settings, qtres: parseFloat(e.target.value) })}
                 className="w-full accent-blue-600"
                 aria-label={`${t('set.detail')}: ${settings.qtres}`}
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('set.stroke')}: <span className="font-mono ml-1">{settings.strokewidth}</span>
-                <Tooltip text={t('set.stroke.help')} label={t('set.stroke')} />
-              </label>
-              <input
-                type="range"
-                min={1}
-                max={5}
-                value={settings.strokewidth}
-                onChange={(e) =>
-                  onSettingsChange({ ...settings, strokewidth: Number(e.target.value) })
-                }
-                className="w-full accent-blue-600"
-                aria-label={`${t('set.stroke')}: ${settings.strokewidth}`}
               />
             </div>
 

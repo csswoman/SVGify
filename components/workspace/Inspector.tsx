@@ -16,7 +16,6 @@ import { NodesInspector } from './inspectors/NodesInspector';
 import { LabelsInspector } from './inspectors/LabelsInspector';
 import { FillInspector } from './inspectors/FillInspector';
 import { OptimizeInspector } from './inspectors/OptimizeInspector';
-import { ZoomInspector } from './inspectors/ZoomInspector';
 import { useI18n } from '@/lib/i18n';
 
 interface InspectorProps {
@@ -27,15 +26,13 @@ interface InspectorProps {
   editor: ReturnType<typeof useWorkspaceSvg> | null;
   shapeTools: ReturnType<typeof useWorkspaceShapeTools>;
   labelTools: ReturnType<typeof useWorkspaceLabels>;
-  previewBackground: 'checkerboard' | 'black';
   selectedColor: RGBColor | null;
   fillColor: RGBColor;
   open: boolean;
   onClose: () => void;
   onSelectedColorChange: (color: RGBColor | null) => void;
   onFillColorChange: (color: RGBColor) => void;
-  onPreviewBackgroundChange: (bg: 'checkerboard' | 'black') => void;
-  onImageData: (data: ImageData | null) => void;
+  onResetDocument: () => void;
   onSvgString: (svg: string) => void;
   onToolChange: (tool: WorkspaceTool) => void;
 }
@@ -48,15 +45,13 @@ export function Inspector({
   editor,
   shapeTools,
   labelTools,
-  previewBackground,
   selectedColor,
   fillColor,
   open,
   onClose,
   onSelectedColorChange,
   onFillColorChange,
-  onPreviewBackgroundChange,
-  onImageData,
+  onResetDocument,
   onSvgString,
   onToolChange,
 }: InspectorProps) {
@@ -82,14 +77,20 @@ export function Inspector({
         {(activeTool === 'import' || !imageData) && (
           <ImportInspector
             hasImage={imageData !== null}
-            onReplace={() => {
-              onImageData(null);
-              onToolChange('import');
-            }}
+            hasSvg={svgString !== null}
+            onReplace={onResetDocument}
           />
         )}
 
-        {activeTool === 'vectorize' && imageData && <VectorizeInspector session={vectorizeSession} />}
+        {activeTool === 'vectorize' && imageData && (
+          <VectorizeInspector
+            session={vectorizeSession}
+            onContinueToEdit={() => {
+              if (vectorizeSession.svg) onSvgString(vectorizeSession.svg);
+              onToolChange('eyedropper');
+            }}
+          />
+        )}
 
         {activeTool === 'eyedropper' && editor && (
           <EyedropperInspector
@@ -103,7 +104,11 @@ export function Inspector({
         )}
 
         {activeTool === 'fill' && (
-          <FillInspector initialColor={fillColor} onFillColorChange={onFillColorChange} />
+          <FillInspector
+            initialColor={fillColor}
+            svgEl={editor?.svgEl ?? null}
+            onFillColorChange={onFillColorChange}
+          />
         )}
 
         {activeTool === 'erase' && editor && (
@@ -126,6 +131,8 @@ export function Inspector({
         {activeTool === 'nodes' && (
           <NodesInspector
             hasSelectedPath={!!shapeTools.selectedPath}
+            nodeCount={shapeTools.selectedNodeCount}
+            onSimplifySelected={shapeTools.simplifySelectedPath}
             onDeselect={() => shapeTools.setSelectedPath(null)}
           />
         )}
@@ -156,12 +163,6 @@ export function Inspector({
           />
         )}
 
-        {activeTool === 'zoom' && (
-          <ZoomInspector
-            previewBackground={previewBackground}
-            onPreviewBackgroundChange={onPreviewBackgroundChange}
-          />
-        )}
       </aside>
     </>
   );

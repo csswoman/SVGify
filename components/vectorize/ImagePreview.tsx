@@ -2,17 +2,19 @@
 
 import { useEffect, useRef } from 'react';
 import type { SeedPoint } from '@/lib/backgroundRemoval';
+import type { CanvasDisplaySize } from '@/lib/canvasDisplaySize';
 
 interface ImagePreviewProps {
   imageData: ImageData;
   label?: string;
+  displaySize?: CanvasDisplaySize | null;
   /** When set, clicking the canvas reports the clicked pixel (in image coords). */
   onPick?: (point: SeedPoint) => void;
   /** Points to mark on the image (already-picked background seeds). */
   seeds?: SeedPoint[];
 }
 
-export function ImagePreview({ imageData, label = 'Original', onPick, seeds }: ImagePreviewProps) {
+export function ImagePreview({ imageData, label = 'Original', displaySize, onPick, seeds }: ImagePreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -52,15 +54,22 @@ export function ImagePreview({ imageData, label = 'Original', onPick, seeds }: I
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{label}</p>
-      <canvas
-        ref={canvasRef}
-        onClick={handleClick}
-        className={`w-full h-auto border border-gray-200 dark:border-gray-700 rounded-lg bg-white${
-          onPick ? ' cursor-crosshair' : ''
-        }`}
-        aria-label={onPick ? `${label} — click the background to remove it` : label}
-      />
+      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">{label}</p>
+      <div
+        className="mx-auto w-fit max-w-full overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700"
+        style={
+          displaySize
+            ? { width: displaySize.width, height: displaySize.height }
+            : undefined
+        }
+      >
+        <canvas
+          ref={canvasRef}
+          onClick={handleClick}
+          className={`block h-full w-full${onPick ? ' cursor-crosshair' : ''}`}
+          aria-label={onPick ? `${label} — click the background to remove it` : label}
+        />
+      </div>
     </div>
   );
 }

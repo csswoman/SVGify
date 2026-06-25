@@ -1,4 +1,4 @@
-import { parseRgbString, rgbToHex } from './colorUtils';
+import { hexToRgb, parseRgbString, rgbToHex } from './colorUtils';
 import type { RGBColor } from '@/types/svg.types';
 import type { WorkspaceTool } from '@/types/workspace.types';
 
@@ -19,7 +19,7 @@ export interface PathClickContext {
 export function parsePathFill(path: SVGPathElement): RGBColor | null {
   const fill = path.getAttribute('fill');
   if (!fill || fill === 'none') return null;
-  return parseRgbString(fill);
+  return parseRgbString(fill) ?? hexToRgb(fill);
 }
 
 export function routePathClick(
@@ -44,7 +44,6 @@ export function routePathClick(
       break;
     case 'erase':
       ctx.removePath(path);
-      ctx.pushSnapshot();
       break;
     case 'nodes':
       ctx.setSelectedPath(path);

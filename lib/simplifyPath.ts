@@ -101,6 +101,51 @@ function parseSubpaths(d: string): Pt[][] {
   return subpaths;
 }
 
+function isClosedSubpath(points: Pt[]): boolean {
+  if (points.length < 3) return false;
+  const first = points[0];
+  const last = points[points.length - 1];
+  return Math.hypot(first.x - last.x, first.y - last.y) < 0.5;
+}
+
+/** Chaikin corner-cutting for closed polylines — rounds pixel-stair edges. */
+function chaikinClosed(points: Pt[], iterations: number): Pt[] {
+  if (points.length < 3 || iterations <= 0) return points;
+  let current = isClosedSubpath(points) ? points.slice(0, -1) : points;
+
+  for (let iter = 0; iter < iterations; iter++) {
+    const next: Pt[] = [];
+    const n = current.length;
+    for (let i = 0; i < n; i++) {
+      const p0 = current[i];
+      const p1 = current[(i + 1) % n];
+      next.push(
+        { x: 0.75 * p0.x + 0.25 * p1.x, y: 0.75 * p0.y + 0.25 * p1.y },
+        { x: 0.25 * p0.x + 0.75 * p1.x, y: 0.25 * p0.y + 0.75 * p1.y }
+      );
+    }
+    current = next;
+  }
+
+  return current;
+}
+
+/**
+ * Smooth jagged traced edges with Chaikin + light RDP. Keeps curves unlike
+ * aggressive simplifySvgPaths used for max compression.
+ */
+export function smoothSvgPaths(svg: string, iterations = 2, epsilon = 0.75, decimals = 2): string {
+  return svg.replace(/d="([^"]*)"/g, (_full, d: string) => {
+    const subpaths = parseSubpaths(d).map((sp) => {
+      if (sp.length < 4) return sp;
+      const rounded = chaikinClosed(sp, iterations);
+      return rdp(rounded.length >= 3 ? [...rounded, rounded[0]] : rounded, epsilon);
+    });
+    const out = subpathsToD(subpaths, decimals);
+    return `d="${out || d}"`;
+  });
+}
+
 /** Serialize simplified subpaths back to a polygonal `d` (M…L…Z per subpath). */
 function subpathsToD(subpaths: Pt[][], decimals: number): string {
   const r = (n: number) => Number(n.toFixed(decimals));
@@ -121,10 +166,13 @@ function subpathsToD(subpaths: Pt[][], decimals: number): string {
  */
 export function simplifySvgPaths(svg: string, epsilon: number, decimals = 0): string {
   return svg.replace(/d="([^"]*)"/g, (_full, d: string) => {
-    const subpaths = parseSubpaths(d).map((sp) => rdp(sp, epsilon));
-    const out = subpathsToD(subpaths, decimals);
-    return `d="${out || d}"`;
+    return `d="${simplifyPathD(d, epsilon, decimals)}"`;
   });
+}
+
+export function simplifyPathD(d: string, epsilon: number, decimals = 0): string {
+  const subpaths = parseSubpaths(d).map((sp) => rdp(sp, epsilon));
+  return subpathsToD(subpaths, decimals) || d;
 }
 
 /** Count total path elements in an SVG string (a proxy for complexity). */
