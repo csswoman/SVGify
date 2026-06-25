@@ -9,9 +9,10 @@ interface SvgPreviewProps {
   svgString: string | null;
   displaySize?: CanvasDisplaySize | null;
   onPathClick?: (pathEl: SVGPathElement) => void;
+  onSvgMount?: (svg: SVGSVGElement | null) => void;
 }
 
-function SvgPreviewInner({ svgString, displaySize, onPathClick }: SvgPreviewProps) {
+function SvgPreviewInner({ svgString, displaySize, onPathClick, onSvgMount }: SvgPreviewProps) {
   // Separate refs: one for the imperative SVG mount zone, one for the placeholder
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -21,6 +22,7 @@ function SvgPreviewInner({ svgString, displaySize, onPathClick }: SvgPreviewProp
 
     if (!svgString) {
       mount.replaceChildren();
+      onSvgMount?.(null);
       return;
     }
 
@@ -59,6 +61,7 @@ function SvgPreviewInner({ svgString, displaySize, onPathClick }: SvgPreviewProp
 
       // Safe imperative mount — React never renders children into mountRef
       mount.replaceChildren(svg);
+      onSvgMount?.(svg as unknown as SVGSVGElement);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       mount.replaceChildren(
@@ -68,7 +71,7 @@ function SvgPreviewInner({ svgString, displaySize, onPathClick }: SvgPreviewProp
         })
       );
     }
-  }, [svgString, onPathClick]);
+  }, [svgString, onPathClick, onSvgMount]);
 
   return (
     <div
