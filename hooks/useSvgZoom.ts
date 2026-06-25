@@ -22,6 +22,7 @@ export interface ZoomState {
 interface UseSvgZoomOptions {
   viewport?: SvgZoomViewport;
   onViewportChange?: (viewport: SvgZoomViewport) => void;
+  containerRef?: React.RefObject<HTMLElement | null>;
 }
 
 const DEFAULT_VIEWPORT: SvgZoomViewport = {
@@ -200,6 +201,18 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
   }, []);
 
   const getBaseViewBox = useCallback(() => baseRef.current, []);
+
+  useEffect(() => {
+    const el = options.containerRef?.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+      setZoom(scaleRef.current * factor);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [options.containerRef, setZoom]);
 
   return {
     attach,
