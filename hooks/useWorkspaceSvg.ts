@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import type { SvgZoomViewport } from '@/types/svg.types';
 import { sanitizeSvgString } from '@/lib/sanitize';
 import { useSvgZoom } from '@/hooks/useSvgZoom';
@@ -20,6 +21,7 @@ export function useWorkspaceSvg({
 }: UseWorkspaceSvgOptions) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [svgEl, setSvgEl] = useState<SVGElement | null>(null);
+  const [isBusy, setIsBusy] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const historyRef = useRef(history);
@@ -68,9 +70,16 @@ export function useWorkspaceSvg({
   );
 
   const pushSnapshot = useCallback(() => {
+    flushSync(() => setIsBusy(true));
     const snapshot = serializeMountedSvg();
-    if (!snapshot) return;
-    if (snapshot === historyRef.current[historyIndexRef.current]) return;
+    if (!snapshot) {
+      setIsBusy(false);
+      return;
+    }
+    if (snapshot === historyRef.current[historyIndexRef.current]) {
+      setIsBusy(false);
+      return;
+    }
     const nextIndex = historyIndexRef.current + 1;
     setHistory((prev) => {
       const base = prev.slice(0, historyIndexRef.current + 1);
@@ -81,6 +90,7 @@ export function useWorkspaceSvg({
     historyIndexRef.current = nextIndex;
     setHistoryIndex(nextIndex);
     onSvgChange?.(snapshot);
+    setIsBusy(false);
   }, [serializeMountedSvg, onSvgChange]);
 
   useEffect(() => {
@@ -142,5 +152,6 @@ export function useWorkspaceSvg({
     canRedo: historyIndex < history.length - 1,
     zoom,
     serializeMountedSvg,
+    isBusy,
   };
 }
