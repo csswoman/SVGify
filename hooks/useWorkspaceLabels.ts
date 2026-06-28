@@ -15,7 +15,7 @@ export function useWorkspaceLabels(
   const isLabelMode = activeTool === 'labels';
 
   const { labels, extractLabels, addLabel } = usePathLabels(editor.svgEl);
-  const { selectPath, clearSelection } = useSvgSelection();
+  const { selectPath, selectPaths, clearSelection } = useSvgSelection();
 
   useEffect(() => {
     if (editor.svgEl) extractLabels();
@@ -44,10 +44,13 @@ export function useWorkspaceLabels(
     (label: string) => {
       if (!editor.svgEl) return;
       setSelectedLabel(label);
-      const path = editor.svgEl.querySelector<SVGPathElement>(`path[data-label="${label}"]`);
-      if (path) selectPath(path, `label-${label}`);
+      const paths = Array.from(
+        editor.svgEl.querySelectorAll<SVGPathElement>(`path[data-label="${label}"]`)
+      );
+      if (paths.length === 1) selectPath(paths[0], `label-${label}`);
+      else if (paths.length > 1) selectPaths(paths, `label-${label}`);
     },
-    [editor.svgEl, selectPath]
+    [editor.svgEl, selectPath, selectPaths]
   );
 
   return {

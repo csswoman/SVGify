@@ -128,12 +128,55 @@ describe('icon layer trace helpers', () => {
       strokewidth: 1,
       scale: 1,
       pathomit: 0,
+      linePathOmit: 0,
       roundcoords: 1,
       blurRadius: 0,
+      blurDelta: 20,
+      traceScale: 1,
+      fillOverlap: 1,
+      lineSmoothing: 1,
+      curveSmoothing: 1,
     });
 
     expect(svg).not.toContain('M0 0H4V4H0');
     expect(svg).toContain('fill="rgb(255,196,20)"');
     expect(svg).toContain('fill="rgb(18,18,20)"');
+  });
+
+  it('stacks dark line colors above light fills', () => {
+    const cream = [255, 246, 214, 255];
+    const line = [68, 50, 29, 255];
+    const pixels: number[] = [];
+
+    for (let y = 0; y < 5; y++) {
+      for (let x = 0; x < 5; x++) {
+        const isBorder = x === 0 || y === 0 || x === 4 || y === 4;
+        pixels.push(...(isBorder ? line : cream));
+      }
+    }
+
+    const input = new ImageData(new Uint8ClampedArray(pixels), 5, 5);
+    const svg = traceIconByColorLayers(input, [
+      { r: 255, g: 246, b: 214 },
+      { r: 68, g: 50, b: 29 },
+    ], {
+      numberofcolors: 2,
+      ltres: 1,
+      qtres: 1,
+      strokewidth: 1,
+      scale: 1,
+      pathomit: 0,
+      linePathOmit: 0,
+      roundcoords: 1,
+      blurRadius: 0,
+      blurDelta: 20,
+      traceScale: 1,
+      fillOverlap: 1,
+      lineSmoothing: 0,
+      curveSmoothing: 0,
+    });
+    const fills = [...svg.matchAll(/fill="([^"]+)"/g)].map((match) => match[1]);
+
+    expect(fills.at(-1)).toBe('rgb(68,50,29)');
   });
 });

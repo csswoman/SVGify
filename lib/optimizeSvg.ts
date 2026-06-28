@@ -1,9 +1,9 @@
 // Lightweight, dependency-free SVG size optimizer for imagetracerjs output.
 // imagetracerjs writes, on every <path>:
 //   fill="rgb(r,g,b)" stroke="rgb(r,g,b)" stroke-width="1" opacity="1"
-// The stroke duplicates the fill color and is usually unwanted, and the
-// coordinate numbers carry trailing zeros. Stripping these shrinks the file
-// substantially without changing the visible result.
+// The stroke duplicates the fill color. Keeping a thin same-color stroke helps
+// seal anti-aliased seams; stripping it shrinks the file when seam sealing is
+// disabled.
 
 interface OptimizeOptions {
   /** Remove the per-path stroke + stroke-width (default true — fills already cover the shape). */
@@ -76,12 +76,12 @@ export function optimizeSvg(svg: string, opts: OptimizeOptions = {}): string {
     out = out
       .replace(/\s*stroke="[^"]*"/g, '')
       .replace(/\s*stroke-width="[^"]*"/g, '')
-      .replace(/<path([^>]*?)fill="(rgb\([^)]*\))"([^>]*?)>/g,
+      .replace(/<path([^>]*?)fill="([^"]+)"([^>]*?)>/g,
         (_full, pre: string, fill: string, post: string) =>
           `<path${pre}fill="${fill}" stroke="${fill}" stroke-width="${sealSeams}"${post}>`);
   } else if (removeStroke) {
     out = out
-      .replace(/\s*stroke="rgb\([^)]*\)"/g, '')
+      .replace(/\s*stroke="[^"]*"/g, '')
       .replace(/\s*stroke-width="[^"]*"/g, '');
   }
 

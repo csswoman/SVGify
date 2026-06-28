@@ -27,15 +27,10 @@ export function EditablePalette({
   const { t } = useI18n();
 
   return (
-    <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
-      <div>
-        <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-          {t('vec.paletteEditor')}
-        </p>
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          {t('vec.paletteEditor.help')}
-        </p>
-      </div>
+    <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/60">
+      <p className="text-xs text-gray-500 dark:text-gray-400">
+        {t('vec.paletteEditor.help')}
+      </p>
 
       <ColorSwatches
         colors={colors}
@@ -51,18 +46,18 @@ export function EditablePalette({
         />
       )}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 pt-1">
         <button
           type="button"
           onClick={onMergeSimilar}
-          className="rounded-lg bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+          className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
         >
           {t('vec.paletteMerge')}
         </button>
         <button
           type="button"
           onClick={onReset}
-          className="rounded-lg bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+          className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
         >
           {t('vec.paletteReset')}
         </button>

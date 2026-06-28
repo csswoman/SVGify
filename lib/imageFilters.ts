@@ -67,6 +67,31 @@ export function applyBlur(imageData: ImageData, radius: number): ImageData {
   return new ImageData(src, width, height);
 }
 
+export function upscaleImageData(imageData: ImageData, scale: number): ImageData {
+  const factor = Math.max(1, Math.min(2, Math.round(scale)));
+  if (factor === 1) return new ImageData(new Uint8ClampedArray(imageData.data), imageData.width, imageData.height);
+
+  const { width, height, data } = imageData;
+  const outWidth = width * factor;
+  const outHeight = height * factor;
+  const out = new Uint8ClampedArray(outWidth * outHeight * 4);
+
+  for (let y = 0; y < outHeight; y++) {
+    const sy = Math.floor(y / factor);
+    for (let x = 0; x < outWidth; x++) {
+      const sx = Math.floor(x / factor);
+      const source = (sy * width + sx) * 4;
+      const target = (y * outWidth + x) * 4;
+      out[target] = data[source];
+      out[target + 1] = data[source + 1];
+      out[target + 2] = data[source + 2];
+      out[target + 3] = data[source + 3];
+    }
+  }
+
+  return new ImageData(out, outWidth, outHeight);
+}
+
 function morphAlpha(imageData: ImageData, radius: number, mode: 'dilate' | 'erode'): ImageData {
   if (radius <= 0) return imageData;
 
@@ -100,6 +125,11 @@ function morphAlpha(imageData: ImageData, radius: number, mode: 'dilate' | 'erod
 export function morphOpenAlpha(imageData: ImageData, radius: number): ImageData {
   if (radius <= 0) return imageData;
   return morphAlpha(morphAlpha(imageData, radius, 'erode'), radius, 'dilate');
+}
+
+export function morphDilateAlpha(imageData: ImageData, radius: number): ImageData {
+  if (radius <= 0) return imageData;
+  return morphAlpha(imageData, radius, 'dilate');
 }
 
 export function morphErodeAlpha(imageData: ImageData, radius: number): ImageData {

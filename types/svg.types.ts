@@ -43,11 +43,17 @@ export interface VectorizeSettings {
   customPalette?: RGBColor[];  // User-approved palette for icon mode
   ltres: number;               // 0.1-5
   qtres: number;               // 0.1-5
-  strokewidth: number;         // 1-5
+  strokewidth: number;         // 0-2; same-color stroke used to seal seams
   scale: number;
   pathomit: number;
+  linePathOmit: number;        // low speckle omit for dark outline masks
   roundcoords: number;
   blurRadius: number;          // 0 = off, 1-5
+  blurDelta: number;           // ImageTracer blur edge threshold
+  traceScale: number;          // raster upscale before quantize/trace
+  fillOverlap: number;         // px dilation for non-line fills before tracing
+  lineSmoothing: number;       // extra denoise passes for line masks
+  curveSmoothing: number;      // 0 = polygon, 1-2 = quadratic curve smoothing
 }
 
 export const VECTORIZE_DEFAULTS: VectorizeSettings = {
@@ -57,8 +63,14 @@ export const VECTORIZE_DEFAULTS: VectorizeSettings = {
   strokewidth: 1,
   scale: 1,
   pathomit: 18,
+  linePathOmit: 2,
   roundcoords: 1,
   blurRadius: 1,
+  blurDelta: 20,
+  traceScale: 2,
+  fillOverlap: 1,
+  lineSmoothing: 1,
+  curveSmoothing: 1,
 };
 
 export interface WorkerMessage {

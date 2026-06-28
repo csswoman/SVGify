@@ -1,5 +1,6 @@
 'use client';
 
+import { Trash } from '@phosphor-icons/react';
 import { RGBColor } from '@/types/svg.types';
 import { rgbToHex } from '@/lib/colorUtils';
 import { useI18n } from '@/lib/i18n';
@@ -56,11 +57,11 @@ export function ColorSwatches({
               {onColorDelete && colors.length > 1 && (
                 <button
                   onClick={() => onColorDelete(color)}
-                  className="focus-ring shrink-0 rounded p-1 text-gray-600 transition hover:bg-red-50 hover:text-red-700 dark:text-gray-400 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                  className="shrink-0 rounded p-1 text-gray-400 transition hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 dark:text-gray-500 dark:hover:bg-red-950/40 dark:hover:text-red-400"
                   aria-label={`${t('col.deleteColor')} ${hex}`}
                   title={t('col.deleteColor')}
                 >
-                  🗑
+                  <Trash size={14} weight="bold" />
                 </button>
               )}
             </div>

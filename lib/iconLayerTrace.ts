@@ -1,8 +1,8 @@
 import ImageTracer from 'imagetracerjs';
 import { RGBColor, VectorizeSettings } from '@/types/svg.types';
 import { rgbToString } from './colorUtils';
-import { morphOpenAlpha } from './imageFilters';
-import { nearestPaletteColor, type TracePaletteColor } from './paletteExtraction';
+import { morphCloseAlpha, morphDilateAlpha, morphOpenAlpha } from './imageFilters';
+import { luminance, nearestPaletteColor, type TracePaletteColor } from './paletteExtraction';
 import { countPaths } from './simplifyPath';
 
 const TRACE_PALETTE = [
@@ -87,6 +87,59 @@ export function countPalettePixels(
   return count;
 }
 
+interface PaletteClassMap {
+  indexes: Int16Array;
+  counts: number[];
+}
+
+function buildPaletteClassMap(imageData: ImageData, palette: readonly RGBColor[]): PaletteClassMap {
+  const pixels = imageData.width * imageData.height;
+  const indexes = new Int16Array(pixels);
+  const counts = new Array<number>(palette.length).fill(0);
+  indexes.fill(-1);
+
+  for (let pixel = 0; pixel < pixels; pixel++) {
+    const i = pixel * 4;
+    if (imageData.data[i + 3] < 16) continue;
+
+    let bestIndex = 0;
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    for (let paletteIndex = 0; paletteIndex < palette.length; paletteIndex++) {
+      const color = palette[paletteIndex];
+      const dr = imageData.data[i] - color.r;
+      const dg = imageData.data[i + 1] - color.g;
+      const db = imageData.data[i + 2] - color.b;
+      const distance = dr * dr + dg * dg + db * db;
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = paletteIndex;
+      }
+    }
+
+    indexes[pixel] = bestIndex;
+    counts[bestIndex]++;
+  }
+
+  return { indexes, counts };
+}
+
+function createMaskFromClassMap(imageData: ImageData, classMap: PaletteClassMap, colorIndex: number): ImageData {
+  const { width, height } = imageData;
+  const out = new Uint8ClampedArray(width * height * 4);
+
+  for (let pixel = 0; pixel < classMap.indexes.length; pixel++) {
+    if (classMap.indexes[pixel] !== colorIndex) continue;
+    const i = pixel * 4;
+    out[i] = 255;
+    out[i + 1] = 255;
+    out[i + 2] = 255;
+    out[i + 3] = 255;
+  }
+
+  return new ImageData(out, width, height);
+}
+
 /** Build a white-on-transparent mask for one palette color. */
 export function createColorMask(
   imageData: ImageData,
@@ -168,21 +221,34 @@ export function pickOuterBorderColor(
 }
 
 function prepareLayerMask(
-  iconRaster: ImageData,
+  mask: ImageData,
   color: RGBColor,
-  palette: readonly RGBColor[],
   settings: VectorizeSettings
 ): ImageData {
-  const mask = createColorMask(iconRaster, color, palette);
-  return smoothColorMask(mask, settings.blurRadius);
+  const isLine = isLikelyLineColor(color);
+  if (isLine) {
+    const closeRadius = Math.max(0, Math.min(2, Math.round(settings.lineSmoothing)));
+    const closed = closeRadius > 0 ? morphCloseAlpha(mask, closeRadius) : mask;
+    const reconnected = closeRadius > 0 ? morphDilateAlpha(closed, 1) : closed;
+    return smoothColorMask(reconnected, settings.blurRadius);
+  }
+
+  const overlap = Math.max(0, Math.min(2, settings.fillOverlap));
+  const expanded = overlap > 0 ? morphDilateAlpha(mask, overlap) : mask;
+  return smoothColorMask(expanded, settings.blurRadius);
 }
 
-export function smoothColorMask(mask: ImageData, blurRadius: number): ImageData {
+export function smoothColorMask(mask: ImageData, blurRadius: number, extraOpenPasses = 0): ImageData {
   let working = mask;
-  // Only remove single-pixel speckles — no blur, to keep sharp traced edges.
-  const openRadius = blurRadius >= 4 ? 1 : 0;
-  if (openRadius > 0) {
-    working = morphOpenAlpha(working, openRadius);
+  // Close tiny transparent pinholes before tracing so fills stay solid.
+  if (blurRadius >= 1) {
+    working = morphCloseAlpha(working, 1);
+  }
+
+  // Remove single-pixel speckles without blurring traced edges.
+  const openPasses = (blurRadius >= 4 ? 1 : 0) + Math.max(0, Math.min(2, extraOpenPasses));
+  for (let pass = 0; pass < openPasses; pass++) {
+    working = morphOpenAlpha(working, 1);
   }
 
   const out = new ImageData(new Uint8ClampedArray(working.data), working.width, working.height);
@@ -194,6 +260,12 @@ export function smoothColorMask(mask: ImageData, blurRadius: number): ImageData 
     out.data[i + 3] = visible ? 255 : 0;
   }
   return out;
+}
+
+function isLikelyLineColor(color: RGBColor): boolean {
+  const sat = Math.max(color.r, color.g, color.b) - Math.min(color.r, color.g, color.b);
+  const light = luminance(color);
+  return light <= 42 || (light >= 30 && light <= 118 && sat >= 18);
 }
 
 function extractPathTags(svg: string): string[] {
@@ -210,27 +282,32 @@ function recolorLayerPaths(layerSvg: string, color: RGBColor): string[] {
   );
 }
 
-function buildTraceOptions(settings: VectorizeSettings, rasterSize: number) {
+function buildTraceOptions(settings: VectorizeSettings, rasterSize: number, isLineLayer: boolean) {
   const sizeFactor = Math.max(1, rasterSize / ICON_TRACE_MAX_DIMENSION);
   const blurBoost = settings.blurRadius * 0.08;
+  const basePathOmit = isLineLayer ? settings.linePathOmit : settings.pathomit;
+  const maxPathOmit = isLineLayer ? 4 : 12;
+  const minPathOmit = isLineLayer ? 0 : 3;
   return {
     numberofcolors: TRACE_PALETTE.length,
     pal: [...TRACE_PALETTE],
     colorquantcycles: 1,
     mincolorratio: 0,
     colorsampling: 0,
-    ltres: Math.min(settings.ltres + blurBoost, 2),
-    qtres: Math.min(settings.qtres + blurBoost, 1.8),
-    pathomit: Math.min(10, Math.max(3, Math.round(settings.pathomit / (4 * sizeFactor)))),
+    // Low line tolerance forces ImageTracer to prefer quadratic splines over
+    // long jagged polygon runs; qtres then controls how much the spline may smooth.
+    ltres: Math.max(0.05, Math.min(settings.ltres * 0.2 + blurBoost, 0.45)),
+    qtres: Math.max(0.8, Math.min(settings.qtres + blurBoost, 2.2)),
+    pathomit: Math.min(maxPathOmit, Math.max(minPathOmit, Math.round(basePathOmit / (4 * sizeFactor)))),
     rightangleenhance: false,
-    linefilter: false,
+    linefilter: true,
     strokewidth: 0,
     scale: settings.scale,
     roundcoords: Math.max(0, settings.roundcoords),
     viewbox: true,
     desc: false,
-    blurradius: 0,
-    blurdelta: 20,
+    blurradius: Math.min(3, Math.max(0, settings.blurRadius)),
+    blurdelta: Math.max(1, Math.min(64, settings.blurDelta)),
   };
 }
 
@@ -241,11 +318,11 @@ function buildCombinedTraceOptions(settings: VectorizeSettings, palette: TracePa
     colorquantcycles: 1,
     mincolorratio: 0,
     colorsampling: 0,
-    ltres: Math.min(settings.ltres + settings.blurRadius * 0.1, 2),
-    qtres: Math.min(settings.qtres + settings.blurRadius * 0.08, 1.8),
+    ltres: Math.max(0.05, Math.min(settings.ltres * 0.2 + settings.blurRadius * 0.1, 0.45)),
+    qtres: Math.max(0.8, Math.min(settings.qtres + settings.blurRadius * 0.08, 2.2)),
     pathomit: Math.min(12, Math.max(4, Math.round(settings.pathomit / 3))),
     rightangleenhance: false,
-    linefilter: false,
+    linefilter: true,
     strokewidth: 0,
     scale: settings.scale,
     roundcoords: Math.max(0, settings.roundcoords),
@@ -271,17 +348,27 @@ export function traceIconByColorLayers(
   palette: RGBColor[],
   settings: VectorizeSettings
 ): string {
-  const traceOptions = buildTraceOptions(settings, Math.max(iconRaster.width, iconRaster.height));
-  const colorsByArea = [...palette].sort(
-    (a, b) => countPalettePixels(iconRaster, b, palette) - countPalettePixels(iconRaster, a, palette)
-  );
+  const classMap = buildPaletteClassMap(iconRaster, palette);
+  const colorIndexesByArea = palette
+    .map((color, index) => ({
+      color,
+      index,
+      count: classMap.counts[index] ?? 0,
+      isLine: isLikelyLineColor(color),
+    }))
+    .filter((entry) => entry.count > 0)
+    .sort((a, b) => {
+      if (a.isLine !== b.isLine) return a.isLine ? 1 : -1;
+      return b.count - a.count;
+    });
 
   const pathTags: string[] = [];
 
-  for (const color of colorsByArea) {
-    if (countPalettePixels(iconRaster, color, palette) === 0) continue;
-
-    const mask = prepareLayerMask(iconRaster, color, palette, settings);
+  for (const { color, index } of colorIndexesByArea) {
+    const isLine = isLikelyLineColor(color);
+    const traceOptions = buildTraceOptions(settings, Math.max(iconRaster.width, iconRaster.height), isLine);
+    const sourceMask = createMaskFromClassMap(iconRaster, classMap, index);
+    const mask = prepareLayerMask(sourceMask, color, settings);
     const layerSvg = ImageTracer.imagedataToSVG(mask, traceOptions);
     pathTags.push(...recolorLayerPaths(layerSvg, color));
   }

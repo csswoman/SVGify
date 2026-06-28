@@ -189,6 +189,37 @@ describe('palette extraction', () => {
     expect(palette.length).toBeGreaterThanOrEqual(10);
   });
 
+  it('collapses dark outline variants even when the requested color count is high', () => {
+    const pixels: number[] = [];
+    const colors = [
+      [74, 49, 26],
+      [83, 58, 31],
+      [69, 42, 20],
+      [4, 18, 38],
+      [0, 0, 0],
+      [255, 246, 214],
+      [198, 176, 128],
+    ];
+
+    for (const [r, g, b] of colors) {
+      pixels.push(r, g, b, 255, r, g, b, 255, r, g, b, 255);
+    }
+
+    const palette = suggestPaletteFromImage(
+      new ImageData(new Uint8ClampedArray(pixels), colors.length * 3, 1),
+      18
+    );
+    const outlineLike = palette.filter((color) => {
+      const light = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
+      const sat = Math.max(color.r, color.g, color.b) - Math.min(color.r, color.g, color.b);
+      return light >= 30 && light <= 118 && sat >= 18;
+    });
+
+    expect(outlineLike).toHaveLength(1);
+    expect(palette).toContainEqual({ r: 4, g: 18, b: 38, a: 255 });
+    expect(palette).toContainEqual({ r: 0, g: 0, b: 0, a: 255 });
+  });
+
   it('preserves soft gray shadow alpha when applying the silhouette mask', () => {
     const color = new ImageData(
       new Uint8ClampedArray([

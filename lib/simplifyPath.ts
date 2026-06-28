@@ -159,6 +159,29 @@ function subpathsToD(subpaths: Pt[][], decimals: number): string {
     .join('');
 }
 
+function subpathsToQuadraticD(subpaths: Pt[][], decimals: number): string {
+  const r = (n: number) => Number(n.toFixed(decimals));
+  return subpaths
+    .filter((sp) => sp.length >= 3)
+    .map((sp) => {
+      const points = isClosedSubpath(sp) ? sp.slice(0, -1) : sp;
+      if (points.length < 3) return '';
+
+      const mid = (a: Pt, b: Pt): Pt => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+      let s = `M${r(points[0].x)} ${r(points[0].y)}`;
+
+      for (let i = 0; i < points.length; i++) {
+        const control = points[i];
+        const next = points[(i + 1) % points.length];
+        const end = mid(control, next);
+        s += `Q${r(control.x)} ${r(control.y)} ${r(end.x)} ${r(end.y)}`;
+      }
+
+      return s + 'Z';
+    })
+    .join('');
+}
+
 /**
  * Simplify every path `d` in an SVG string. `epsilon` controls aggressiveness
  * (higher = fewer points = smaller file). Curves are flattened to polygons,
@@ -167,6 +190,22 @@ function subpathsToD(subpaths: Pt[][], decimals: number): string {
 export function simplifySvgPaths(svg: string, epsilon: number, decimals = 0): string {
   return svg.replace(/d="([^"]*)"/g, (_full, d: string) => {
     return `d="${simplifyPathD(d, epsilon, decimals)}"`;
+  });
+}
+
+export function curveSmoothSvgPaths(svg: string, iterations = 1, epsilon = 0.35, decimals = 1): string {
+  if (iterations <= 0) return svg;
+  const level = Math.min(2, Math.max(1, Math.floor(iterations)));
+
+  return svg.replace(/d="([^"]*)"/g, (_full, d: string) => {
+    const subpaths = parseSubpaths(d).map((sp) => {
+      if (sp.length < 4) return sp;
+      const rounded = level >= 2 ? chaikinClosed(sp, 1) : sp;
+      const closed = rounded.length >= 3 ? [...rounded, rounded[0]] : rounded;
+      return rdp(closed, level >= 2 ? Math.max(epsilon, 1.2) : Math.max(epsilon, 0.9));
+    });
+    const out = subpathsToQuadraticD(subpaths, decimals);
+    return `d="${out || d}"`;
   });
 }
 

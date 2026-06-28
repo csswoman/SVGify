@@ -3,6 +3,7 @@ import { RGBColor } from '@/types/svg.types';
 import {
   extractColorsFromSvg,
   replaceColorInSvg,
+  replaceColorsInSvg,
   rgbToHex,
   colorDistanceSq,
   luminance,
@@ -32,7 +33,8 @@ function getColorStats(svgElement: SVGElement): ColorStat[] {
     if (current) {
       current.weight += pathWeight(path as SVGPathElement);
     } else {
-      stats.set(hex, { color, weight: pathWeight(path as SVGPathElement) });
+      const weight = pathWeight(path as SVGPathElement);
+      stats.set(hex, { color, weight });
     }
   });
 
@@ -76,17 +78,19 @@ export function useSvgColors(svgElement: SVGElement | null) {
       const current = getColorStats(svgElement).map((stat) => stat.color);
       const thrSq = threshold * threshold;
       const reps: RGBColor[] = [];
+      const replacements = new Map<string, RGBColor>();
       let mergedCount = 0;
 
       for (const c of current) {
         const rep = reps.find((r) => colorDistanceSq(r, c) <= thrSq);
         if (rep) {
-          replaceColorInSvg(svgElement, c, rep);
+          replacements.set(rgbToHex(c), rep);
           mergedCount++;
         } else {
           reps.push(c);
         }
       }
+      replaceColorsInSvg(svgElement, replacements);
       refreshColors();
       return mergedCount;
     },
@@ -132,6 +136,7 @@ export function useSvgColors(svgElement: SVGElement | null) {
       }
 
       const dominant = ranked.slice(0, count).map((stat) => stat.color);
+      const replacements = new Map<string, RGBColor>();
       for (const { color } of ranked.slice(count)) {
         let nearest = dominant[0];
         let best = colorDistanceSq(color, nearest);
@@ -142,8 +147,11 @@ export function useSvgColors(svgElement: SVGElement | null) {
             nearest = candidate;
           }
         }
-        replaceColorInSvg(svgElement, color, nearest);
+        if (rgbToHex(color) !== rgbToHex(nearest)) {
+          replacements.set(rgbToHex(color), nearest);
+        }
       }
+      replaceColorsInSvg(svgElement, replacements);
       refreshColors();
     },
     [svgElement, refreshColors]
@@ -166,10 +174,12 @@ export function useSvgColors(svgElement: SVGElement | null) {
         }
         return rep;
       };
+      const replacements = new Map<string, RGBColor>();
       for (const c of getColorStats(svgElement).map((stat) => stat.color)) {
         const rep = assign(c);
-        if (rgbToHex(rep) !== rgbToHex(c)) replaceColorInSvg(svgElement, c, rep);
+        if (rgbToHex(rep) !== rgbToHex(c)) replacements.set(rgbToHex(c), rep);
       }
+      replaceColorsInSvg(svgElement, replacements);
 
       reduceToCount(maxColors);
     },
@@ -183,11 +193,13 @@ export function useSvgColors(svgElement: SVGElement | null) {
       if (!svgElement) return;
       const current = extractColorsFromSvg(svgElement);
       const black: RGBColor = { r: 0, g: 0, b: 0 };
+      const replacements = new Map<string, RGBColor>();
       for (const c of current) {
         if (rgbToHex(c) !== '#000000' && luminance(c) <= threshold) {
-          replaceColorInSvg(svgElement, c, black);
+          replacements.set(rgbToHex(c), black);
         }
       }
+      replaceColorsInSvg(svgElement, replacements);
       refreshColors();
     },
     [svgElement, refreshColors]

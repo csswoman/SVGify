@@ -35,7 +35,15 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
       ...next,
       numberofcolors: Math.min(24, Math.max(2, next.numberofcolors)),
       pathomit: Math.max(0, Math.min(40, next.pathomit)),
+      linePathOmit: Math.max(0, Math.min(12, next.linePathOmit)),
       roundcoords: Math.max(0, Math.min(3, next.roundcoords)),
+      blurRadius: Math.max(0, Math.min(5, next.blurRadius)),
+      blurDelta: Math.max(1, Math.min(64, next.blurDelta)),
+      traceScale: Math.max(1, Math.min(2, next.traceScale)),
+      strokewidth: Math.max(0, Math.min(2, next.strokewidth)),
+      fillOverlap: Math.max(0, Math.min(2, next.fillOverlap)),
+      lineSmoothing: Math.max(0, Math.min(2, next.lineSmoothing)),
+      curveSmoothing: Math.max(0, Math.min(2, next.curveSmoothing)),
     });
   }, []);
 

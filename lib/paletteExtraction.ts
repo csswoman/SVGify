@@ -15,9 +15,10 @@ interface ColorBucket {
   g: number;
   b: number;
   count: number;
+  edgeCount: number;
 }
 
-type ColorCandidate = RGBColor & { count: number };
+type ColorCandidate = RGBColor & { count: number; edgeCount: number };
 
 const BASE_ICON_COLORS = ICON_BASE_PALETTE.map((entry) => entry.color);
 
@@ -55,6 +56,12 @@ function isTrueBlackFill(color: RGBColor): boolean {
   return luminance(color) <= 42 && saturationRange(color) <= 24 && !isDropShadowColor(color);
 }
 
+export function isDarkOutlineColor(color: RGBColor): boolean {
+  if (isNearWhite(color) || isDropShadowColor(color) || isTrueBlackFill(color)) return false;
+  const light = luminance(color);
+  return light >= 30 && light <= 118 && saturationRange(color) >= 18;
+}
+
 function nearestAmong(color: RGBColor, palette: readonly RGBColor[]): RGBColor {
   let nearest: RGBColor = palette[0] ?? ICON_BASE_PALETTE[0].color;
   let best = colorDistanceSq(color, nearest);
@@ -78,6 +85,10 @@ function blackPaletteEntries(palette: readonly RGBColor[]): RGBColor[] {
   return palette.filter(isTrueBlackFill);
 }
 
+function outlinePaletteEntries(palette: readonly RGBColor[]): RGBColor[] {
+  return palette.filter(isDarkOutlineColor);
+}
+
 export function removeNearWhitePixels(imageData: ImageData, threshold = 244): ImageData {
   const out = new ImageData(new Uint8ClampedArray(imageData.data), imageData.width, imageData.height);
 
@@ -97,7 +108,8 @@ export function mergeSimilarPaletteColors(
 ): RGBColor[] {
   const merged: RGBColor[] = [];
   for (const color of palette) {
-    if (!isSimilarToAny(color, merged, threshold)) {
+    const categoryThreshold = isDarkOutlineColor(color) ? Math.max(threshold, 48) : threshold;
+    if (!isSimilarToAny(color, merged, categoryThreshold)) {
       merged.push({ ...color });
     }
   }
@@ -150,7 +162,9 @@ export function smoothQuantizedPalette(
         };
         const votePalette = isDropShadowColor(currentRgb)
           ? shadowPaletteEntries(palette)
-          : palette;
+          : isDarkOutlineColor(currentRgb)
+            ? outlinePaletteEntries(palette)
+            : palette;
         const activePalette = votePalette.length > 0 ? votePalette : palette;
 
         const counts = new Map<number, number>();
@@ -231,9 +245,14 @@ export function nearestPaletteColor(
   palette: readonly RGBColor[] = BASE_ICON_COLORS
 ): RGBColor {
   const shadows = shadowPaletteEntries(palette);
+  const outlines = outlinePaletteEntries(palette);
 
   if (isDropShadowColor(color) && shadows.length > 0) {
     return nearestAmong(color, shadows);
+  }
+
+  if (isDarkOutlineColor(color) && outlines.length > 0) {
+    return nearestAmong(color, outlines);
   }
 
   const sat = saturationRange(color);
@@ -306,6 +325,17 @@ function totalOpaquePixels(imageData: ImageData): number {
   return count;
 }
 
+function touchesTransparentNeighbor(imageData: ImageData, x: number, y: number): boolean {
+  const { width, height, data } = imageData;
+  if (x === 0 || y === 0 || x === width - 1 || y === height - 1) return true;
+  return (
+    data[((y - 1) * width + x) * 4 + 3] < 16 ||
+    data[((y + 1) * width + x) * 4 + 3] < 16 ||
+    data[(y * width + (x - 1)) * 4 + 3] < 16 ||
+    data[(y * width + (x + 1)) * 4 + 3] < 16
+  );
+}
+
 function collectVisibleColorBuckets(imageData: ImageData): ColorCandidate[] {
   const buckets = new Map<number, ColorBucket>();
 
@@ -314,6 +344,10 @@ function collectVisibleColorBuckets(imageData: ImageData): ColorCandidate[] {
     const color = { r: imageData.data[i], g: imageData.data[i + 1], b: imageData.data[i + 2] };
     if (isNearWhite(color)) continue;
 
+    const pixel = i / 4;
+    const x = pixel % imageData.width;
+    const y = Math.floor(pixel / imageData.width);
+    const edgeCount = touchesTransparentNeighbor(imageData, x, y) ? 1 : 0;
     const rq = color.r >> 3;
     const gq = color.g >> 3;
     const bq = color.b >> 3;
@@ -325,8 +359,9 @@ function collectVisibleColorBuckets(imageData: ImageData): ColorCandidate[] {
       bucket.g += color.g;
       bucket.b += color.b;
       bucket.count++;
+      bucket.edgeCount += edgeCount;
     } else {
-      buckets.set(key, { ...color, count: 1 });
+      buckets.set(key, { ...color, count: 1, edgeCount });
     }
   }
 
@@ -336,8 +371,17 @@ function collectVisibleColorBuckets(imageData: ImageData): ColorCandidate[] {
       g: Math.round(bucket.g / bucket.count),
       b: Math.round(bucket.b / bucket.count),
       count: bucket.count,
+      edgeCount: bucket.edgeCount,
     }))
     .sort((a, b) => b.count - a.count);
+}
+
+export function pickDarkOutlineColorFromImage(imageData: ImageData): RGBColor | null {
+  const candidates = collectVisibleColorBuckets(imageData)
+    .filter((color) => isDarkOutlineColor(color))
+    .sort((a, b) => (b.edgeCount * 3 + b.count) - (a.edgeCount * 3 + a.count));
+
+  return candidates[0] ? toRgb(candidates[0]) : null;
 }
 
 export function suggestPaletteFromImage(imageData: ImageData, maxColors: number): TracePaletteColor[] {
@@ -375,11 +419,18 @@ export function suggestPaletteFromImage(imageData: ImageData, maxColors: number)
     addColor(toRgb(blackCandidates[0]), 14);
   }
 
+  const outlineCandidates = source
+    .filter((color) => isDarkOutlineColor(color))
+    .sort((a, b) => (b.edgeCount * 3 + b.count) - (a.edgeCount * 3 + a.count));
+  if (outlineCandidates[0]) {
+    addColor(toRgb(outlineCandidates[0]), 48);
+  }
+
   for (const color of source) {
     if (selected.length >= limit) break;
     const isAccent = saturationRange(color) >= 36 && luminance(color) > 45;
     const isCream = colorDistanceSq(color, ICON_BASE_PALETTE[1].color) <= 56 * 56;
-    if (isAccent && !isCream) addColor(toRgb(color));
+    if (isAccent && !isCream && !isDarkOutlineColor(color)) addColor(toRgb(color));
   }
 
   const largeDarkAccentCount = Math.max(minProminentCount * 3, Math.ceil(totalOpaque * 0.01));
@@ -408,14 +459,14 @@ export function suggestPaletteFromImage(imageData: ImageData, maxColors: number)
   for (const color of source) {
     if (selected.length >= limit) break;
     const isDarkAccent = saturationRange(color) >= 30 && luminance(color) <= 55;
-    addColor(toRgb(color), isDarkAccent ? 14 : defaultThreshold);
+    addColor(toRgb(color), isDarkOutlineColor(color) ? 48 : isDarkAccent ? 14 : defaultThreshold);
   }
 
   if (selected.length < limit && limit >= 12) {
     for (const color of source) {
       if (selected.length >= limit) break;
       const isDarkAccent = saturationRange(color) >= 30 && luminance(color) <= 55;
-      addColor(toRgb(color), isDarkAccent ? 10 : 4);
+      addColor(toRgb(color), isDarkOutlineColor(color) ? 48 : isDarkAccent ? 10 : 4);
     }
   }
 

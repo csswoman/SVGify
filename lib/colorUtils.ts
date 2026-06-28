@@ -226,21 +226,34 @@ export function simplifyColors(svg: string, threshold: number): string {
 
 // Replace all paths with a specific fill color
 export function replaceColorInSvg(svg: SVGElement, oldColor: RGBColor, newColor: RGBColor): void {
-  const newStr = rgbToString(newColor);
   const oldHex = rgbToHex(oldColor);
+  replaceColorsInSvg(svg, new Map([[oldHex, newColor]]));
+}
+
+// Replace multiple colors in a single DOM pass. This is much faster than
+// calling replaceColorInSvg repeatedly on large traced SVGs.
+export function replaceColorsInSvg(svg: SVGElement, replacements: Map<string, RGBColor>): void {
+  if (replacements.size === 0) return;
+
+  const replacementStrings = new Map<string, string>();
+  replacements.forEach((color, hex) => {
+    replacementStrings.set(hex, rgbToString(color));
+  });
 
   const paths = svg.querySelectorAll('path');
   paths.forEach((path) => {
     const fill = path.getAttribute('fill');
     const fillColor = fill ? parseRgbString(fill) : null;
-    if (fillColor && rgbToHex(fillColor) === oldHex) {
-      path.setAttribute('fill', newStr);
+    if (fillColor) {
+      const replacement = replacementStrings.get(rgbToHex(fillColor));
+      if (replacement) path.setAttribute('fill', replacement);
     }
 
     const stroke = path.getAttribute('stroke');
     const strokeColor = stroke ? parseRgbString(stroke) : null;
-    if (strokeColor && rgbToHex(strokeColor) === oldHex) {
-      path.setAttribute('stroke', newStr);
+    if (strokeColor) {
+      const replacement = replacementStrings.get(rgbToHex(strokeColor));
+      if (replacement) path.setAttribute('stroke', replacement);
     }
   });
 }

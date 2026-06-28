@@ -9,7 +9,11 @@ interface LabelSidebarProps {
 }
 
 export function LabelSidebar({ labels, onLabelClick, selectedLabel }: LabelSidebarProps) {
-  const uniqueLabels = Array.from(new Set(labels.map((l) => l.label)));
+  const labelCounts = labels.reduce<Record<string, number>>((acc, item) => {
+    acc[item.label] = (acc[item.label] ?? 0) + 1;
+    return acc;
+  }, {});
+  const uniqueLabels = Object.keys(labelCounts);
 
   return (
     <div className="space-y-2">
@@ -33,7 +37,12 @@ export function LabelSidebar({ labels, onLabelClick, selectedLabel }: LabelSideb
                 }`}
                 aria-pressed={selectedLabel === label}
               >
-                {label}
+                <span className="flex items-center justify-between gap-3">
+                  <span className="min-w-0 truncate">{label}</span>
+                  <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
+                    {labelCounts[label]}
+                  </span>
+                </span>
               </button>
             </li>
           ))}

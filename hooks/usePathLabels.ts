@@ -46,6 +46,14 @@ export function usePathLabels(svgElement: SVGElement | null) {
     [svgElement]
   );
 
+  const getPathsByLabel = useCallback(
+    (label: string): SVGPathElement[] => {
+      if (!svgElement) return [];
+      return Array.from(svgElement.querySelectorAll<SVGPathElement>(`path[data-label="${label}"]`));
+    },
+    [svgElement]
+  );
+
   return {
     labels,
     extractLabels,
@@ -53,5 +61,6 @@ export function usePathLabels(svgElement: SVGElement | null) {
     removeLabel,
     getLabelForPath,
     getPathByLabel,
+    getPathsByLabel,
   };
 }
