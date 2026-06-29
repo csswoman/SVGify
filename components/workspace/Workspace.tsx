@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { DEFAULT_ZOOM_VIEWPORT, type SvgZoomViewport, type RGBColor } from '@/types/svg.types';
 import type { WorkspaceTool } from '@/types/workspace.types';
 import { countPaths } from '@/lib/simplifyPath';
@@ -64,6 +64,12 @@ export function Workspace() {
     [activeTool, vectorizeSession.svg]
   );
 
+  useEffect(() => {
+    if (activeTool !== 'vectorize') return;
+    if (!vectorizeSession.svg) return;
+    setSvgString((current) => (current === vectorizeSession.svg ? current : vectorizeSession.svg));
+  }, [activeTool, vectorizeSession.svg]);
+
   useWorkspaceShortcuts({
     document,
     activeTool,
@@ -72,8 +78,9 @@ export function Workspace() {
     onRedo: () => editor.redo(),
   });
 
-  const pathCount = svgString ? countPaths(svgString) : 0;
-  const byteSize = svgString ? svgByteSize(svgString) : 0;
+  const isPreTrace = activeTool === 'vectorize' && svgString === null;
+  const pathCount = svgString ? countPaths(svgString) : null;
+  const byteSize = svgString ? svgByteSize(svgString) : null;
 
   return (
     <ErrorBoundary>
@@ -103,6 +110,7 @@ export function Workspace() {
             fillColor={fillColor}
             uploadError={uploadError}
             onSelectedColorChange={setSelectedColor}
+            onFillColorChange={setFillColor}
             onImageData={(data) => {
               setUploadError(null);
               setImageData(data);
@@ -130,13 +138,14 @@ export function Workspace() {
             onToolChange={handleToolChange}
           />
         </div>
-        <StatusBar
-          pathCount={pathCount}
-          byteSize={byteSize}
-          activeTool={activeTool}
-          statusMessage={statusMessage}
-          hasSvg={svgString !== null}
-          zoomScale={editor?.zoom.scale}
+          <StatusBar
+            pathCount={pathCount}
+            byteSize={byteSize}
+            activeTool={activeTool}
+            statusMessage={statusMessage}
+            hasSvg={svgString !== null}
+            isPreTrace={isPreTrace}
+            zoomScale={editor?.zoom.scale}
           onZoomIn={editor ? () => editor.zoom.zoomIn() : undefined}
           onZoomOut={editor ? () => editor.zoom.zoomOut() : undefined}
           onZoomReset={editor ? () => editor.zoom.reset() : undefined}
