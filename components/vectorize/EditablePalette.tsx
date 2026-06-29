@@ -9,6 +9,7 @@ interface EditablePaletteProps {
   colors: RGBColor[];
   selectedColor: RGBColor | null;
   onSelectColor: (color: RGBColor) => void;
+  onAddColor: (color: RGBColor) => void;
   onChangeSelectedColor: (color: RGBColor) => void;
   onDeleteColor: (color: RGBColor) => void;
   onMergeSimilar: () => void;
@@ -19,6 +20,7 @@ export function EditablePalette({
   colors,
   selectedColor,
   onSelectColor,
+  onAddColor,
   onChangeSelectedColor,
   onDeleteColor,
   onMergeSimilar,
@@ -29,7 +31,7 @@ export function EditablePalette({
   return (
     <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/60">
       <p className="text-xs text-gray-500 dark:text-gray-400">
-        {t('vec.paletteEditor.help')}
+        {t('vec.palettePreviewHint')}
       </p>
 
       <ColorSwatches
@@ -43,6 +45,8 @@ export function EditablePalette({
         <ColorPicker
           color={selectedColor}
           onChange={onChangeSelectedColor}
+          onCommit={() => onAddColor(selectedColor)}
+          actionLabel={t('workspace.fillAddToPalette')}
         />
       )}
 
