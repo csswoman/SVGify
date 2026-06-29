@@ -4,6 +4,7 @@ import { VectorizeSettingsPanel } from '@/components/vectorize/VectorizeSettings
 import { EditablePalette } from '@/components/vectorize/EditablePalette';
 import { WorkflowSteps } from '@/components/workspace/WorkflowSteps';
 import { Tooltip } from '@/components/shared/Tooltip';
+import { DownloadButton } from '@/components/shared/DownloadButton';
 import type { useVectorizeSession } from '@/hooks/useVectorizeSession';
 import { useI18n } from '@/lib/i18n';
 
@@ -129,13 +130,20 @@ export function VectorizeInspector({ session, onContinueToEdit }: VectorizeInspe
       </p>
 
       {svg && !isLoading && (
-        <button
-          type="button"
-          onClick={onContinueToEdit}
-          className="focus-ring w-full rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700"
-        >
-          {t('workspace.continueToColors')}
-        </button>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <DownloadButton
+            svgString={svg}
+            fileName="vectorized.svg"
+            label={t('workspace.download')}
+          />
+          <button
+            type="button"
+            onClick={onContinueToEdit}
+            className="focus-ring rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+          >
+            {t('vec.refineColors')}
+          </button>
+        </div>
       )}
     </div>
   );

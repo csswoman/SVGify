@@ -61,6 +61,7 @@ const DICT = {
   'vec.paletteEditor.help': { en: 'These colors come from your image. Edit, delete, or merge them before tracing.', es: 'Estos colores salen de tu imagen. Edítalos, bórralos o une parecidos antes de trazar.' },
   'vec.paletteMerge': { en: 'Merge similar', es: 'Unir parecidos' },
   'vec.paletteReset': { en: 'Reset suggestion', es: 'Restaurar sugerencia' },
+  'vec.refineColors': { en: 'Refine colors', es: 'Afinar colores' },
   'vec.maxOptimize': { en: '⚡ Optimize to the max', es: '⚡ Optimizar al máximo' },
   'vec.maxOptimize.help': { en: 'Extra compression only: flattens curves to straight segments (Douglas–Peucker). Smaller file, but corners look chunkier. Skip this if you want the sharpest default preview.', es: 'Compresión extra: aplana curvas a segmentos rectos (Douglas–Peucker). Archivo más ligero, pero las esquinas se ven más toscas. Omítelo si quieres la vista previa más nítida.' },
   'vec.cleanFragments': { en: '🧹 Clean fragments', es: '🧹 Limpiar fragmentos' },
