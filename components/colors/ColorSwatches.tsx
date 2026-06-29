@@ -1,6 +1,6 @@
 'use client';
 
-import { Trash } from '@phosphor-icons/react';
+import { Check, Trash } from '@phosphor-icons/react';
 import { RGBColor } from '@/types/svg.types';
 import { rgbToHex } from '@/lib/colorUtils';
 import { useI18n } from '@/lib/i18n';
@@ -29,44 +29,58 @@ export function ColorSwatches({
       <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
         {t('col.paletteTitle')} ({colors.length} {t('vec.colors')})
       </p>
-      <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
-        {colors.map((color, idx) => {
-          const hex = rgbToHex(color);
-          const isSelected =
-            selectedColor !== null && rgbToHex(selectedColor) === hex;
+      <div className="max-h-[280px] overflow-y-auto pr-1">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(44px,1fr))] gap-1.5">
+          {colors.map((color, idx) => {
+            const hex = rgbToHex(color);
+            const isSelected =
+              selectedColor !== null && rgbToHex(selectedColor) === hex;
 
-          return (
-            <div
-              key={idx}
-              className={`group w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${
-                isSelected ? 'bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-950/50' : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              <button
-                onClick={() => onColorClick(color)}
-                className="flex items-center gap-3 flex-1 min-w-0"
-                aria-label={`Select color ${hex}`}
-                aria-pressed={isSelected}
-              >
-                <span
-                  className="w-7 h-7 rounded border border-gray-300 dark:border-gray-600 shrink-0"
-                  style={{ backgroundColor: hex }}
-                />
-                <span className="font-mono text-gray-700 dark:text-gray-300">{hex}</span>
-              </button>
-              {onColorDelete && colors.length > 1 && (
+            return (
+              <div key={idx} className="group relative">
                 <button
-                  onClick={() => onColorDelete(color)}
-                  className="shrink-0 rounded p-1 text-gray-400 transition hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 dark:text-gray-500 dark:hover:bg-red-950/40 dark:hover:text-red-400"
-                  aria-label={`${t('col.deleteColor')} ${hex}`}
-                  title={t('col.deleteColor')}
+                  type="button"
+                  onClick={() => onColorClick(color)}
+                  className="focus-ring flex w-full flex-col items-stretch gap-1 text-left transition"
+                  aria-label={`Select color ${hex}`}
+                  aria-pressed={isSelected}
                 >
-                  <Trash size={14} weight="bold" />
+                  <span
+                    className={[
+                      'aspect-square w-full rounded-md',
+                      isSelected
+                        ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-800'
+                        : '',
+                    ].join(' ')}
+                    style={{ backgroundColor: hex }}
+                  />
+                  <span className="truncate font-mono text-[10px] text-gray-400 opacity-0 transition group-hover:opacity-100 dark:text-gray-500">
+                    {hex}
+                  </span>
+                  {isSelected && (
+                    <Check
+                      size={14}
+                      weight="bold"
+                      className="absolute right-2 top-2 text-blue-700 dark:text-blue-300"
+                      aria-hidden
+                    />
+                  )}
                 </button>
-              )}
-            </div>
-          );
-        })}
+                {onColorDelete && colors.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => onColorDelete(color)}
+                    className="focus-ring absolute right-2 top-2 rounded-md bg-white/90 p-1.5 text-gray-500 opacity-0 shadow-sm transition hover:text-red-600 group-hover:opacity-100 dark:bg-gray-900/90 dark:text-gray-400 dark:hover:text-red-400"
+                    aria-label={`${t('col.deleteColor')} ${hex}`}
+                    title={t('col.deleteColor')}
+                  >
+                    <Trash size={14} weight="bold" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
