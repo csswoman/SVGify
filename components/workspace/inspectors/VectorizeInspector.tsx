@@ -71,6 +71,12 @@ export function VectorizeInspector({ session, onContinueToEdit }: VectorizeInspe
         onReset={resetPalette}
       />
 
+      {svg && !isLoading && (
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          {t('vec.readyHint')}
+        </p>
+      )}
+
       <div className="space-y-3 border-t border-gray-100 pt-4 dark:border-gray-700">
         <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
           <input

@@ -58,6 +58,7 @@ const DICT = {
   'vec.optimized': { en: 'optimized', es: 'optimizado' },
   'vec.paletteEditor': { en: 'Clean icon palette', es: 'Paleta del icono limpio' },
   'vec.palettePreviewHint': { en: "Colors we'll trace with — fine-tune later in Fill", es: 'Colores que trazaremos — afina luego en Fill' },
+  'vec.readyHint': { en: 'Your SVG is ready — download it, or refine colors below.', es: 'Tu SVG ya está listo — descárgalo o afina los colores abajo.' },
   'vec.paletteEditor.help': { en: 'These colors come from your image. Edit, delete, or merge them before tracing.', es: 'Estos colores salen de tu imagen. Edítalos, bórralos o une parecidos antes de trazar.' },
   'vec.paletteMerge': { en: 'Merge similar', es: 'Unir parecidos' },
   'vec.paletteReset': { en: 'Reset suggestion', es: 'Restaurar sugerencia' },
