@@ -28,6 +28,7 @@ export function VectorizeInspector({ session, onContinueToEdit }: VectorizeInspe
     paletteColors,
     selectedPaletteColor,
     selectPaletteColor,
+    addPaletteColor,
     updateSelectedPaletteColor,
     deletePaletteColor,
     mergeSimilarPaletteColors,
@@ -62,6 +63,7 @@ export function VectorizeInspector({ session, onContinueToEdit }: VectorizeInspe
         colors={paletteColors}
         selectedColor={selectedPaletteColor}
         onSelectColor={selectPaletteColor}
+        onAddColor={addPaletteColor}
         onChangeSelectedColor={updateSelectedPaletteColor}
         onDeleteColor={deletePaletteColor}
         onMergeSimilar={mergeSimilarPaletteColors}
@@ -77,6 +79,7 @@ export function VectorizeInspector({ session, onContinueToEdit }: VectorizeInspe
             className="h-4 w-4 accent-blue-600"
           />
           {t('bg.remove')}
+          <Tooltip text={t('bg.auto.help')} label={t('bg.remove')} />
         </label>
         <p className="text-xs text-gray-500 dark:text-gray-400">
           {seeds.length > 0 ? t('bg.picking') : t('bg.auto')}

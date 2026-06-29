@@ -38,14 +38,20 @@ export function useEditablePalette(initialColors: RGBColor[] = []) {
     setSelectedColor(color);
   }, []);
 
+  const addColor = useCallback((newColor: RGBColor) => {
+    let nextPalette: RGBColor[] = [];
+    setColors((current) => {
+      nextPalette = uniqueColors([...current, newColor]);
+      return nextPalette;
+    });
+    setSelectedColor(newColor);
+    return nextPalette;
+  }, []);
+
   const updateSelectedColor = useCallback((newColor: RGBColor) => {
     let nextPalette: RGBColor[] = [];
     setColors((current) => {
-      if (!selectedColor) {
-        nextPalette = uniqueColors([...current, newColor]);
-        return nextPalette;
-      }
-
+      if (!selectedColor) return current;
       nextPalette = uniqueColors(current.map((color) => (sameColor(color, selectedColor) ? newColor : color)));
       return nextPalette;
     });
@@ -96,6 +102,7 @@ export function useEditablePalette(initialColors: RGBColor[] = []) {
     selectedColor,
     replacePalette,
     selectColor,
+    addColor,
     updateSelectedColor,
     deleteColor,
     mergeSimilar,

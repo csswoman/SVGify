@@ -25,6 +25,7 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
     selectedColor: selectedPaletteColor,
     replacePalette,
     selectColor: selectPaletteColor,
+    addColor: addPaletteColor,
     updateSelectedColor: updateSelectedPaletteColor,
     deleteColor: deletePaletteColor,
     mergeSimilar: mergeSimilarPaletteColors,
@@ -33,15 +34,29 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
   const updateSettings = useCallback((next: VectorizeSettings) => {
     setSettings({
       ...next,
-      numberofcolors: Math.min(24, Math.max(2, next.numberofcolors)),
-      pathomit: Math.max(0, Math.min(40, next.pathomit)),
+      colorPrecision: Math.max(1, Math.min(8, Math.round(next.colorPrecision))),
+      numberofcolors: 2 ** Math.max(1, Math.min(8, Math.round(next.colorPrecision))),
+      filterSpeckle: Math.max(0, Math.min(40, Math.round(next.filterSpeckle))),
+      cornerThreshold: Math.max(0, Math.min(180, Math.round(next.cornerThreshold))),
+      pathPrecision: Math.max(0, Math.min(8, Math.round(next.pathPrecision))),
+      layerDifference: Math.max(0, Math.min(64, Math.round(next.layerDifference))),
+      lengthThreshold: Math.max(1, Math.min(32, Math.round(next.lengthThreshold))),
+      maxIterations: Math.max(0, Math.min(10, Math.round(next.maxIterations))),
+      spliceThreshold: Math.max(0, Math.min(180, Math.round(next.spliceThreshold))),
+      preprocessingScale: Math.max(1, Math.min(2, Math.round(next.preprocessingScale))),
+      bilateralRadius: Math.max(0, Math.min(3, Math.round(next.bilateralRadius))),
+      bilateralColorSigma: Math.max(1, Math.min(96, Math.round(next.bilateralColorSigma))),
+      alphaThreshold: Math.max(0, Math.min(255, Math.round(next.alphaThreshold))),
+      paletteMergeThreshold: Math.max(0, Math.min(128, Math.round(next.paletteMergeThreshold))),
+      colorQuantCycles: Math.max(1, Math.min(8, next.colorQuantCycles)),
+      pathomit: Math.max(0, Math.min(40, next.filterSpeckle)),
       linePathOmit: Math.max(0, Math.min(12, next.linePathOmit)),
-      roundcoords: Math.max(0, Math.min(3, next.roundcoords)),
-      blurRadius: Math.max(0, Math.min(5, next.blurRadius)),
+      roundcoords: Math.max(0, Math.min(8, next.pathPrecision)),
+      blurRadius: Math.max(0, Math.min(3, next.bilateralRadius)),
       blurDelta: Math.max(1, Math.min(64, next.blurDelta)),
-      traceScale: Math.max(1, Math.min(2, next.traceScale)),
-      strokewidth: Math.max(0, Math.min(2, next.strokewidth)),
-      fillOverlap: Math.max(0, Math.min(2, next.fillOverlap)),
+      traceScale: Math.max(1, Math.min(2, next.preprocessingScale)),
+      strokewidth: 0,
+      fillOverlap: 0,
       lineSmoothing: Math.max(0, Math.min(2, next.lineSmoothing)),
       curveSmoothing: Math.max(0, Math.min(2, next.curveSmoothing)),
     });
@@ -59,12 +74,12 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
 
   const suggestedPalette = useMemo(() => {
     if (!processedImageData) return [];
-    return suggestPaletteFromImage(processedImageData, settings.numberofcolors).map(({ r, g, b }) => ({
+    return suggestPaletteFromImage(processedImageData, settings.numberofcolors, settings.colorQuantCycles).map(({ r, g, b }) => ({
       r,
       g,
       b,
     }));
-  }, [processedImageData, settings.numberofcolors]);
+  }, [processedImageData, settings.numberofcolors, settings.colorQuantCycles]);
 
   useEffect(() => {
     replacePalette(suggestedPalette);
@@ -105,6 +120,7 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
     paletteColors,
     selectedPaletteColor,
     selectPaletteColor,
+    addPaletteColor,
     updateSelectedPaletteColor,
     deletePaletteColor,
     mergeSimilarPaletteColors: () => mergeSimilarPaletteColors(64),
