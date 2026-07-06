@@ -7,11 +7,12 @@ import type { WorkspaceTool } from '@/types/workspace.types';
 type PreviewBackground = 'checkerboard' | 'black';
 
 interface StatusBarProps {
-  pathCount: number;
-  byteSize: number;
+  pathCount: number | null;
+  byteSize: number | null;
   activeTool: WorkspaceTool;
   statusMessage?: string | null;
   hasSvg?: boolean;
+  isPreTrace?: boolean;
   zoomScale?: number;
   onZoomIn?: () => void;
   onZoomOut?: () => void;
@@ -31,6 +32,7 @@ export function StatusBar({
   activeTool,
   statusMessage,
   hasSvg = false,
+  isPreTrace = false,
   zoomScale,
   onZoomIn,
   onZoomOut,
@@ -56,10 +58,16 @@ export function StatusBar({
         </span>
       )}
       <div className="flex items-center gap-3">
-        <span>
-          {pathCount} {t('workspace.paths')}
-        </span>
-        <span>{formatBytes(byteSize)}</span>
+        {isPreTrace ? (
+          <span>{t('vec.notTracedYet')}</span>
+        ) : (
+          <>
+            <span>
+              {pathCount ?? 0} {t('workspace.paths')}
+            </span>
+            <span>{byteSize !== null ? formatBytes(byteSize) : '0 B'}</span>
+          </>
+        )}
       </div>
 
       {showViewControls && (
@@ -81,7 +89,7 @@ export function StatusBar({
                 }`}
                 aria-pressed={previewBackground === bg}
               >
-                {bg === 'checkerboard' ? t('shape.bgCheckerboard') : t('shape.bgBlack')}
+                {bg === 'checkerboard' ? t('shape.bgCheckerboard') : t('shape.bgSolid')}
               </button>
             ))}
           </div>

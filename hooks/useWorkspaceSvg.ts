@@ -26,6 +26,7 @@ export function useWorkspaceSvg({
   const [historyIndex, setHistoryIndex] = useState(-1);
   const historyRef = useRef(history);
   const historyIndexRef = useRef(historyIndex);
+  const skipNextHistoryResetRef = useRef<string | null>(null);
 
   useEffect(() => {
     historyRef.current = history;
@@ -108,9 +109,26 @@ export function useWorkspaceSvg({
     const container = containerRef.current;
     const hasLiveSvg = container?.querySelector('svg') != null;
 
+    if (skipNextHistoryResetRef.current === svgString) {
+      skipNextHistoryResetRef.current = null;
+      return;
+    }
+
     if (hasLiveSvg) {
       const mounted = serializeMountedSvg();
       if (mounted === svgString) return;
+
+      mountSvg(svgString);
+      const nextIndex = historyIndexRef.current + 1;
+      setHistory((prev) => {
+        const base = prev.slice(0, historyIndexRef.current + 1);
+        const next = [...base, svgString];
+        historyRef.current = next;
+        return next;
+      });
+      historyIndexRef.current = nextIndex;
+      setHistoryIndex(nextIndex);
+      return;
     }
 
     mountSvg(svgString);
@@ -122,14 +140,15 @@ export function useWorkspaceSvg({
 
   const restore = useCallback(
     (index: number) => {
-      const snap = history[index];
+      const snap = historyRef.current[index];
       if (snap === undefined) return;
       mountSvg(snap);
       historyIndexRef.current = index;
       setHistoryIndex(index);
+      skipNextHistoryResetRef.current = snap;
       onSvgChange?.(snap);
     },
-    [history, mountSvg, onSvgChange]
+    [mountSvg, onSvgChange]
   );
 
   const undo = useCallback(() => {

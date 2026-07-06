@@ -1,4 +1,6 @@
-// Lightweight, dependency-free SVG size optimizer for imagetracerjs output.
+import { optimize as optimizeWithSvgo, type Config as SvgoConfig } from 'svgo/browser';
+
+// Lightweight SVG size optimizer for imagetracerjs output.
 // imagetracerjs writes, on every <path>:
 //   fill="rgb(r,g,b)" stroke="rgb(r,g,b)" stroke-width="1" opacity="1"
 // The stroke duplicates the fill color. Keeping a thin same-color stroke helps
@@ -16,6 +18,12 @@ interface OptimizeOptions {
   compressPaths?: boolean;
   /** Convert rgb(r,g,b) color attributes to shorter hex notation (default true). */
   minifyColors?: boolean;
+  /** Run SVGO after the targeted imagetracer cleanup (default true). */
+  svgo?: boolean;
+  /** Allow SVGO to merge adjacent/same-style paths (default true). Disable for path-level editing. */
+  mergePaths?: boolean;
+  /** Split compound path data with multiple absolute M commands into separate editable paths. */
+  splitCompoundPaths?: boolean;
   /**
    * Seal hairline gaps between adjacent shapes by giving each path a thin stroke
    * of its own fill color. When set, this overrides removeStroke. The number is
@@ -52,6 +60,95 @@ function minifyRgbColors(svg: string): string {
   });
 }
 
+function splitPathDataOnAbsoluteMove(d: string): string[] {
+  const starts: number[] = [];
+  const moveRe = /M(?=[\s+\-.\d])/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = moveRe.exec(d)) !== null) {
+    starts.push(match.index);
+  }
+
+  if (starts.length <= 1) return [d];
+
+  return starts
+    .map((start, index) => d.slice(start, starts[index + 1]).trim())
+    .filter((part) => part.length > 0);
+}
+
+function splitCompoundPathElements(svg: string): string {
+  return svg.replace(/<path\b([^>]*?)\bd="([^"]+)"([^>]*)>/g, (full, before: string, d: string, after: string) => {
+    const parts = splitPathDataOnAbsoluteMove(d);
+    if (parts.length <= 1) return full;
+
+    return parts.map((part) => `<path${before}d="${part}"${after}>`).join('');
+  });
+}
+
+function setRootStrokeWidth(svg: string, strokeWidth: number): string {
+  return svg.replace(/<svg\b([^>]*)>/, (full, attrs: string) => {
+    const cleanedAttrs = attrs.replace(/\s*stroke-width="[^"]*"/g, '');
+    return `<svg${cleanedAttrs} stroke-width="${strokeWidth}">`;
+  });
+}
+
+function runSvgo(svg: string, coordDecimals?: number, mergePaths = true): string {
+  const floatPrecision = typeof coordDecimals === 'number'
+    ? Math.max(0, Math.min(3, coordDecimals))
+    : 1;
+  type SvgoPlugin = NonNullable<SvgoConfig['plugins']>[number];
+  const presetDefaultPlugin = (mergePaths
+    ? {
+        name: 'preset-default' as const,
+        params: {
+          floatPrecision,
+          overrides: {
+            cleanupIds: false,
+            // Path order is semantic for this tracer: fills are painted first,
+            // dark/line layers last. Do not let SVGO sort or reorder content.
+            sortAttrs: false,
+          },
+        },
+      }
+    : {
+        name: 'preset-default' as const,
+        params: {
+          floatPrecision,
+          overrides: {
+            cleanupIds: false,
+            sortAttrs: false,
+            mergePaths: false,
+          },
+        },
+      }) as unknown as SvgoPlugin;
+  const config: SvgoConfig = {
+    multipass: true,
+    js2svg: {
+      indent: 0,
+      pretty: false,
+    },
+    plugins: [
+      presetDefaultPlugin,
+      'removeDimensions',
+      'removeXMLProcInst',
+      'removeComments',
+      'removeMetadata',
+      {
+        name: 'convertPathData',
+        params: {
+          floatPrecision,
+          transformPrecision: floatPrecision,
+          noSpaceAfterFlags: true,
+          utilizeAbsolute: false,
+        },
+      },
+    ],
+  };
+  const result = optimizeWithSvgo(svg, config);
+
+  return result.data;
+}
+
 /**
  * Optimize an imagetracerjs SVG string. Operates on the raw string with
  * targeted regexes (the structure is known and machine-generated), so it is
@@ -64,6 +161,9 @@ export function optimizeSvg(svg: string, opts: OptimizeOptions = {}): string {
     coordDecimals,
     compressPaths = true,
     minifyColors = true,
+    svgo = true,
+    mergePaths = true,
+    splitCompoundPaths = false,
     sealSeams,
   } = opts;
 
@@ -72,13 +172,15 @@ export function optimizeSvg(svg: string, opts: OptimizeOptions = {}): string {
   if (sealSeams && sealSeams > 0) {
     // Give every path a thin stroke equal to its fill so adjacent shapes grow
     // slightly and cover the hairline gaps that show the background through.
-    // First strip any existing stroke attrs, then add matching ones.
+    // First strip any existing stroke attrs, then add matching strokes. The
+    // width is inherited from the root so it is not repeated on every path.
     out = out
       .replace(/\s*stroke="[^"]*"/g, '')
       .replace(/\s*stroke-width="[^"]*"/g, '')
       .replace(/<path([^>]*?)fill="([^"]+)"([^>]*?)>/g,
         (_full, pre: string, fill: string, post: string) =>
-          `<path${pre}fill="${fill}" stroke="${fill}" stroke-width="${sealSeams}"${post}>`);
+          `<path${pre}fill="${fill}" stroke="${fill}"${post}>`);
+    out = setRootStrokeWidth(out, sealSeams);
   } else if (removeStroke) {
     out = out
       .replace(/\s*stroke="[^"]*"/g, '')
@@ -106,11 +208,19 @@ export function optimizeSvg(svg: string, opts: OptimizeOptions = {}): string {
     out = minifyRgbColors(out);
   }
 
+  if (splitCompoundPaths) {
+    out = splitCompoundPathElements(out);
+  }
+
   // Collapse runs of whitespace between tags/attributes that the above may leave.
   out = out
     .replace(/[ \t]{2,}/g, ' ')
     .replace(/>\s+</g, '><')
     .trim();
+
+  if (svgo) {
+    out = runSvgo(out, coordDecimals, mergePaths);
+  }
 
   return out;
 }

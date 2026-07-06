@@ -10,7 +10,6 @@ import { VECTORIZE_DEFAULTS } from '@/types/svg.types';
 import { ImportInspector } from './inspectors/ImportInspector';
 import { VectorizeInspector } from './inspectors/VectorizeInspector';
 import { EraseInspector } from './inspectors/EraseInspector';
-import { EyedropperInspector } from './inspectors/EyedropperInspector';
 import { BrushInspector } from './inspectors/BrushInspector';
 import { NodesInspector } from './inspectors/NodesInspector';
 import { LabelsInspector } from './inspectors/LabelsInspector';
@@ -87,35 +86,30 @@ export function Inspector({
             session={vectorizeSession}
             onContinueToEdit={() => {
               if (vectorizeSession.svg) onSvgString(vectorizeSession.svg);
-              onToolChange('eyedropper');
+              onToolChange('fill');
             }}
           />
         )}
 
-        {activeTool === 'eyedropper' && editor && (
-          <EyedropperInspector
-            svgEl={editor.svgEl}
-            selectedColor={selectedColor}
-            onSelectedColorChange={onSelectedColorChange}
-            onFillColorChange={onFillColorChange}
-            onToolChange={onToolChange}
-            onPushSnapshot={editor.pushSnapshot}
-          />
-        )}
-
-        {activeTool === 'fill' && (
+        {(activeTool === 'fill' || activeTool === 'eyedropper') && (
           <FillInspector
             initialColor={fillColor}
             svgEl={editor?.svgEl ?? null}
+            isSampling={activeTool === 'eyedropper'}
+            sampledColor={selectedColor}
             onFillColorChange={onFillColorChange}
+            onToolChange={onToolChange}
           />
         )}
 
-        {activeTool === 'erase' && editor && (
+        {(activeTool === 'erase' || activeTool === 'erasePath') && editor && (
           <EraseInspector
+            mode={activeTool === 'erase' ? 'brush' : 'path'}
             pathItems={shapeTools.pathItems}
+            eraseSize={shapeTools.brushSize}
             onHover={shapeTools.handleHover}
             onDelete={shapeTools.handleDeleteItem}
+            onEraseSizeChange={shapeTools.setBrushSize}
           />
         )}
 
@@ -157,7 +151,7 @@ export function Inspector({
             svgString={svgString}
             selectedColor={selectedColor}
             onSelectedColorChange={onSelectedColorChange}
-            onPushSnapshot={editor.pushSnapshot}
+            serializeMountedSvg={editor.serializeMountedSvg}
             pathOmit={VECTORIZE_DEFAULTS.pathomit}
             onSvgString={onSvgString}
           />

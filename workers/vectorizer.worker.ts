@@ -1,31 +1,7 @@
 import { WorkerMessage, WorkerResponse, VectorizeSettings, VECTORIZE_DEFAULTS } from '@/types/svg.types';
-import { optimizeSvg, svgByteSize } from '@/lib/optimizeSvg';
-import { applyBlur, buildIconSilhouette, upscaleImageData } from '@/lib/imageFilters';
-import { downscaleForTrace, traceIconByColorLayers } from '@/lib/iconLayerTrace';
-import {
-  quantizeImageToIconPalette,
-  removeSmallSvgPathsByBounds,
-  snapSvgToIconPalette,
-} from '@/lib/iconVectorization';
-import { curveSmoothSvgPaths, simplifySvgPaths } from '@/lib/simplifyPath';
-import { compactSvgPaths } from '@/lib/svgPathCompaction';
-import {
-  applyAlphaMask,
-  isDarkOutlineColor,
-  mergeSimilarPaletteColors,
-  pickDarkOutlineColorFromImage,
-  smoothQuantizedPalette,
-  suggestPaletteFromImage,
-  isDropShadowColor,
-  luminance,
-  type TracePaletteColor as IconTracePaletteColor,
-} from '@/lib/paletteExtraction';
-import { colorDistanceSq } from '@/lib/colorUtils';
+import { applyAlphaThreshold, applyBilateralFilter, upscaleImageData } from '@/lib/imageFilters';
 
-// Notify main thread that worker is ready
 self.postMessage({ type: 'ready' } satisfies WorkerResponse);
-
-const TARGET_SVG_BYTES = 500 * 1024;
 
 let activeRequestId = 0;
 
@@ -40,126 +16,93 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
   if (type === 'vectorize' && imageData && settings) {
     const jobId = requestId ?? ++activeRequestId;
     activeRequestId = jobId;
-
-    try {
-      vectorizeImage(imageData, settings, jobId);
-    } catch (err) {
-      if (jobId !== activeRequestId) return;
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      self.postMessage({ type: 'error', message, requestId: jobId } satisfies WorkerResponse);
-    }
+    void vectorizeImage(imageData, settings, jobId);
   }
 };
 
-function optimizeWithinBudget(svg: string, coordDecimals: number, seamStrokeWidth: number): string {
-  const sealSeams = seamStrokeWidth > 0 ? seamStrokeWidth : undefined;
-  const optimized = optimizeSvg(svg, {
-    dropDefaultOpacity: true,
-    coordDecimals,
-    sealSeams,
-  });
-
-  if (svgByteSize(optimized) <= TARGET_SVG_BYTES) return optimized;
-
-  const attempts = [
-    { epsilon: 0.18, decimals: Math.min(coordDecimals, 1) },
-    { epsilon: 0.28, decimals: Math.min(coordDecimals, 1) },
-    { epsilon: 0.4, decimals: 0 },
-    { epsilon: 0.55, decimals: 0 },
-  ];
-
-  let best = optimized;
-  let bestSize = svgByteSize(best);
-
-  for (const attempt of attempts) {
-    const simplified = simplifySvgPaths(svg, attempt.epsilon, attempt.decimals);
-    const candidate = optimizeSvg(simplified, {
-      dropDefaultOpacity: true,
-      coordDecimals: attempt.decimals,
-      sealSeams,
-    });
-    const candidateSize = svgByteSize(candidate);
-
-    if (candidateSize < bestSize) {
-      best = candidate;
-      bestSize = candidateSize;
-    }
-    if (candidateSize <= TARGET_SVG_BYTES) return candidate;
-  }
-
-  return best;
+function clampInt(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, Math.round(value)));
 }
 
-function vectorizeIcon(withoutWhite: ImageData, settings: VectorizeSettings): string {
-  const traceScale = Math.max(1, Math.min(2, Math.round(settings.traceScale)));
-  const source = upscaleImageData(downscaleForTrace(withoutWhite, Math.round(720 / traceScale)), traceScale);
-  const targetColors = Math.max(2, Math.min(settings.numberofcolors, 24));
-  const rawTraceColors: IconTracePaletteColor[] =
-    settings.customPalette && settings.customPalette.length > 0
-      ? settings.customPalette.slice(0, targetColors).map((color) => ({ ...color, a: 255 }))
-      : suggestPaletteFromImage(source, targetColors);
-  const mergeThreshold = targetColors >= 18 ? 8 : targetColors >= 12 ? 14 : 22;
-  const mergedTraceColors = mergeSimilarPaletteColors(rawTraceColors, mergeThreshold);
-  const outlineColor = pickDarkOutlineColorFromImage(source);
-  const fixedTraceColors =
-    outlineColor && !mergedTraceColors.some((color) => isDarkOutlineColor(color))
-      ? [...mergedTraceColors.slice(0, Math.max(0, targetColors - 1)), outlineColor]
-      : mergedTraceColors;
-  const traceColors = fixedTraceColors.map((color) => ({
-    ...color,
-    a: 255 as const,
-  }));
-
-  const quantizeBlur = Math.min(settings.blurRadius, 2);
-  const quantizeSource = quantizeBlur > 0 ? applyBlur(source, quantizeBlur) : source;
-  const quantized = quantizeImageToIconPalette(quantizeSource, traceColors);
-  const smoothed = smoothQuantizedPalette(quantized, traceColors, settings.blurRadius);
-  const silhouette = buildIconSilhouette(source, Math.min(settings.blurRadius, 3));
-  const iconRaster = applyAlphaMask(smoothed, silhouette);
-
-  const svgString = traceIconByColorLayers(iconRaster, traceColors, settings);
-
-  const withoutTransparent = removeTransparentPaths(svgString);
-  const snapped = snapSvgToIconPalette(withoutTransparent, traceColors);
-  const minPathArea = Math.max(8, Math.round(settings.pathomit * 0.4));
-  const shadowColors = traceColors.filter((color) => isDropShadowColor(color));
-  const protectedFillColors = traceColors.filter(
-    (color) => luminance(color) >= 96 || isDarkOutlineColor(color) || shadowColors.some((shadow) => colorDistanceSq(shadow, color) <= 36 * 36)
+function normalizeSettings(settings: VectorizeSettings): VectorizeSettings {
+  const merged = { ...VECTORIZE_DEFAULTS, ...settings };
+  const colorPrecision = clampInt(
+    Number.isFinite(merged.colorPrecision) ? merged.colorPrecision : Math.round(Math.log2(Math.max(2, merged.numberofcolors))),
+    1,
+    8
   );
-  const withoutSpeckles = removeSmallSvgPathsByBounds(snapped, minPathArea, protectedFillColors);
-  const coordDecimals = Math.max(0, settings.roundcoords);
-
-  const compacted = compactSvgPaths(withoutSpeckles, 50);
-  const curved = curveSmoothSvgPaths(
-    compacted,
-    Math.max(0, Math.min(2, settings.curveSmoothing)),
-    settings.curveSmoothing >= 2 ? 0.55 : 0.35,
-    coordDecimals
+  const filterSpeckle = clampInt(
+    Number.isFinite(merged.filterSpeckle) ? merged.filterSpeckle : merged.pathomit,
+    0,
+    40
+  );
+  const pathPrecision = clampInt(
+    Number.isFinite(merged.pathPrecision) ? merged.pathPrecision : merged.roundcoords,
+    0,
+    8
+  );
+  const preprocessingScale = clampInt(
+    Number.isFinite(merged.preprocessingScale) ? merged.preprocessingScale : merged.traceScale,
+    1,
+    2
+  );
+  const bilateralRadius = clampInt(
+    Number.isFinite(merged.bilateralRadius) ? merged.bilateralRadius : merged.blurRadius,
+    0,
+    3
   );
 
-  const seamStrokeWidth = Math.max(0, Math.min(settings.strokewidth, 2));
-
-  return optimizeWithinBudget(curved, coordDecimals, seamStrokeWidth);
+  return {
+    ...merged,
+    numberofcolors: 2 ** colorPrecision,
+    colorPrecision,
+    filterSpeckle,
+    pathPrecision,
+    preprocessingScale,
+    bilateralRadius,
+    bilateralColorSigma: clampInt(merged.bilateralColorSigma, 1, 96),
+    alphaThreshold: clampInt(merged.alphaThreshold, 0, 255),
+    paletteMergeThreshold: clampInt(merged.paletteMergeThreshold, 0, 128),
+    cornerThreshold: clampInt(merged.cornerThreshold, 0, 180),
+    layerDifference: clampInt(merged.layerDifference, 0, 64),
+    lengthThreshold: clampInt(merged.lengthThreshold, 1, 32),
+    maxIterations: clampInt(merged.maxIterations, 0, 10),
+    spliceThreshold: clampInt(merged.spliceThreshold, 0, 180),
+    pathomit: filterSpeckle,
+    roundcoords: pathPrecision,
+    traceScale: preprocessingScale,
+    blurRadius: bilateralRadius,
+  };
 }
 
-function vectorizeImage(imageData: ImageData, settings: VectorizeSettings, requestId: number): void {
+function preprocessForVTracer(imageData: ImageData, settings: VectorizeSettings): ImageData {
+  const upscaled = upscaleImageData(imageData, settings.preprocessingScale);
+  const alphaCleaned = applyAlphaThreshold(upscaled, settings.alphaThreshold);
+  return applyBilateralFilter(alphaCleaned, settings.bilateralRadius, settings.bilateralColorSigma);
+}
+
+async function vectorizeImage(imageData: ImageData, settings: VectorizeSettings, requestId: number): Promise<void> {
   try {
-    const options = { ...VECTORIZE_DEFAULTS, ...settings };
+    const options = normalizeSettings(settings);
+    const source = preprocessForVTracer(imageData, options);
+    const body = new FormData();
+    body.set('width', String(source.width));
+    body.set('height', String(source.height));
+    body.set('settings', JSON.stringify(options));
+    body.set('pixels', new Blob([source.data], { type: 'application/octet-stream' }));
 
-    const optimized = vectorizeIcon(imageData, {
-      ...options,
-      numberofcolors: Math.max(2, Math.min(options.numberofcolors, 24)),
-      pathomit: Math.max(0, Math.min(options.pathomit, 40)),
-      linePathOmit: Math.max(0, Math.min(options.linePathOmit, 12)),
-      roundcoords: Math.max(0, Math.min(options.roundcoords, 3)),
-      blurRadius: Math.max(0, Math.min(options.blurRadius, 5)),
-      blurDelta: Math.max(1, Math.min(options.blurDelta, 64)),
-      traceScale: Math.max(1, Math.min(options.traceScale, 2)),
-      strokewidth: Math.max(0, Math.min(options.strokewidth, 2)),
-      fillOverlap: Math.max(0, Math.min(options.fillOverlap, 2)),
-      lineSmoothing: Math.max(0, Math.min(options.lineSmoothing, 2)),
-      curveSmoothing: Math.max(0, Math.min(options.curveSmoothing, 2)),
+    const response = await fetch('/api/vectorize', {
+      method: 'POST',
+      body,
     });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => null) as { error?: string } | null;
+      throw new Error(error?.error ?? `Vectorization failed with HTTP ${response.status}`);
+    }
+
+    const { svg: optimized } = await response.json() as { svg?: string };
+    if (!optimized) throw new Error('Vectorization did not return an SVG');
 
     if (requestId !== activeRequestId) return;
     self.postMessage({ type: 'done', svg: optimized, requestId } satisfies WorkerResponse);
@@ -168,8 +111,4 @@ function vectorizeImage(imageData: ImageData, settings: VectorizeSettings, reque
     const message = err instanceof Error ? err.message : 'Vectorization failed';
     self.postMessage({ type: 'error', message, requestId } satisfies WorkerResponse);
   }
-}
-
-function removeTransparentPaths(svg: string): string {
-  return svg.replace(/<path\b(?=[^>]*\bopacity="0(?:\.0+)?")[^>]*>/g, '');
 }

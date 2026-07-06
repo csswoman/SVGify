@@ -2,13 +2,17 @@ import { describe, expect, it } from 'vitest';
 import {
   getToolCursor,
   parsePathFill,
+  resolvePathFromEvent,
   routePathClick,
   type PathClickContext,
 } from './canvasToolInteraction';
 import type { RGBColor } from '@/types/svg.types';
 
 function mockPath(fill: string): SVGPathElement {
-  return { getAttribute: (name: string) => (name === 'fill' ? fill : null) } as SVGPathElement;
+  return {
+    getAttribute: (name: string) => (name === 'fill' ? fill : null),
+    setAttribute: () => {},
+  } as unknown as SVGPathElement;
 }
 
 const red: RGBColor = { r: 255, g: 0, b: 0 };
@@ -30,33 +34,42 @@ describe('routePathClick', () => {
   const baseCtx: PathClickContext = {
     fillColor: blue,
     selectedColor: null,
-    replaceColor: () => {},
+    replacePathColor: () => {},
     pushSnapshot: () => {},
     removePath: () => {},
+    erasePathArea: () => {},
     setSelectedColor: () => {},
+    setFillColor: () => {},
     setSelectedPath: () => {},
     setEditingLabelPath: () => {},
   };
 
-  it('eyedropper sets selected color', () => {
+  it('eyedropper sets selected and fill color, then returns to fill', () => {
     let picked: RGBColor | null = null;
+    let fill: RGBColor | null = null;
+    let nextTool = '';
     routePathClick('eyedropper', mockPath('rgb(255, 0, 0)'), {
       ...baseCtx,
       setSelectedColor: (c) => { picked = c; },
+      setFillColor: (c) => { fill = c; },
+      onToolChange: (tool) => { nextTool = tool; },
     });
     expect(picked).toEqual(red);
+    expect(fill).toEqual(red);
+    expect(nextTool).toBe('fill');
   });
 
-  it('fill replaces when colors differ', () => {
-    let replaced = false;
-    routePathClick('fill', mockPath('rgb(255, 0, 0)'), {
+  it('fill paints only the clicked path when colors differ', () => {
+    const path = mockPath('rgb(255, 0, 0)');
+    let painted = false;
+    routePathClick('fill', path, {
       ...baseCtx,
-      replaceColor: (from, to) => {
-        replaced = from.r === 255 && to.b === 255;
+      replacePathColor: (target, to, from) => {
+        painted = target === path && from.r === 255 && to.b === 255;
       },
       pushSnapshot: () => {},
     });
-    expect(replaced).toBe(true);
+    expect(painted).toBe(true);
   });
 
   it('fill no-ops when same color', () => {
@@ -68,15 +81,15 @@ describe('routePathClick', () => {
     expect(snapshotted).toBe(false);
   });
 
-  it('erase removes path', () => {
+  it('erasePath masks the clicked path area', () => {
     const path = mockPath('rgb(255, 0, 0)');
-    let removed: SVGPathElement | null = null;
-    routePathClick('erase', path, {
+    let erased: SVGPathElement | null = null;
+    routePathClick('erasePath', path, {
       ...baseCtx,
-      removePath: (p) => { removed = p; },
+      erasePathArea: (p) => { erased = p; },
       pushSnapshot: () => {},
-    });
-    expect(removed).toBe(path);
+    }, { clientX: 1, clientY: 1 });
+    expect(erased).toBe(path);
   });
 
   it('nodes selects path', () => {
@@ -106,5 +119,49 @@ describe('getToolCursor', () => {
   });
   it('returns cell for fill', () => {
     expect(getToolCursor('fill')).toBe('cell');
+  });
+});
+
+describe('resolvePathFromEvent', () => {
+  it('prefers the smallest path under the click point', () => {
+    class TestElement {
+      closest() {
+        return null;
+      }
+    }
+
+    class TestPath extends TestElement {
+      constructor(private readonly area: number) {
+        super();
+      }
+
+      getBBox() {
+        return { width: this.area, height: 1 };
+      }
+    }
+
+    const previousElement = globalThis.Element;
+    const previousPath = globalThis.SVGPathElement;
+    const previousDocument = globalThis.document;
+    globalThis.Element = TestElement as unknown as typeof Element;
+    globalThis.SVGPathElement = TestPath as unknown as typeof SVGPathElement;
+
+    const large = new TestPath(1000) as unknown as SVGPathElement;
+    const small = new TestPath(10) as unknown as SVGPathElement;
+    const container = {
+      contains: (el: Element) => el === large || el === small,
+    } as unknown as HTMLElement;
+
+    globalThis.document = {
+      elementsFromPoint: () => [large, small],
+    } as unknown as Document;
+
+    try {
+      expect(resolvePathFromEvent(small, container, { clientX: 1, clientY: 1 })).toBe(small);
+    } finally {
+      globalThis.Element = previousElement;
+      globalThis.SVGPathElement = previousPath;
+      globalThis.document = previousDocument;
+    }
   });
 });

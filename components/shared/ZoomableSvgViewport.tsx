@@ -25,20 +25,35 @@ export function ZoomableSvgViewport({
   onMouseMove,
   'aria-label': ariaLabel,
 }: ZoomableSvgViewportProps) {
+  const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (zoom.shouldSuppressClick()) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    onClick?.(event);
+  };
+
   return (
-    <div className="relative mx-auto w-fit">
+    <div
+      className="relative flex h-full w-full items-center justify-center"
+      onPointerDown={zoom.onPointerDown}
+      onPointerMove={zoom.onPointerMove}
+      onPointerUp={zoom.onPointerUp}
+      onPointerCancel={zoom.onPointerUp}
+      style={{
+        touchAction: 'none',
+        cursor: zoom.isPanning ? 'grabbing' : zoom.isPanMode ? 'grab' : undefined,
+      }}
+    >
       <div
         ref={containerRef}
-        onClick={onClick}
+        onClick={handleClick}
         onMouseMove={onMouseMove}
-        onPointerDown={zoom.onPointerDown}
-        onPointerMove={zoom.onPointerMove}
-        onPointerUp={zoom.onPointerUp}
-        onPointerCancel={zoom.onPointerUp}
         className={className}
         style={{
           touchAction: 'none',
-          cursor: zoom.isPanMode ? 'grab' : undefined,
+          margin: 'auto',
           ...(displaySize
             ? { width: displaySize.width, height: displaySize.height }
             : undefined),

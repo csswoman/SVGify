@@ -23,10 +23,7 @@ export const WORKSPACE_TOOL_GROUPS: WorkspaceToolGroup[] = [
   {
     id: 'edit',
     requiresSvg: true,
-    tools: [
-      { id: 'eyedropper', shortcut: 'I' },
-      { id: 'fill', shortcut: 'G' },
-    ],
+    tools: [{ id: 'fill', shortcut: 'G' }],
   },
   {
     id: 'output',
@@ -38,6 +35,7 @@ export const WORKSPACE_TOOL_GROUPS: WorkspaceToolGroup[] = [
     requiresSvg: true,
     tools: [
       { id: 'erase', shortcut: 'E' },
+      { id: 'erasePath', shortcut: 'X' },
       { id: 'brush', shortcut: 'B' },
       { id: 'nodes', shortcut: 'A' },
       { id: 'labels', shortcut: 'L' },
@@ -49,13 +47,14 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = WORKSPACE_TOOL_GROUPS.flatMap((g
   g.tools.map((t) => t.id)
 );
 
-const SVG_TOOLS = new Set<WorkspaceTool>(
-  WORKSPACE_TOOLS.filter((t) => t !== 'import' && t !== 'vectorize')
-);
+const SVG_TOOLS = new Set<WorkspaceTool>([
+  'eyedropper',
+  ...WORKSPACE_TOOLS.filter((t) => t !== 'import' && t !== 'vectorize'),
+]);
 
 const KEY_MAP: Record<string, WorkspaceTool> = {
   i: 'eyedropper', g: 'fill', e: 'erase',
-  b: 'brush', a: 'nodes', l: 'labels',
+  x: 'erasePath', b: 'brush', a: 'nodes', l: 'labels',
 };
 
 export function isToolEnabled(tool: WorkspaceTool, doc: WorkspaceDocument): boolean {

@@ -19,10 +19,10 @@ export function BrushInspector({
   const { t } = useI18n();
 
   return (
-    <div className="space-y-4">
-      <div>
+    <div className="space-y-5">
+      <div className="space-y-1">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('tool.brush')}</h2>
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('shape.brushSub')}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">{t('shape.brushSub')}</p>
       </div>
       <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
         {t('shape.brushColor')}

@@ -3,6 +3,8 @@ import {
   applyAlphaMask,
   hardenIconAlpha,
   mergeSimilarPaletteColors,
+  nearestPaletteColor,
+  pickDarkOutlineColorFromImage,
   quantizeImageToPalette,
   removeNearWhitePixels,
   smoothQuantizedPalette,
@@ -218,6 +220,28 @@ describe('palette extraction', () => {
     expect(outlineLike).toHaveLength(1);
     expect(palette).toContainEqual({ r: 4, g: 18, b: 38, a: 255 });
     expect(palette).toContainEqual({ r: 0, g: 0, b: 0, a: 255 });
+  });
+
+  it('keeps a dark navy outline as a fixed palette entry instead of folding it into brown', () => {
+    const navy = [4, 18, 38, 255];
+    const brown = [74, 49, 26, 255];
+    const black = [18, 18, 20, 255];
+    const cream = [255, 246, 214, 255];
+    const pixels = [
+      ...navy, ...navy, ...navy, ...brown,
+      ...navy, ...cream, ...cream, ...brown,
+      ...navy, ...cream, ...black, ...brown,
+      ...navy, ...navy, ...navy, ...brown,
+    ];
+    const image = new ImageData(new Uint8ClampedArray(pixels), 4, 4);
+
+    const outline = pickDarkOutlineColorFromImage(image);
+    const palette = suggestPaletteFromImage(image, 32, 6);
+    const snapped = nearestPaletteColor({ r: 7, g: 19, b: 39 }, palette);
+
+    expect(outline).toEqual({ r: 4, g: 18, b: 38 });
+    expect(palette).toContainEqual({ r: 4, g: 18, b: 38, a: 255 });
+    expect(snapped).toEqual({ r: 4, g: 18, b: 38, a: 255 });
   });
 
   it('preserves soft gray shadow alpha when applying the silhouette mask', () => {

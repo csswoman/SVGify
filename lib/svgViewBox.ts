@@ -85,7 +85,9 @@ export function clampZoomOffset(
 export function serializeSvgAtBaseViewBox(svg: SVGSVGElement, base: SvgBaseViewBox): string {
   const current = svg.getAttribute('viewBox');
   svg.setAttribute('viewBox', `${base.x} ${base.y} ${base.w} ${base.h}`);
-  const serialized = new XMLSerializer().serializeToString(svg);
+  const clone = svg.cloneNode(true) as SVGSVGElement;
+  clone.querySelectorAll('[data-svgcraft-editor]').forEach((el) => el.remove());
+  const serialized = new XMLSerializer().serializeToString(clone);
   if (current !== null) {
     svg.setAttribute('viewBox', current);
   } else {

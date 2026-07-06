@@ -92,6 +92,87 @@ export function upscaleImageData(imageData: ImageData, scale: number): ImageData
   return new ImageData(out, outWidth, outHeight);
 }
 
+/** Small bilateral filter for RGBA rasters; smooths noise while preserving hard color edges. */
+export function applyBilateralFilter(imageData: ImageData, radius: number, colorSigma: number): ImageData {
+  const r = Math.max(0, Math.min(3, Math.round(radius)));
+  if (r <= 0) return new ImageData(new Uint8ClampedArray(imageData.data), imageData.width, imageData.height);
+
+  const sigma = Math.max(1, colorSigma);
+  const spatialSigma = Math.max(1, r);
+  const twoSpatialSigmaSq = 2 * spatialSigma * spatialSigma;
+  const twoColorSigmaSq = 2 * sigma * sigma;
+  const { width, height, data } = imageData;
+  const src = new Uint8ClampedArray(data);
+  const out = new Uint8ClampedArray(data.length);
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const centerIndex = (y * width + x) * 4;
+      const cr = src[centerIndex];
+      const cg = src[centerIndex + 1];
+      const cb = src[centerIndex + 2];
+      const ca = src[centerIndex + 3];
+      let rSum = 0;
+      let gSum = 0;
+      let bSum = 0;
+      let aSum = 0;
+      let weightSum = 0;
+
+      for (let dy = -r; dy <= r; dy++) {
+        const ny = Math.min(Math.max(y + dy, 0), height - 1);
+        for (let dx = -r; dx <= r; dx++) {
+          const nx = Math.min(Math.max(x + dx, 0), width - 1);
+          const sampleIndex = (ny * width + nx) * 4;
+          const sr = src[sampleIndex];
+          const sg = src[sampleIndex + 1];
+          const sb = src[sampleIndex + 2];
+          const sa = src[sampleIndex + 3];
+          const spatialDistanceSq = dx * dx + dy * dy;
+          const colorDistanceSq =
+            (sr - cr) * (sr - cr) +
+            (sg - cg) * (sg - cg) +
+            (sb - cb) * (sb - cb) +
+            ((sa - ca) * (sa - ca)) / 4;
+          const weight =
+            Math.exp(-spatialDistanceSq / twoSpatialSigmaSq) *
+            Math.exp(-colorDistanceSq / twoColorSigmaSq);
+
+          rSum += sr * weight;
+          gSum += sg * weight;
+          bSum += sb * weight;
+          aSum += sa * weight;
+          weightSum += weight;
+        }
+      }
+
+      out[centerIndex] = rSum / weightSum;
+      out[centerIndex + 1] = gSum / weightSum;
+      out[centerIndex + 2] = bSum / weightSum;
+      out[centerIndex + 3] = aSum / weightSum;
+    }
+  }
+
+  return new ImageData(out, width, height);
+}
+
+export function applyAlphaThreshold(imageData: ImageData, threshold: number): ImageData {
+  const t = Math.max(0, Math.min(255, Math.round(threshold)));
+  const out = new Uint8ClampedArray(imageData.data);
+
+  for (let i = 0; i < out.length; i += 4) {
+    if (out[i + 3] < t) {
+      out[i] = 0;
+      out[i + 1] = 0;
+      out[i + 2] = 0;
+      out[i + 3] = 0;
+    } else {
+      out[i + 3] = 255;
+    }
+  }
+
+  return new ImageData(out, imageData.width, imageData.height);
+}
+
 function morphAlpha(imageData: ImageData, radius: number, mode: 'dilate' | 'erode'): ImageData {
   if (radius <= 0) return imageData;
 

@@ -24,17 +24,18 @@ describe('isToolEnabled', () => {
 });
 
 describe('toolFromKeyboard', () => {
-  it('maps i/g/e/b/a/l to tools', () => {
+  it('maps i/g/e/x/b/a/l to tools', () => {
     expect(toolFromKeyboard('v')).toBeNull();
     expect(toolFromKeyboard('I')).toBe('eyedropper');
     expect(toolFromKeyboard('g')).toBe('fill');
     expect(toolFromKeyboard('e')).toBe('erase');
+    expect(toolFromKeyboard('x')).toBe('erasePath');
     expect(toolFromKeyboard('b')).toBe('brush');
     expect(toolFromKeyboard('a')).toBe('nodes');
     expect(toolFromKeyboard('l')).toBe('labels');
     expect(toolFromKeyboard('z')).toBeNull();
   });
   it('returns null for unrelated keys', () => {
-    expect(toolFromKeyboard('x')).toBeNull();
+    expect(toolFromKeyboard('q')).toBeNull();
   });
 });

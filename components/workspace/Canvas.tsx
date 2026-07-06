@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ImageDropzone } from '@/components/upload/ImageDropzone';
 import { ImagePreview } from '@/components/vectorize/ImagePreview';
@@ -8,6 +8,8 @@ import { SvgPreview } from '@/components/vectorize/SvgPreview';
 import { PalettePreview } from '@/components/vectorize/PalettePreview';
 import { NodeEditor } from '@/components/shape/NodeEditor';
 import { BrushEditor } from '@/components/shape/BrushEditor';
+import { EraseEditor } from '@/components/shape/EraseEditor';
+import { ZoomControls } from '@/components/shared/ZoomControls';
 import { ZoomableSvgViewport } from '@/components/shared/ZoomableSvgViewport';
 import { formatBytes, svgByteSize } from '@/lib/optimizeSvg';
 import { useSvgColors } from '@/hooks/useSvgColors';
@@ -47,6 +49,7 @@ interface CanvasProps {
   fillColor: RGBColor;
   uploadError: string | null;
   onSelectedColorChange: (color: RGBColor | null) => void;
+  onFillColorChange: (color: RGBColor) => void;
   onImageData: (data: ImageData) => void;
   onUploadError: (error: string) => void;
   onToolChange: (tool: WorkspaceTool) => void;
@@ -66,6 +69,7 @@ export function Canvas({
   fillColor,
   uploadError,
   onSelectedColorChange,
+  onFillColorChange,
   onImageData,
   onUploadError,
   onToolChange,
@@ -79,7 +83,9 @@ export function Canvas({
   });
   const isVectorizeView = activeTool === 'vectorize';
   const canEdit = svgString !== null && editor !== null;
-  const { replaceColor } = useSvgColors(editor?.svgEl ?? null);
+  const tracedSvg = svgString ?? vectorizeSession.svg;
+  const isPreTrace = isVectorizeView && !svgString;
+  const { replacePathColor } = useSvgColors(editor?.svgEl ?? null);
   const vectorizeContainerRef = useRef<HTMLDivElement>(null);
   const vectorizeZoom = useSvgZoom({ containerRef: vectorizeContainerRef });
   const imageZoom = useImageZoom();
@@ -90,12 +96,36 @@ export function Canvas({
     },
     [vectorizeZoom.attach]
   );
+
+  useEffect(() => {
+    if (!isVectorizeView || !tracedSvg || showOriginalPreview) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+      if (event.target instanceof HTMLElement && event.target.isContentEditable) return;
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+      if (event.key === '+' || event.key === '=' || event.code === 'NumpadAdd') {
+        event.preventDefault();
+        vectorizeZoom.zoomIn();
+      } else if (event.key === '-' || event.code === 'NumpadSubtract') {
+        event.preventDefault();
+        vectorizeZoom.zoomOut();
+      } else if (event.key === '0' || event.code === 'Numpad0') {
+        event.preventDefault();
+        vectorizeZoom.reset();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isVectorizeView, showOriginalPreview, tracedSvg, vectorizeZoom]);
   const handleCanvasStatusMessage = useCallback(
     (event: CanvasStatusEvent, detail?: string) => {
       if (event === 'colorPicked' && detail) {
         onStatusMessage(`${t('workspace.statusColorPicked')} ${detail}`);
-      } else if (event === 'fillReplaced') {
-        onStatusMessage(t('workspace.statusFillReplaced'));
+      } else if (event === 'fillPainted') {
+        onStatusMessage(t('workspace.statusFillPainted'));
       }
     },
     [onStatusMessage, t]
@@ -106,11 +136,14 @@ export function Canvas({
     fillColor,
     selectedColor,
     onSelectedColorChange,
-    replaceColor,
+    onFillColorChange,
+    replacePathColor,
     pushSnapshot: editor?.pushSnapshot ?? (() => {}),
     setSelectedPath: shapeTools.setSelectedPath,
     setEditingLabelPath: labelTools.setEditingPath,
     removePath: shapeTools.removePath,
+    erasePathArea: shapeTools.erasePathArea,
+    onToolChange,
     onEraseHover: shapeTools.handleHover,
     onStatusMessage: handleCanvasStatusMessage,
   });
@@ -123,7 +156,7 @@ export function Canvas({
     [onImageData, onToolChange]
   );
 
-  if (!imageData || activeTool === 'import') {
+  if (!imageData) {
     return (
       <section
         aria-label={t('workspace.canvas')}
@@ -148,9 +181,26 @@ export function Canvas({
     return (
       <section
         aria-label={t('workspace.canvas')}
-        className="flex min-w-0 flex-1 items-center justify-center bg-gray-200/60 dark:bg-gray-950/60"
+        className="flex min-w-0 flex-1 flex-col bg-gray-200/60 dark:bg-gray-950/60"
       >
-        <p className="text-sm text-gray-500">{t('vec.vectorizing')}</p>
+        <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
+            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+              {t('tool.vectorize')}
+            </p>
+          </div>
+          <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 transparent-preview">
+            <ImagePreview
+              imageData={imageData}
+              label={t('vec.original')}
+              zoomTransform={imageZoom.transform}
+              onPointerDown={imageZoom.onPointerDown}
+              onPointerMove={imageZoom.onPointerMove}
+              onPointerUp={imageZoom.onPointerUp}
+              onWheel={imageZoom.onWheel}
+            />
+          </div>
+        </div>
       </section>
     );
   }
@@ -166,6 +216,7 @@ export function Canvas({
   const { selectedPath, brushColor, brushSize } = shapeTools;
   const svgForPortals = svgEl as SVGSVGElement | null;
   const showEditorSurface = canEdit && !isVectorizeView;
+  const compareOriginalSvg = vectorizeSession.svg;
 
   return (
     <section
@@ -188,9 +239,9 @@ export function Canvas({
               <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
                 <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
                   {t('vec.vector')}
-                  {svg && (
+                  {tracedSvg && !isPreTrace && (
                     <span className="ml-2 font-normal text-gray-500 dark:text-gray-400">
-                      ({formatBytes(svgByteSize(svg))})
+                      ({formatBytes(svgByteSize(tracedSvg))})
                     </span>
                   )}
                 </p>
@@ -225,13 +276,18 @@ export function Canvas({
                     className="focus-ring rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                     aria-expanded={showOriginalPreview}
                   >
-                    {showOriginalPreview ? t('vec.hideOriginal') : t('vec.showOriginal')}
+                    {showOriginalPreview ? t('vec.hideOriginal') : t('workflow.compareOriginal')}
                   </button>
                 </div>
               </div>
 
               <div className="relative flex-1 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 transparent-preview">
                 <CanvasOverlay isVisible={isLoading} />
+                {isPreTrace && (
+                  <div className="absolute left-3 top-3 rounded-full border border-gray-200 bg-white/90 px-3 py-1 text-[11px] font-medium text-gray-600 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-300">
+                    {t('vec.notTracedYet')}
+                  </div>
+                )}
                 <div
                   ref={vectorizeContainerRef}
                   className="w-full h-full"
@@ -264,22 +320,66 @@ export function Canvas({
       )}
 
       {canEdit && zoom && (
-        <div className={isVectorizeView ? 'hidden' : undefined} aria-hidden={isVectorizeView}>
-          <div className="relative">
-            <CanvasOverlay isVisible={editor?.isBusy ?? false} />
-            <ZoomableSvgViewport
-            containerRef={containerRef}
-            zoom={zoom}
-            displaySize={displaySize}
-            onClick={showEditorSurface ? handleCanvasClick : undefined}
-            onMouseMove={showEditorSurface ? handleCanvasMouseMove : undefined}
-            className="relative flex items-center justify-center overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
-            style={{
-              ...previewStyle,
-              cursor: showEditorSurface ? cursor : undefined,
-            }}
-            aria-label="SVG editor canvas"
-          />
+        <div
+          className={isVectorizeView ? 'hidden' : 'flex h-full min-w-0 flex-1 flex-col'}
+          aria-hidden={isVectorizeView}
+        >
+          <div className="flex min-h-0 flex-1 flex-col gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
+              <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                {t(`tool.${activeTool}`)}
+              </p>
+              <div className="flex items-center gap-2">
+                <ZoomControls
+                  scale={zoom.scale}
+                  onZoomIn={zoom.zoomIn}
+                  onZoomOut={zoom.zoomOut}
+                  onReset={zoom.reset}
+                />
+                {compareOriginalSvg && (
+                  <button
+                    type="button"
+                    onClick={() => setShowOriginalPreview((v) => !v)}
+                    className="focus-ring rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                    aria-expanded={showOriginalPreview}
+                  >
+                    {showOriginalPreview ? t('vec.hideOriginal') : t('workflow.compareOriginal')}
+                  </button>
+                )}
+              </div>
+            </div>
+            <div
+              className="relative min-h-0 flex-1 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
+              style={{
+                ...previewStyle,
+                cursor: showEditorSurface && !showOriginalPreview ? cursor : undefined,
+              }}
+            >
+              <CanvasOverlay isVisible={editor?.isBusy ?? false} />
+              <ZoomableSvgViewport
+                containerRef={containerRef}
+                zoom={zoom}
+                displaySize={displaySize}
+                onClick={showEditorSurface ? handleCanvasClick : undefined}
+                onMouseMove={showEditorSurface ? handleCanvasMouseMove : undefined}
+                className="relative flex items-center justify-center overflow-hidden"
+                style={{
+                  cursor: zoom.isPanning
+                    ? 'grabbing'
+                    : zoom.isPanMode
+                      ? 'grab'
+                      : showEditorSurface
+                        ? cursor
+                        : undefined,
+                }}
+                aria-label="SVG editor canvas"
+              />
+              {showOriginalPreview && compareOriginalSvg && (
+                <div className="absolute inset-0 pointer-events-none">
+                  <SvgPreview svgString={compareOriginalSvg} />
+                </div>
+              )}
+            </div>
           </div>
           {showEditorSurface &&
             svgForPortals &&
@@ -287,6 +387,17 @@ export function Canvas({
             selectedPath &&
             createPortal(
               <NodeEditor pathEl={selectedPath} svgEl={svgForPortals} onChange={pushSnapshot} />,
+              svgForPortals
+            )}
+          {showEditorSurface &&
+            svgForPortals &&
+            activeTool === 'erase' &&
+            createPortal(
+              <EraseEditor
+                svgEl={svgForPortals}
+                size={brushSize}
+                onChange={pushSnapshot}
+              />,
               svgForPortals
             )}
           {showEditorSurface &&

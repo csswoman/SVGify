@@ -23,6 +23,7 @@ function getColorStats(svgElement: SVGElement): ColorStat[] {
   const stats = new Map<string, ColorStat>();
 
   svgElement.querySelectorAll('path').forEach((path) => {
+    if (path.closest('defs') || path.closest('[data-svgcraft-editor]')) return;
     const fill = path.getAttribute('fill');
     if (!fill || fill === 'none') return;
     const color = parseRgbString(fill);
@@ -212,12 +213,17 @@ export function useSvgColors(svgElement: SVGElement | null) {
 
   // Replace color of a specific path
   const replacePathColor = useCallback(
-    (pathEl: SVGPathElement, newColor: RGBColor) => {
+    (pathEl: SVGPathElement, newColor: RGBColor, previousColor?: RGBColor) => {
       const rgbStr = `rgb(${newColor.r},${newColor.g},${newColor.b})`;
       pathEl.setAttribute('fill', rgbStr);
-      pathEl.setAttribute('stroke', rgbStr);
+      const stroke = pathEl.getAttribute('stroke');
+      const strokeColor = stroke ? parseRgbString(stroke) : null;
+      if (previousColor && strokeColor && rgbToHex(strokeColor) === rgbToHex(previousColor)) {
+        pathEl.setAttribute('stroke', rgbStr);
+      }
+      refreshColors();
     },
-    []
+    [refreshColors]
   );
 
   return {

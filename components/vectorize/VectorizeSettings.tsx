@@ -13,6 +13,9 @@ interface VectorizeSettingsProps {
 export function VectorizeSettingsPanel({ settings, onSettingsChange }: VectorizeSettingsProps) {
   const { t } = useI18n();
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const setColorPrecision = (colorPrecision: number) => {
+    onSettingsChange({ ...settings, colorPrecision, numberofcolors: 2 ** colorPrecision });
+  };
 
   return (
     <div className="space-y-6">
@@ -22,42 +25,38 @@ export function VectorizeSettingsPanel({ settings, onSettingsChange }: Vectorize
 
         <div>
           <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-            {t('set.blur')}: <span className="font-mono ml-1">{settings.blurRadius}</span>
+            {t('set.blur')}: <span className="font-mono ml-1">{settings.bilateralRadius}</span>
             <Tooltip text={t('set.blur.help')} label={t('set.blur')} />
           </label>
           <input
             type="range"
             min={0}
-            max={5}
+            max={3}
             step={1}
-            value={settings.blurRadius}
-            onChange={(e) => onSettingsChange({ ...settings, blurRadius: Number(e.target.value) })}
+            value={settings.bilateralRadius}
+            onChange={(e) => onSettingsChange({ ...settings, bilateralRadius: Number(e.target.value), blurRadius: Number(e.target.value) })}
             className="w-full accent-blue-600"
-            aria-label={`${t('set.blur')}: ${settings.blurRadius}`}
+            aria-label={`${t('set.blur')}: ${settings.bilateralRadius}`}
           />
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('set.blur.hint')}</p>
         </div>
 
         <div>
           <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-            {t('set.colors')}: <span className="font-mono ml-1">{settings.numberofcolors}</span>
+            {t('set.colorPrecision')}: <span className="font-mono ml-1">{2 ** settings.colorPrecision}</span>
             <Tooltip text={t('set.colors.help')} label={t('set.colors')} />
           </label>
           <input
             type="range"
             min={2}
-            max={24}
-            value={settings.numberofcolors}
+            max={128}
+            step={1}
+            value={2 ** settings.colorPrecision}
             onChange={(e) =>
-              onSettingsChange({ ...settings, numberofcolors: Number(e.target.value) })
+              setColorPrecision(Math.round(Math.log2(Number(e.target.value))))
             }
             className="w-full accent-blue-600"
-            aria-label={`${t('set.colors')}: ${settings.numberofcolors}`}
+            aria-label={`${t('set.colorPrecision')}: ${2 ** settings.colorPrecision}`}
           />
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('set.colors.hint')}</p>
-          <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
-            {t('set.icon.hint')}
-          </p>
         </div>
       </div>
 
@@ -76,74 +75,75 @@ export function VectorizeSettingsPanel({ settings, onSettingsChange }: Vectorize
           <div className="space-y-5 mt-4">
             <div>
               <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('set.smoothing')}: <span className="font-mono ml-1">{settings.ltres.toFixed(1)}</span>
-                <Tooltip text={t('set.smoothing.help')} label={t('set.smoothing')} />
+                {t('set.colorPrecision')}: <span className="font-mono ml-1">{2 ** settings.colorPrecision}</span>
+                <Tooltip text={t('set.colorPrecision.help')} label={t('set.colorPrecision')} />
               </label>
               <input
                 type="range"
-                min={0.1}
-                max={5}
-                step={0.1}
-                value={settings.ltres}
-                onChange={(e) => onSettingsChange({ ...settings, ltres: parseFloat(e.target.value) })}
+                min={1}
+                max={8}
+                step={1}
+                value={settings.colorPrecision}
+                onChange={(e) => setColorPrecision(Number(e.target.value))}
                 className="w-full accent-blue-600"
-                aria-label={`${t('set.smoothing')}: ${settings.ltres}`}
+                aria-label={`${t('set.colorPrecision')}: ${2 ** settings.colorPrecision}`}
               />
             </div>
 
             <div>
               <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('set.detail')}: <span className="font-mono ml-1">{settings.qtres.toFixed(1)}</span>
-                <Tooltip text={t('set.detail.help')} label={t('set.detail')} />
-              </label>
-              <input
-                type="range"
-                min={0.1}
-                max={5}
-                step={0.1}
-                value={settings.qtres}
-                onChange={(e) => onSettingsChange({ ...settings, qtres: parseFloat(e.target.value) })}
-                className="w-full accent-blue-600"
-                aria-label={`${t('set.detail')}: ${settings.qtres}`}
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('set.noise')}: <span className="font-mono ml-1">{settings.pathomit}</span>
+                {t('set.noise')}: <span className="font-mono ml-1">{settings.filterSpeckle}</span>
                 <Tooltip text={t('set.noise.help')} label={t('set.noise')} />
               </label>
               <input
                 type="range"
                 min={0}
                 max={40}
-                value={settings.pathomit}
-                onChange={(e) => onSettingsChange({ ...settings, pathomit: Number(e.target.value) })}
+                value={settings.filterSpeckle}
+                onChange={(e) => onSettingsChange({ ...settings, filterSpeckle: Number(e.target.value), pathomit: Number(e.target.value) })}
                 className="w-full accent-blue-600"
-                aria-label={`${t('set.noise')}: ${settings.pathomit}`}
+                aria-label={`${t('set.noise')}: ${settings.filterSpeckle}`}
               />
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('set.noise.hint')}</p>
             </div>
 
             <div>
               <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('set.lineNoise')}: <span className="font-mono ml-1">{settings.linePathOmit}</span>
-                <Tooltip text={t('set.lineNoise.help')} label={t('set.lineNoise')} />
+                {t('set.cornerThreshold')}: <span className="font-mono ml-1">{settings.cornerThreshold}</span>
+                <Tooltip text={t('set.cornerThreshold.help')} label={t('set.cornerThreshold')} />
               </label>
               <input
                 type="range"
                 min={0}
-                max={12}
-                value={settings.linePathOmit}
-                onChange={(e) => onSettingsChange({ ...settings, linePathOmit: Number(e.target.value) })}
+                max={180}
+                step={5}
+                value={settings.cornerThreshold}
+                onChange={(e) => onSettingsChange({ ...settings, cornerThreshold: Number(e.target.value) })}
                 className="w-full accent-blue-600"
-                aria-label={`${t('set.lineNoise')}: ${settings.linePathOmit}`}
+                aria-label={`${t('set.cornerThreshold')}: ${settings.cornerThreshold}`}
               />
             </div>
 
             <div>
               <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('set.traceScale')}: <span className="font-mono ml-1">{settings.traceScale}x</span>
+                {t('set.precision')}: <span className="font-mono ml-1">{settings.pathPrecision}</span>
+                <Tooltip text={t('set.precision.help')} label={t('set.precision')} />
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={8}
+                value={settings.pathPrecision}
+                onChange={(e) => onSettingsChange({ ...settings, pathPrecision: Number(e.target.value), roundcoords: Number(e.target.value) })}
+                className="w-full accent-blue-600"
+                aria-label={`${t('set.precision')}: ${settings.pathPrecision}`}
+              />
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('set.precision.hint')}</p>
+            </div>
+
+            <div>
+              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                {t('set.traceScale')}: <span className="font-mono ml-1">{settings.preprocessingScale}x</span>
                 <Tooltip text={t('set.traceScale.help')} label={t('set.traceScale')} />
               </label>
               <input
@@ -151,113 +151,143 @@ export function VectorizeSettingsPanel({ settings, onSettingsChange }: Vectorize
                 min={1}
                 max={2}
                 step={1}
-                value={settings.traceScale}
-                onChange={(e) => onSettingsChange({ ...settings, traceScale: Number(e.target.value) })}
+                value={settings.preprocessingScale}
+                onChange={(e) => onSettingsChange({ ...settings, preprocessingScale: Number(e.target.value), traceScale: Number(e.target.value) })}
                 className="w-full accent-blue-600"
-                aria-label={`${t('set.traceScale')}: ${settings.traceScale}`}
+                aria-label={`${t('set.traceScale')}: ${settings.preprocessingScale}`}
               />
             </div>
 
             <div>
               <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('set.blurDelta')}: <span className="font-mono ml-1">{settings.blurDelta}</span>
-                <Tooltip text={t('set.blurDelta.help')} label={t('set.blurDelta')} />
-              </label>
-              <input
-                type="range"
-                min={1}
-                max={64}
-                value={settings.blurDelta}
-                onChange={(e) => onSettingsChange({ ...settings, blurDelta: Number(e.target.value) })}
-                className="w-full accent-blue-600"
-                aria-label={`${t('set.blurDelta')}: ${settings.blurDelta}`}
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('set.stroke')}:{' '}
-                <span className="font-mono ml-1">{settings.strokewidth.toFixed(2)}</span>
-                <Tooltip text={t('set.stroke.help')} label={t('set.stroke')} />
-              </label>
-              <input
-                type="range"
-                min={0}
-                max={2}
-                step={0.25}
-                value={settings.strokewidth}
-                onChange={(e) => onSettingsChange({ ...settings, strokewidth: Number(e.target.value) })}
-                className="w-full accent-blue-600"
-                aria-label={`${t('set.stroke')}: ${settings.strokewidth}`}
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('set.fillOverlap')}: <span className="font-mono ml-1">{settings.fillOverlap}</span>
-                <Tooltip text={t('set.fillOverlap.help')} label={t('set.fillOverlap')} />
-              </label>
-              <input
-                type="range"
-                min={0}
-                max={2}
-                step={1}
-                value={settings.fillOverlap}
-                onChange={(e) => onSettingsChange({ ...settings, fillOverlap: Number(e.target.value) })}
-                className="w-full accent-blue-600"
-                aria-label={`${t('set.fillOverlap')}: ${settings.fillOverlap}`}
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('set.lineSmoothing')}: <span className="font-mono ml-1">{settings.lineSmoothing}</span>
-                <Tooltip text={t('set.lineSmoothing.help')} label={t('set.lineSmoothing')} />
-              </label>
-              <input
-                type="range"
-                min={0}
-                max={2}
-                step={1}
-                value={settings.lineSmoothing}
-                onChange={(e) => onSettingsChange({ ...settings, lineSmoothing: Number(e.target.value) })}
-                className="w-full accent-blue-600"
-                aria-label={`${t('set.lineSmoothing')}: ${settings.lineSmoothing}`}
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('set.curveSmoothing')}: <span className="font-mono ml-1">{settings.curveSmoothing}</span>
-                <Tooltip text={t('set.curveSmoothing.help')} label={t('set.curveSmoothing')} />
-              </label>
-              <input
-                type="range"
-                min={0}
-                max={2}
-                step={1}
-                value={settings.curveSmoothing}
-                onChange={(e) => onSettingsChange({ ...settings, curveSmoothing: Number(e.target.value) })}
-                className="w-full accent-blue-600"
-                aria-label={`${t('set.curveSmoothing')}: ${settings.curveSmoothing}`}
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('set.precision')}: <span className="font-mono ml-1">{settings.roundcoords}</span>
-                <Tooltip text={t('set.precision.help')} label={t('set.precision')} />
+                {t('set.blur')}: <span className="font-mono ml-1">{settings.bilateralRadius}</span>
+                <Tooltip text={t('set.blur.help')} label={t('set.blur')} />
               </label>
               <input
                 type="range"
                 min={0}
                 max={3}
-                value={settings.roundcoords}
-                onChange={(e) => onSettingsChange({ ...settings, roundcoords: Number(e.target.value) })}
+                step={1}
+                value={settings.bilateralRadius}
+                onChange={(e) => onSettingsChange({ ...settings, bilateralRadius: Number(e.target.value), blurRadius: Number(e.target.value) })}
                 className="w-full accent-blue-600"
-                aria-label={`${t('set.precision')}: ${settings.roundcoords}`}
+                aria-label={`${t('set.blur')}: ${settings.bilateralRadius}`}
               />
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('set.precision.hint')}</p>
+            </div>
+
+            <div>
+              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                {t('set.bilateralSigma')}: <span className="font-mono ml-1">{settings.bilateralColorSigma}</span>
+                <Tooltip text={t('set.bilateralSigma.help')} label={t('set.bilateralSigma')} />
+              </label>
+              <input
+                type="range"
+                min={1}
+                max={96}
+                value={settings.bilateralColorSigma}
+                onChange={(e) => onSettingsChange({ ...settings, bilateralColorSigma: Number(e.target.value) })}
+                className="w-full accent-blue-600"
+                aria-label={`${t('set.bilateralSigma')}: ${settings.bilateralColorSigma}`}
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                {t('set.alphaThreshold')}: <span className="font-mono ml-1">{settings.alphaThreshold}</span>
+                <Tooltip text={t('set.alphaThreshold.help')} label={t('set.alphaThreshold')} />
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={255}
+                value={settings.alphaThreshold}
+                onChange={(e) => onSettingsChange({ ...settings, alphaThreshold: Number(e.target.value) })}
+                className="w-full accent-blue-600"
+                aria-label={`${t('set.alphaThreshold')}: ${settings.alphaThreshold}`}
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                {t('set.paletteMerge')}: <span className="font-mono ml-1">{settings.paletteMergeThreshold}</span>
+                <Tooltip text={t('set.paletteMerge.help')} label={t('set.paletteMerge')} />
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={128}
+                value={settings.paletteMergeThreshold}
+                onChange={(e) => onSettingsChange({ ...settings, paletteMergeThreshold: Number(e.target.value) })}
+                className="w-full accent-blue-600"
+                aria-label={`${t('set.paletteMerge')}: ${settings.paletteMergeThreshold}`}
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                {t('set.layerDifference')}: <span className="font-mono ml-1">{settings.layerDifference}</span>
+                <Tooltip text={t('set.layerDifference.help')} label={t('set.layerDifference')} />
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={64}
+                value={settings.layerDifference}
+                onChange={(e) => onSettingsChange({ ...settings, layerDifference: Number(e.target.value) })}
+                className="w-full accent-blue-600"
+                aria-label={`${t('set.layerDifference')}: ${settings.layerDifference}`}
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                {t('set.lengthThreshold')}: <span className="font-mono ml-1">{settings.lengthThreshold}</span>
+                <Tooltip text={t('set.lengthThreshold.help')} label={t('set.lengthThreshold')} />
+              </label>
+              <input
+                type="range"
+                min={1}
+                max={32}
+                step={1}
+                value={settings.lengthThreshold}
+                onChange={(e) => onSettingsChange({ ...settings, lengthThreshold: Number(e.target.value) })}
+                className="w-full accent-blue-600"
+                aria-label={`${t('set.lengthThreshold')}: ${settings.lengthThreshold}`}
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                {t('set.maxIterations')}: <span className="font-mono ml-1">{settings.maxIterations}</span>
+                <Tooltip text={t('set.maxIterations.help')} label={t('set.maxIterations')} />
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={10}
+                step={1}
+                value={settings.maxIterations}
+                onChange={(e) => onSettingsChange({ ...settings, maxIterations: Number(e.target.value) })}
+                className="w-full accent-blue-600"
+                aria-label={`${t('set.maxIterations')}: ${settings.maxIterations}`}
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                {t('set.spliceThreshold')}: <span className="font-mono ml-1">{settings.spliceThreshold}</span>
+                <Tooltip text={t('set.spliceThreshold.help')} label={t('set.spliceThreshold')} />
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={180}
+                step={5}
+                value={settings.spliceThreshold}
+                onChange={(e) => onSettingsChange({ ...settings, spliceThreshold: Number(e.target.value) })}
+                className="w-full accent-blue-600"
+                aria-label={`${t('set.spliceThreshold')}: ${settings.spliceThreshold}`}
+              />
             </div>
 
           </div>

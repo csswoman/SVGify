@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { PathItem } from '@/components/shape/PathList';
 import type { useWorkspaceSvg } from '@/hooks/useWorkspaceSvg';
+import { addStackEraseShape, clickedSubpathD } from '@/lib/eraseMask';
 import { simplifyPathD } from '@/lib/simplifyPath';
 
 const AUTO_NODE_TARGET = 90;
@@ -43,6 +44,7 @@ export function useWorkspaceShapeTools(editor: ReturnType<typeof useWorkspaceSvg
   const refreshPathItems = useCallback((svg: SVGSVGElement) => {
     const items: PathItem[] = [];
     svg.querySelectorAll('path').forEach((el, i) => {
+      if (el.closest('defs') || el.closest('[data-svgcraft-editor]')) return;
       items.push({
         el,
         id: i,
@@ -95,6 +97,20 @@ export function useWorkspaceShapeTools(editor: ReturnType<typeof useWorkspaceSvg
       path.remove();
       const svg = editor.containerRef.current?.querySelector('svg') as SVGSVGElement | null;
       if (svg) refreshPathItems(svg);
+      editor.pushSnapshot();
+      setSelectedPathState(null);
+    },
+    [editor, refreshPathItems]
+  );
+
+  const erasePathArea = useCallback(
+    (path: SVGPathElement, clientX: number, clientY: number) => {
+      const svg = editor.containerRef.current?.querySelector('svg') as SVGSVGElement | null;
+      if (!svg) return;
+
+      const d = clickedSubpathD(svg, path, clientX, clientY);
+      addStackEraseShape(svg, path, d, path.getAttribute('fill-rule'));
+      refreshPathItems(svg);
       editor.pushSnapshot();
       setSelectedPathState(null);
     },
@@ -170,6 +186,7 @@ export function useWorkspaceShapeTools(editor: ReturnType<typeof useWorkspaceSvg
     handleHover,
     handleDeleteItem,
     removePath,
+    erasePathArea,
     simplifySelectedPath,
   };
 }

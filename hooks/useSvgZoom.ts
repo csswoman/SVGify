@@ -42,7 +42,10 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
   const viewportRef = useRef(initialViewport);
   const onViewportChangeRef = useRef(options.onViewportChange);
   const spaceDownRef = useRef(false);
+  const [spaceDown, setSpaceDown] = useState(false);
   const panRef = useRef<{ active: boolean; x: number; y: number }>({ active: false, x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const suppressNextClickRef = useRef(false);
 
   const [scale, setScale] = useState(initialViewport.scale);
   const scaleRef = useRef(initialViewport.scale);
@@ -55,16 +58,31 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.code === 'Space') spaceDownRef.current = true;
+      if (event.code !== 'Space') return;
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+      if (event.target instanceof HTMLElement && event.target.isContentEditable) return;
+      event.preventDefault();
+      spaceDownRef.current = true;
+      setSpaceDown(true);
     };
     const onKeyUp = (event: KeyboardEvent) => {
-      if (event.code === 'Space') spaceDownRef.current = false;
+      if (event.code !== 'Space') return;
+      spaceDownRef.current = false;
+      setSpaceDown(false);
+    };
+    const clearSpaceMode = () => {
+      spaceDownRef.current = false;
+      panRef.current.active = false;
+      setSpaceDown(false);
+      setIsPanning(false);
     };
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', clearSpaceMode);
     return () => {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', clearSpaceMode);
     };
   }, []);
 
@@ -134,17 +152,18 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
     (dxUser: number, dyUser: number) => {
       const base = baseRef.current;
       if (!base) return;
+      const currentScale = scaleRef.current;
       const next = clampZoomOffset(
         base,
-        scale,
+        currentScale,
         offset.current.x - dxUser,
         offset.current.y - dyUser
       );
       offset.current = next;
-      apply(scale, offset.current.x, offset.current.y);
-      emitViewport(scale, offset.current.x, offset.current.y);
+      apply(currentScale, offset.current.x, offset.current.y);
+      emitViewport(currentScale, offset.current.x, offset.current.y);
     },
-    [scale, apply, emitViewport]
+    [apply, emitViewport]
   );
 
   const panByClientDelta = useCallback(
@@ -170,6 +189,7 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
       event.preventDefault();
       event.currentTarget.setPointerCapture(event.pointerId);
       panRef.current = { active: true, x: event.clientX, y: event.clientY };
+      setIsPanning(true);
     },
     [shouldStartPan]
   );
@@ -179,6 +199,9 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
       if (!panRef.current.active) return;
       const dx = event.clientX - panRef.current.x;
       const dy = event.clientY - panRef.current.y;
+      if (dx !== 0 || dy !== 0) {
+        suppressNextClickRef.current = true;
+      }
       panRef.current = { active: true, x: event.clientX, y: event.clientY };
       panByClientDelta(dx, dy);
     },
@@ -188,9 +211,17 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
   const onPointerUp = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
     if (!panRef.current.active) return;
     panRef.current.active = false;
+    setIsPanning(false);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+  }, []);
+
+  const shouldSuppressClick = useCallback(() => {
+    if (spaceDownRef.current || panRef.current.active) return true;
+    if (!suppressNextClickRef.current) return false;
+    suppressNextClickRef.current = false;
+    return true;
   }, []);
 
   const serializeMountedSvg = useCallback((): string | null => {
@@ -225,8 +256,10 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
     onPointerDown,
     onPointerMove,
     onPointerUp,
+    shouldSuppressClick,
     serializeMountedSvg,
     getBaseViewBox,
-    isPanMode: scale > 1,
+    isPanMode: spaceDown || isPanning,
+    isPanning,
   };
 }

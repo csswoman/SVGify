@@ -33,6 +33,7 @@ export function Workspace() {
     imageData,
     enabled: activeTool === 'vectorize',
   });
+  const workspaceSvgString = svgString ?? vectorizeSession.svg;
 
   const handleResetDocument = useCallback(() => {
     setImageData(null);
@@ -43,7 +44,7 @@ export function Workspace() {
   }, []);
 
   const editor = useWorkspaceSvg({
-    svgString,
+    svgString: workspaceSvgString,
     zoomViewport,
     onZoomViewportChange: setZoomViewport,
     onSvgChange: setSvgString,
@@ -51,7 +52,7 @@ export function Workspace() {
 
   const shapeTools = useWorkspaceShapeTools(editor);
   const labelTools = useWorkspaceLabels(editor, activeTool);
-  const document = { imageData, svgString };
+  const document = { imageData, svgString: workspaceSvgString };
 
   const handleToolChange = useCallback(
     (tool: WorkspaceTool) => {
@@ -76,17 +77,20 @@ export function Workspace() {
     onToolChange: handleToolChange,
     onUndo: () => editor.undo(),
     onRedo: () => editor.redo(),
+    onZoomIn: activeTool === 'vectorize' ? undefined : () => editor.zoom.zoomIn(),
+    onZoomOut: activeTool === 'vectorize' ? undefined : () => editor.zoom.zoomOut(),
+    onZoomReset: activeTool === 'vectorize' ? undefined : () => editor.zoom.reset(),
   });
 
-  const isPreTrace = activeTool === 'vectorize' && svgString === null;
-  const pathCount = svgString ? countPaths(svgString) : null;
-  const byteSize = svgString ? svgByteSize(svgString) : null;
+  const isPreTrace = activeTool === 'vectorize' && workspaceSvgString === null;
+  const pathCount = workspaceSvgString ? countPaths(workspaceSvgString) : null;
+  const byteSize = workspaceSvgString ? svgByteSize(workspaceSvgString) : null;
 
   return (
     <ErrorBoundary>
       <div className="flex h-[calc(100vh-7rem)] min-h-[46rem] flex-col overflow-hidden rounded-xl border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900">
         <TopBar
-          svgString={svgString}
+          svgString={workspaceSvgString}
           labels={labelTools.labels}
           canUndo={editor.canUndo}
           canRedo={editor.canRedo}
@@ -100,9 +104,9 @@ export function Workspace() {
           <Canvas
             activeTool={activeTool}
             imageData={imageData}
-            svgString={svgString}
+            svgString={workspaceSvgString}
             vectorizeSession={vectorizeSession}
-            editor={svgString ? editor : null}
+            editor={workspaceSvgString ? editor : null}
             shapeTools={shapeTools}
             labelTools={labelTools}
             previewBackground={previewBackground}
@@ -122,9 +126,9 @@ export function Workspace() {
           <Inspector
             activeTool={activeTool}
             imageData={imageData}
-            svgString={svgString}
+            svgString={workspaceSvgString}
             vectorizeSession={vectorizeSession}
-            editor={svgString ? editor : null}
+            editor={workspaceSvgString ? editor : null}
             shapeTools={shapeTools}
             labelTools={labelTools}
             selectedColor={selectedColor}
@@ -143,7 +147,7 @@ export function Workspace() {
             byteSize={byteSize}
             activeTool={activeTool}
             statusMessage={statusMessage}
-            hasSvg={svgString !== null}
+            hasSvg={workspaceSvgString !== null}
             isPreTrace={isPreTrace}
             zoomScale={editor?.zoom.scale}
           onZoomIn={editor ? () => editor.zoom.zoomIn() : undefined}

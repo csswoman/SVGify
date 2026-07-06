@@ -25,10 +25,10 @@ export function LabelsInspector({
   const { t } = useI18n();
 
   return (
-    <div className="space-y-4">
-      <div>
+    <div className="space-y-5">
+      <div className="space-y-1">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('tool.labels')}</h2>
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('workspace.labelsHint')}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">{t('workspace.labelsHint')}</p>
       </div>
       {editingPath ? (
         <LabelInput

@@ -20,7 +20,7 @@ interface OptimizeInspectorProps {
   svgString: string;
   selectedColor: RGBColor | null;
   onSelectedColorChange: (color: RGBColor | null) => void;
-  onPushSnapshot: () => void;
+  serializeMountedSvg: () => string | null;
   pathOmit: number;
   onSvgString: (svg: string) => void;
 }
@@ -30,7 +30,7 @@ export function OptimizeInspector({
   svgString,
   selectedColor,
   onSelectedColorChange,
-  onPushSnapshot,
+  serializeMountedSvg,
   pathOmit,
   onSvgString,
 }: OptimizeInspectorProps) {
@@ -50,17 +50,22 @@ export function OptimizeInspector({
     if (svgEl) extractColors();
   }, [svgEl, extractColors]);
 
+  const commitMountedSvg = useCallback(() => {
+    const nextSvg = serializeMountedSvg();
+    if (nextSvg) onSvgString(nextSvg);
+  }, [serializeMountedSvg, onSvgString]);
+
   const handleReapplyOriginal = useCallback(
     (color: RGBColor) => {
       if (selectedColor && rgbToHex(selectedColor) !== rgbToHex(color)) {
         replaceColor(selectedColor, color);
         onSelectedColorChange(color);
-        onPushSnapshot();
+        commitMountedSvg();
       } else {
         onSelectedColorChange(color);
       }
     },
-    [selectedColor, replaceColor, onSelectedColorChange, onPushSnapshot]
+    [selectedColor, replaceColor, onSelectedColorChange, commitMountedSvg]
   );
 
   const handleDeleteColor = useCallback(
@@ -69,9 +74,9 @@ export function OptimizeInspector({
       if (selectedColor && rgbToHex(selectedColor) === rgbToHex(color)) {
         onSelectedColorChange(null);
       }
-      onPushSnapshot();
+      commitMountedSvg();
     },
-    [deleteColor, selectedColor, onSelectedColorChange, onPushSnapshot]
+    [deleteColor, selectedColor, onSelectedColorChange, commitMountedSvg]
   );
 
   const handleCleanFragments = useCallback(() => {
@@ -95,7 +100,16 @@ export function OptimizeInspector({
   }, [svgString, shapeTarget, onSvgString]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      <div className="space-y-1">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          {t('tool.optimize')}
+        </h2>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          {t('vec.complexWarn')}
+        </p>
+      </div>
+
       <section className="space-y-4">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           {t('optimize.paletteSection')}
@@ -131,7 +145,7 @@ export function OptimizeInspector({
             type="button"
             onClick={() => {
               mergeSimilar(mergeThreshold);
-              onPushSnapshot();
+              commitMountedSvg();
             }}
             className="focus-ring flex w-full items-center justify-center gap-1 rounded-lg border border-blue-600 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 dark:border-blue-500 dark:bg-gray-800 dark:text-blue-300 dark:hover:bg-blue-950/40"
           >
@@ -141,7 +155,7 @@ export function OptimizeInspector({
             type="button"
             onClick={() => {
               normalizePalette(targetCount);
-              onPushSnapshot();
+              commitMountedSvg();
             }}
             className="focus-ring flex w-full items-center justify-center gap-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
           >
@@ -152,7 +166,7 @@ export function OptimizeInspector({
             type="button"
             onClick={() => {
               snapDarksToBlack(72);
-              onPushSnapshot();
+              commitMountedSvg();
             }}
             className="flex w-full items-center justify-center gap-1 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-black"
           >

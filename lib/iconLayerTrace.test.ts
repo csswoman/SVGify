@@ -8,6 +8,7 @@ import {
   smoothColorMask,
   traceIconByColorLayers,
 } from './iconLayerTrace';
+import { VECTORIZE_DEFAULTS } from '../types/svg.types';
 
 class TestImageData {
   readonly colorSpace: PredefinedColorSpace = 'srgb';
@@ -122,7 +123,9 @@ describe('icon layer trace helpers', () => {
     );
 
     const svg = traceIconByColorLayers(input, [yellow, black], {
+      ...VECTORIZE_DEFAULTS,
       numberofcolors: 2,
+      colorQuantCycles: 1,
       ltres: 2,
       qtres: 2,
       strokewidth: 1,
@@ -160,7 +163,9 @@ describe('icon layer trace helpers', () => {
       { r: 255, g: 246, b: 214 },
       { r: 68, g: 50, b: 29 },
     ], {
+      ...VECTORIZE_DEFAULTS,
       numberofcolors: 2,
+      colorQuantCycles: 1,
       ltres: 1,
       qtres: 1,
       strokewidth: 1,

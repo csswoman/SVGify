@@ -96,7 +96,7 @@ export function TopBar({
         <button
           type="button"
           onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
-          aria-label={`${t('theme.switchLang')}: ${t('lang.toggle')}`}
+          aria-label={`${t('theme.switchLang')}: ${t('lang.current')}`}
           className="focus-ring flex min-h-11 items-center gap-1 rounded-md border border-gray-200 px-2 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
         >
           <Globe size={16} aria-hidden />

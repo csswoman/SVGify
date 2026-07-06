@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import sharp from 'sharp';
-import { VECTORIZE_DEFAULTS, type VectorizeSettings } from '@/types/svg.types';
+import { RGBColor, VECTORIZE_DEFAULTS, type VectorizeSettings } from '@/types/svg.types';
 import { optimizeSvg, svgByteSize } from '@/lib/optimizeSvg';
 import { applyBlur, buildIconSilhouette, upscaleImageData } from '@/lib/imageFilters';
 import { downscaleForTrace, traceIconByColorLayers } from '@/lib/iconLayerTrace';
@@ -47,6 +47,7 @@ if (typeof ImageData === 'undefined') {
 const OUT_DIR = join(process.cwd(), 'out', 'diagnostics', process.env.DIAG_CASE ?? 'dog-line-art');
 const TARGET_SVG_BYTES = 500 * 1024;
 const OUTPUT_PREFIX = process.env.DIAG_PREFIX ?? 'before';
+const MAX_TRACE_COLORS = 64;
 
 function envNumber(name: string, fallback: number): number {
   const raw = process.env[name];
@@ -58,6 +59,7 @@ function envNumber(name: string, fallback: number): number {
 interface DiagnosticVectorizeResult {
   svg: string;
   curvedSvg: string;
+  preSvgoSvg: string;
   traceColors: TracePaletteColor[];
   pathCount: number;
   byteSize: number;
@@ -118,28 +120,50 @@ function removeTransparentPaths(svg: string): string {
   return svg.replace(/<path\b(?=[^>]*\bopacity="0(?:\.0+)?")[^>]*>/g, '');
 }
 
+function withFixedOutlineColor(
+  palette: readonly RGBColor[],
+  outlineColor: RGBColor | null,
+  targetColors: number
+): RGBColor[] {
+  if (!outlineColor) return palette.slice(0, targetColors);
+
+  const exactIndex = palette.findIndex((color) => colorDistanceSq(color, outlineColor) <= 8 * 8);
+  if (exactIndex >= 0) {
+    return [
+      outlineColor,
+      ...palette.filter((_, index) => index !== exactIndex),
+    ].slice(0, targetColors);
+  }
+
+  return [
+    outlineColor,
+    ...palette,
+  ].slice(0, targetColors);
+}
+
 function diagnosticVectorize(imageData: ImageData, settings: VectorizeSettings): DiagnosticVectorizeResult {
   const traceScale = Math.max(1, Math.min(2, Math.round(settings.traceScale)));
   const source = upscaleImageData(downscaleForTrace(imageData, Math.round(720 / traceScale)), traceScale);
-  const targetColors = Math.max(2, Math.min(settings.numberofcolors, 24));
-  const rawTraceColors = suggestPaletteFromImage(source, targetColors);
-  const mergeThreshold = targetColors >= 18 ? 8 : targetColors >= 12 ? 14 : 22;
+  const targetColors = Math.max(2, Math.min(settings.numberofcolors, MAX_TRACE_COLORS));
+  const rawTraceColors = suggestPaletteFromImage(source, targetColors, settings.colorQuantCycles);
+  const mergeThreshold = targetColors >= 48 ? 4 : targetColors >= 32 ? 6 : targetColors >= 18 ? 8 : targetColors >= 12 ? 14 : 22;
   const mergedTraceColors = mergeSimilarPaletteColors(rawTraceColors, mergeThreshold);
   const outlineColor = pickDarkOutlineColorFromImage(source);
-  const fixedTraceColors =
-    outlineColor && !mergedTraceColors.some((color) => isDarkOutlineColor(color))
-      ? [...mergedTraceColors.slice(0, Math.max(0, targetColors - 1)), outlineColor]
-      : mergedTraceColors;
+  const fixedTraceColors = withFixedOutlineColor(
+    mergedTraceColors,
+    outlineColor,
+    targetColors
+  );
   const traceColors = fixedTraceColors.map((color) => ({
     ...color,
     a: 255 as const,
   }));
 
-  const quantizeBlur = Math.min(settings.blurRadius, 2);
+  const quantizeBlur = Math.min(settings.blurRadius, 1);
   const quantizeSource = quantizeBlur > 0 ? applyBlur(source, quantizeBlur) : source;
   const quantized = quantizeImageToIconPalette(quantizeSource, traceColors);
-  const smoothed = smoothQuantizedPalette(quantized, traceColors, settings.blurRadius);
-  const silhouette = buildIconSilhouette(source, Math.min(settings.blurRadius, 3));
+  const smoothed = smoothQuantizedPalette(quantized, traceColors, Math.min(settings.blurRadius, 1));
+  const silhouette = buildIconSilhouette(source, Math.min(settings.blurRadius, 1));
   const iconRaster = applyAlphaMask(smoothed, silhouette);
   const layered = traceIconByColorLayers(iconRaster, traceColors, settings);
   const withoutTransparent = removeTransparentPaths(layered);
@@ -159,6 +183,12 @@ function diagnosticVectorize(imageData: ImageData, settings: VectorizeSettings):
   );
   const seamStrokeWidth = Math.max(0, Math.min(settings.strokewidth, 2));
   const svg = optimizeWithinBudget(curved, Math.max(0, settings.roundcoords), seamStrokeWidth);
+  const preSvgo = optimizeSvg(curved, {
+    dropDefaultOpacity: true,
+    coordDecimals: Math.max(0, settings.roundcoords),
+    sealSeams: seamStrokeWidth > 0 ? seamStrokeWidth : undefined,
+    svgo: false,
+  });
   const paths = svg.match(/<path\b[^>]*>/g) ?? [];
   const fillOrder = paths
     .map((path) => /fill="([^"]+)"/.exec(path)?.[1])
@@ -167,6 +197,7 @@ function diagnosticVectorize(imageData: ImageData, settings: VectorizeSettings):
   return {
     svg,
     curvedSvg: curved,
+    preSvgoSvg: preSvgo,
     traceColors,
     pathCount: countPaths(svg),
     byteSize: svgByteSize(svg),
@@ -182,7 +213,8 @@ describe('vectorizer dog line-art diagnosis', () => {
     const imageData = imageDataFromFixture();
     const settings: VectorizeSettings = {
       ...VECTORIZE_DEFAULTS,
-      numberofcolors: 18,
+      numberofcolors: envNumber('DIAG_COLORS', VECTORIZE_DEFAULTS.numberofcolors),
+      colorQuantCycles: envNumber('DIAG_COLOR_QUANT_CYCLES', VECTORIZE_DEFAULTS.colorQuantCycles),
       blurRadius: 1,
       pathomit: 18,
       linePathOmit: envNumber('DIAG_LINE_PATHOMIT', VECTORIZE_DEFAULTS.linePathOmit),
@@ -204,11 +236,17 @@ describe('vectorizer dog line-art diagnosis', () => {
       extractedSvgPalette: extractPaletteFromSvgString(result.svg).map((color) => rgbToHex(color)),
       pathCount: result.pathCount,
       byteSize: result.byteSize,
+      stageByteSizes: {
+        raw: svgByteSize(result.curvedSvg),
+        preSvgo: svgByteSize(result.preSvgoSvg),
+        final: result.byteSize,
+      },
       polygonPathCount: result.polygonPathCount,
       curvePathCount: result.curvePathCount,
       curvedQCount: (result.curvedSvg.match(/Q/g) ?? []).length,
       finalQCount: (result.svg.match(/Q/g) ?? []).length,
       strokeWidth: Math.max(0, Math.min(settings.strokewidth, 2)),
+      colorQuantCycles: Math.max(1, Math.min(settings.colorQuantCycles, 8)),
       traceScale: Math.max(1, Math.min(2, Math.round(settings.traceScale))),
       linePathOmit: Math.max(0, Math.min(settings.linePathOmit, 12)),
       firstFills: result.fillOrder.slice(0, 10),

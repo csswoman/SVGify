@@ -229,8 +229,7 @@ function prepareLayerMask(
   if (isLine) {
     const closeRadius = Math.max(0, Math.min(2, Math.round(settings.lineSmoothing)));
     const closed = closeRadius > 0 ? morphCloseAlpha(mask, closeRadius) : mask;
-    const reconnected = closeRadius > 0 ? morphDilateAlpha(closed, 1) : closed;
-    return smoothColorMask(reconnected, settings.blurRadius);
+    return smoothColorMask(closed, settings.blurRadius);
   }
 
   const overlap = Math.max(0, Math.min(2, settings.fillOverlap));
@@ -291,13 +290,13 @@ function buildTraceOptions(settings: VectorizeSettings, rasterSize: number, isLi
   return {
     numberofcolors: TRACE_PALETTE.length,
     pal: [...TRACE_PALETTE],
-    colorquantcycles: 1,
+    colorquantcycles: Math.max(1, Math.min(8, Math.round(settings.colorQuantCycles))),
     mincolorratio: 0,
     colorsampling: 0,
     // Low line tolerance forces ImageTracer to prefer quadratic splines over
     // long jagged polygon runs; qtres then controls how much the spline may smooth.
-    ltres: Math.max(0.05, Math.min(settings.ltres * 0.2 + blurBoost, 0.45)),
-    qtres: Math.max(0.8, Math.min(settings.qtres + blurBoost, 2.2)),
+    ltres: Math.max(0.05, Math.min(settings.ltres * 0.16 + blurBoost, 0.35)),
+    qtres: Math.max(0.5, Math.min(settings.qtres * 0.85 + blurBoost, 1.8)),
     pathomit: Math.min(maxPathOmit, Math.max(minPathOmit, Math.round(basePathOmit / (4 * sizeFactor)))),
     rightangleenhance: false,
     linefilter: true,
@@ -306,7 +305,7 @@ function buildTraceOptions(settings: VectorizeSettings, rasterSize: number, isLi
     roundcoords: Math.max(0, settings.roundcoords),
     viewbox: true,
     desc: false,
-    blurradius: Math.min(3, Math.max(0, settings.blurRadius)),
+    blurradius: Math.min(1, Math.max(0, settings.blurRadius)),
     blurdelta: Math.max(1, Math.min(64, settings.blurDelta)),
   };
 }
@@ -315,11 +314,11 @@ function buildCombinedTraceOptions(settings: VectorizeSettings, palette: TracePa
   return {
     numberofcolors: palette.length,
     pal: [...palette, { r: 255, g: 255, b: 255, a: 0 }],
-    colorquantcycles: 1,
+    colorquantcycles: Math.max(1, Math.min(8, Math.round(settings.colorQuantCycles))),
     mincolorratio: 0,
     colorsampling: 0,
-    ltres: Math.max(0.05, Math.min(settings.ltres * 0.2 + settings.blurRadius * 0.1, 0.45)),
-    qtres: Math.max(0.8, Math.min(settings.qtres + settings.blurRadius * 0.08, 2.2)),
+    ltres: Math.max(0.05, Math.min(settings.ltres * 0.16 + settings.blurRadius * 0.08, 0.35)),
+    qtres: Math.max(0.5, Math.min(settings.qtres * 0.85 + settings.blurRadius * 0.06, 1.8)),
     pathomit: Math.min(12, Math.max(4, Math.round(settings.pathomit / 3))),
     rightangleenhance: false,
     linefilter: true,

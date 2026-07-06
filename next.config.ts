@@ -8,7 +8,7 @@ const __impeccableLiveDev =
 
 const csp = [
   "default-src 'self'",
-  // wasm-unsafe-eval is required for the imagetracerjs Web Worker
+  // wasm-unsafe-eval is kept for worker-compatible optimizer dependencies.
   `script-src 'self' 'wasm-unsafe-eval'${__impeccableLiveDev}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
@@ -19,9 +19,9 @@ const csp = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
-  // output:'export' only during `next build` — it breaks `next dev`
-  ...(isProd ? { output: "export" } : {}),
   reactStrictMode: true,
+  compress: true,
+  serverExternalPackages: ["@neplex/vectorizer"],
   // Serve CSP as an HTTP header in production (meta tags can't cover all Next.js inline scripts)
   async headers() {
     if (!isProd) return [];

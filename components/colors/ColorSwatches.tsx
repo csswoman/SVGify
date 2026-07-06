@@ -47,7 +47,8 @@ export function ColorSwatches({
                 >
                   <span
                     className={[
-                      'aspect-square w-full rounded-md',
+                      'aspect-square w-full rounded-md transition',
+                      'group-hover:ring-1 group-hover:ring-gray-300 dark:group-hover:ring-gray-600',
                       isSelected
                         ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-800'
                         : '',

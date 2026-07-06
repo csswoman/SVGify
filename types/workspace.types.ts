@@ -4,6 +4,7 @@ export type WorkspaceTool =
   | 'eyedropper'
   | 'fill'
   | 'erase'
+  | 'erasePath'
   | 'brush'
   | 'nodes'
   | 'labels'

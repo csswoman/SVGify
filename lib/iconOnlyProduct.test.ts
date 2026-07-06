@@ -24,19 +24,28 @@ describe('icon-only product surface', () => {
     expect(types).not.toContain("mode: 'icon' | 'color' | 'lineart'");
   });
 
-  it('keeps the worker on a single icon pipeline', () => {
+  it('keeps vectorization on the vtracer pipeline', () => {
     const worker = readSource('workers/vectorizer.worker.ts');
+    const route = readSource('app/api/vectorize/route.ts');
     const packageJson = readSource('package.json');
 
-    expect(worker).toContain('settings.customPalette');
-    expect(worker).toContain('applyAlphaMask');
+    expect(worker).toContain("fetch('/api/vectorize'");
+    expect(worker).toContain('applyBilateralFilter');
+    expect(route).toContain("from '@neplex/vectorizer'");
+    expect(route).toContain('Hierarchical.Stacked');
+    expect(route).toContain('PathSimplifyMode.Spline');
+    expect(route).toContain('vectorizeRaw');
+    expect(worker).not.toContain('applyAlphaMask');
+    expect(worker).not.toContain('traceIconByColorLayers');
     expect(worker).not.toContain('traceIconColorLayers');
+    expect(worker).not.toContain('strokeWidth');
     expect(worker).not.toContain("options.mode");
     expect(worker).not.toContain("mode ===");
     expect(worker).not.toContain('vectorizeLineart');
     expect(worker).not.toContain('quantizeToDominantPalette');
     expect(worker).not.toContain('normalizeSvgPalette');
     expect(worker).not.toContain('vectortracer');
+    expect(packageJson).toContain('@neplex/vectorizer');
     expect(packageJson).not.toContain('vectortracer');
   });
 });

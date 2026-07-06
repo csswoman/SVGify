@@ -100,6 +100,30 @@ function collectSvgStringColors(svg: string): RGBColor[] {
   return colors;
 }
 
+interface SvgColorCount {
+  color: RGBColor;
+  count: number;
+}
+
+function collectSvgStringColorCounts(svg: string): SvgColorCount[] {
+  const counts = new Map<string, SvgColorCount>();
+  const re = /\b(?:fill|stroke)="(#[0-9a-f]{3}|#[0-9a-f]{6}|rgba?\(\s*\d+,\s*\d+,\s*\d+(?:,\s*[\d.]+)?\s*\))"/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(svg)) !== null) {
+    const color = parseRgbString(m[1]);
+    if (!color) continue;
+    const hex = rgbToHex(color);
+    const current = counts.get(hex);
+    if (current) {
+      current.count += 1;
+    } else {
+      counts.set(hex, { color, count: 1 });
+    }
+  }
+
+  return [...counts.values()].sort((a, b) => b.count - a.count);
+}
+
 // Extract unique colors from SVG DOM
 export function extractFillColorsFromSvg(svg: SVGElement): RGBColor[] {
   const colors: RGBColor[] = [];
@@ -222,6 +246,35 @@ export function simplifyColors(svg: string, threshold: number): string {
   if (threshold <= 0) return svg;
   const map = buildColorMergeMap(svg, threshold);
   return applyColorMergeToSvgString(svg, map);
+}
+
+/**
+ * Cap a traced SVG palette by keeping the most common colors and reassigning
+ * the rest to the nearest retained color. This preserves vtracer geometry and
+ * layering while preventing shaded outputs from exposing thousands of fills.
+ */
+export function reduceSvgStringColorsToCount(svg: string, targetCount: number): string {
+  const count = Math.max(1, Math.floor(targetCount));
+  const ranked = collectSvgStringColorCounts(svg);
+  if (ranked.length <= count) return svg;
+
+  const dominant = ranked.slice(0, count).map((entry) => entry.color);
+  const replacements = new Map<string, RGBColor>();
+
+  for (const { color } of ranked.slice(count)) {
+    let nearest = dominant[0];
+    let best = colorDistanceSq(color, nearest);
+    for (const candidate of dominant) {
+      const distance = colorDistanceSq(color, candidate);
+      if (distance < best) {
+        best = distance;
+        nearest = candidate;
+      }
+    }
+    replacements.set(rgbToHex(color), nearest);
+  }
+
+  return applyColorMergeToSvgString(svg, replacements);
 }
 
 // Replace all paths with a specific fill color

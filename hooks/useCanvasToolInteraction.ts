@@ -18,11 +18,14 @@ interface UseCanvasToolInteractionOptions {
   fillColor: RGBColor;
   selectedColor: RGBColor | null;
   onSelectedColorChange: (color: RGBColor | null) => void;
-  replaceColor: (from: RGBColor, to: RGBColor) => void;
+  onFillColorChange: (color: RGBColor) => void;
+  replacePathColor: (path: SVGPathElement, newColor: RGBColor, previousColor: RGBColor) => void;
   pushSnapshot: () => void;
   setSelectedPath: (path: SVGPathElement | null) => void;
   setEditingLabelPath: (path: SVGPathElement | null) => void;
   removePath: (path: SVGPathElement) => void;
+  erasePathArea: (path: SVGPathElement, clientX: number, clientY: number) => void;
+  onToolChange: (tool: WorkspaceTool) => void;
   onEraseHover: (path: SVGPathElement | null) => void;
   onStatusMessage?: (event: CanvasStatusEvent, detail?: string) => void;
 }
@@ -33,11 +36,14 @@ export function useCanvasToolInteraction({
   fillColor,
   selectedColor,
   onSelectedColorChange,
-  replaceColor,
+  onFillColorChange,
+  replacePathColor,
   pushSnapshot,
   setSelectedPath,
   setEditingLabelPath,
   removePath,
+  erasePathArea,
+  onToolChange,
   onEraseHover,
   onStatusMessage,
 }: UseCanvasToolInteractionOptions) {
@@ -45,23 +51,32 @@ export function useCanvasToolInteraction({
     fillColor,
     selectedColor,
     setSelectedColor: onSelectedColorChange,
+    setFillColor: onFillColorChange,
     setSelectedPath,
     setEditingLabelPath,
-    replaceColor,
+    replacePathColor,
     removePath,
+    erasePathArea,
     pushSnapshot,
+    onToolChange,
     onStatusMessage,
-  }), [fillColor, selectedColor, onSelectedColorChange, setSelectedPath, setEditingLabelPath, replaceColor, removePath, pushSnapshot, onStatusMessage]);
+  }), [fillColor, selectedColor, onSelectedColorChange, onFillColorChange, setSelectedPath, setEditingLabelPath, replacePathColor, removePath, erasePathArea, pushSnapshot, onToolChange, onStatusMessage]);
 
   const handleCanvasClick = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
-      if (activeTool === 'brush' || activeTool === 'optimize') return;
+      if (activeTool === 'brush' || activeTool === 'erase' || activeTool === 'optimize') return;
 
-      const path = resolvePathFromEvent(event.target, containerRef.current);
+      const path = resolvePathFromEvent(event.target, containerRef.current, {
+        clientX: event.clientX,
+        clientY: event.clientY,
+      });
       const ctx = buildCtx();
 
       if (path) {
-        routePathClick(activeTool, path, ctx);
+        routePathClick(activeTool, path, ctx, {
+          clientX: event.clientX,
+          clientY: event.clientY,
+        });
       } else {
         routeBackgroundClick(activeTool, ctx);
       }
@@ -71,11 +86,15 @@ export function useCanvasToolInteraction({
 
   const handleCanvasMouseMove = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
-      if (activeTool !== 'erase') {
+      if (activeTool !== 'erasePath') {
         onEraseHover(null);
         return;
       }
-      const path = resolvePathFromEvent(event.target, containerRef.current);
+
+      const path = resolvePathFromEvent(event.target, containerRef.current, {
+        clientX: event.clientX,
+        clientY: event.clientY,
+      });
       onEraseHover(path);
     },
     [activeTool, containerRef, onEraseHover]

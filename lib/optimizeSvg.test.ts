@@ -10,10 +10,13 @@ describe('optimizeSvg seam sealing', () => {
       sealSeams: 1,
       minifyColors: false,
       compressPaths: false,
+      svgo: false,
     });
 
-    expect(optimized).toContain('fill="rgb(12, 34, 56)" stroke="rgb(12, 34, 56)" stroke-width="1"');
-    expect(optimized).toContain('fill="#abc" stroke="#abc" stroke-width="1"');
+    expect(optimized).toContain('<svg stroke-width="1">');
+    expect(optimized).toContain('fill="rgb(12, 34, 56)" stroke="rgb(12, 34, 56)"');
+    expect(optimized).toContain('fill="#abc" stroke="#abc"');
+    expect((optimized.match(/stroke-width=/g) ?? []).length).toBe(1);
   });
 
   it('removes strokes when seam sealing is disabled', () => {
@@ -23,5 +26,26 @@ describe('optimizeSvg seam sealing', () => {
 
     expect(optimized).not.toContain('stroke=');
     expect(optimized).not.toContain('stroke-width=');
+  });
+
+  it('can preserve separate paths for path-level editing tools', () => {
+    const svg =
+      '<svg viewBox="0 0 20 10"><path fill="#000" d="M0 0h2v2H0z"/><path fill="#000" d="M10 0h2v2h-2z"/></svg>';
+
+    const optimized = optimizeSvg(svg, { mergePaths: false });
+
+    expect((optimized.match(/<path\b/g) ?? []).length).toBe(2);
+  });
+
+  it('can split compound same-color subpaths for erase-by-piece editing', () => {
+    const svg =
+      '<svg viewBox="0 0 20 10"><path fill="#000" d="M0 0h2v2H0zM10 0h2v2h-2z"/></svg>';
+
+    const optimized = optimizeSvg(svg, {
+      splitCompoundPaths: true,
+      mergePaths: false,
+    });
+
+    expect((optimized.match(/<path\b/g) ?? []).length).toBe(2);
   });
 });
