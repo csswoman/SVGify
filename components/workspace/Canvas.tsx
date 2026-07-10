@@ -387,7 +387,7 @@ export function Canvas({
             selectedPath &&
             createPortal(
               <NodeEditor pathEl={selectedPath} svgEl={svgForPortals} onChange={pushSnapshot} />,
-              svgForPortals
+              selectedPath.parentElement ?? svgForPortals
             )}
           {showEditorSurface &&
             svgForPortals &&

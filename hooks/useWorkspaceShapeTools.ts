@@ -4,10 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import type { PathItem } from '@/components/shape/PathList';
 import type { useWorkspaceSvg } from '@/hooks/useWorkspaceSvg';
 import { addStackEraseShape, clickedSubpathD } from '@/lib/eraseMask';
+import { getEditableNodes, parsePathD } from '@/lib/pathEditor';
 import { simplifyPathD } from '@/lib/simplifyPath';
-
-const AUTO_NODE_TARGET = 90;
-const AUTO_SIMPLIFY_EPSILONS = [0.35, 0.55, 0.8, 1.1];
 
 function pathStats(path: SVGPathElement): { area: number; nodeCount: number } {
   const d = path.getAttribute('d') ?? '';
@@ -32,7 +30,7 @@ function pathStats(path: SVGPathElement): { area: number; nodeCount: number } {
 }
 
 function countPathNodes(d: string): number {
-  return (d.match(/[MLCQ]/g) ?? []).length;
+  return getEditableNodes(parsePathD(d)).length;
 }
 
 export function useWorkspaceShapeTools(editor: ReturnType<typeof useWorkspaceSvg>) {
@@ -61,6 +59,11 @@ export function useWorkspaceShapeTools(editor: ReturnType<typeof useWorkspaceSvg
       refreshPathItems(editor.svgEl);
     }
   }, [editor.svgEl, refreshPathItems]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- selection must not reference a detached path
+    setSelectedPathState(null);
+  }, [editor.svgEl]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -117,48 +120,9 @@ export function useWorkspaceShapeTools(editor: ReturnType<typeof useWorkspaceSvg
     [editor, refreshPathItems]
   );
 
-  const simplifyPathToNodeTarget = useCallback(
-    (path: SVGPathElement, targetNodes = AUTO_NODE_TARGET): boolean => {
-      const originalD = path.getAttribute('d') ?? '';
-      if (countPathNodes(originalD) <= targetNodes) return false;
-
-      let bestD = originalD;
-      let bestCount = countPathNodes(originalD);
-
-      for (const epsilon of AUTO_SIMPLIFY_EPSILONS) {
-        const candidateD = simplifyPathD(originalD, epsilon, 1);
-        const candidateCount = countPathNodes(candidateD);
-        if (candidateCount < bestCount) {
-          bestD = candidateD;
-          bestCount = candidateCount;
-        }
-        if (candidateCount <= targetNodes) break;
-      }
-
-      if (bestD === originalD) return false;
-      path.setAttribute('d', bestD);
-      return true;
-    },
-    []
-  );
-
-  const setSelectedPath = useCallback(
-    (path: SVGPathElement | null) => {
-      if (!path) {
-        setSelectedPathState(null);
-        return;
-      }
-
-      const changed = simplifyPathToNodeTarget(path);
-      setSelectedPathState(path);
-      if (changed) {
-        const svg = editor.containerRef.current?.querySelector('svg') as SVGSVGElement | null;
-        if (svg) refreshPathItems(svg);
-        editor.pushSnapshot();
-      }
-    },
-    [editor, refreshPathItems, simplifyPathToNodeTarget]
-  );
+  const setSelectedPath = useCallback((path: SVGPathElement | null) => {
+    setSelectedPathState(path);
+  }, []);
 
   const simplifySelectedPath = useCallback(
     (epsilon = 0.45) => {

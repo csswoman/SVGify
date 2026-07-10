@@ -102,7 +102,7 @@ export function clientPointToSvg(svgEl: SVGSVGElement, clientX: number, clientY:
   return ctm ? point.matrixTransform(ctm.inverse()) : point;
 }
 
-function clientPointToElement(el: SVGGraphicsElement, clientX: number, clientY: number): DOMPoint {
+export function clientPointToElement(el: SVGGraphicsElement, clientX: number, clientY: number): DOMPoint {
   const ownerSvg = el.ownerSVGElement;
   const point = ownerSvg?.createSVGPoint() ?? new DOMPoint();
   point.x = clientX;

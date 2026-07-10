@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { clientPointToElement } from '@/lib/eraseMask';
 import {
   parsePathD,
   serializePathD,
@@ -9,6 +10,7 @@ import {
   type PathSegment,
   type EditableNode,
 } from '@/lib/pathEditor';
+import { preparePathForNodeEditing } from '@/lib/pathNormalize';
 
 interface NodeEditorProps {
   /** The selected path element being edited (lives in the mounted SVG). */
@@ -24,30 +26,29 @@ interface NodeEditorProps {
  * positioned over each anchor point; dragging rewrites the path's `d`.
  */
 export function NodeEditor({ pathEl, svgEl, onChange }: NodeEditorProps) {
-  const [segs, setSegs] = useState<PathSegment[]>(() => parsePathD(pathEl.getAttribute('d') ?? ''));
-  const [nodes, setNodes] = useState<EditableNode[]>(() => getEditableNodes(segs));
+  const editableDRef = useRef(preparePathForNodeEditing(pathEl));
+  const [segs, setSegs] = useState<PathSegment[]>(() => parsePathD(editableDRef.current));
+  const [nodes, setNodes] = useState<EditableNode[]>(() => getEditableNodes(parsePathD(editableDRef.current)));
   const dragging = useRef<{ node: EditableNode; lastX: number; lastY: number } | null>(null);
 
-  // Re-parse if the path element changes.
   useEffect(() => {
-    const parsed = parsePathD(pathEl.getAttribute('d') ?? '');
+    const editableD = preparePathForNodeEditing(pathEl);
+    editableDRef.current = editableD;
+    if (editableD !== (pathEl.getAttribute('d') ?? '')) {
+      pathEl.setAttribute('d', editableD);
+    }
+    const parsed = parsePathD(editableD);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- re-parse when the selected path changes
     setSegs(parsed);
     setNodes(getEditableNodes(parsed));
   }, [pathEl]);
 
-  // Map a client (screen) coordinate to SVG user units.
   const toUser = useCallback(
     (clientX: number, clientY: number) => {
-      const pt = svgEl.createSVGPoint();
-      pt.x = clientX;
-      pt.y = clientY;
-      const ctm = svgEl.getScreenCTM();
-      if (!ctm) return { x: clientX, y: clientY };
-      const u = pt.matrixTransform(ctm.inverse());
-      return { x: u.x, y: u.y };
+      const pt = clientPointToElement(pathEl, clientX, clientY);
+      return { x: pt.x, y: pt.y };
     },
-    [svgEl]
+    [pathEl]
   );
 
   const onPointerDown = (node: EditableNode) => (e: React.PointerEvent) => {
@@ -79,7 +80,6 @@ export function NodeEditor({ pathEl, svgEl, onChange }: NodeEditorProps) {
           : n
       )
     );
-    // keep the dragged node reference in sync
     drag.node = { ...drag.node, x: drag.node.x + dx, y: drag.node.y + dy };
   };
 
@@ -90,7 +90,6 @@ export function NodeEditor({ pathEl, svgEl, onChange }: NodeEditorProps) {
     }
   };
 
-  // Size handles relative to the viewBox so they stay visible at any zoom.
   const vb = svgEl.viewBox.baseVal;
   const r = Math.max(vb.width, vb.height) * 0.012;
 

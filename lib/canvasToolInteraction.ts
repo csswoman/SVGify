@@ -31,6 +31,24 @@ export function routePathClick(
   ctx: PathClickContext,
   point?: { clientX: number; clientY: number }
 ): void {
+  switch (activeTool) {
+    case 'nodes':
+      ctx.setSelectedPath(path);
+      return;
+    case 'labels':
+      ctx.setEditingLabelPath(path);
+      return;
+    case 'erasePath':
+      if (point) {
+        ctx.erasePathArea(path, point.clientX, point.clientY);
+      } else {
+        ctx.removePath(path);
+      }
+      return;
+    default:
+      break;
+  }
+
   const color = parsePathFill(path);
   if (!color) return;
 
@@ -47,19 +65,6 @@ export function routePathClick(
         ctx.pushSnapshot();
         ctx.onStatusMessage?.('fillPainted');
       }
-      break;
-    case 'erasePath':
-      if (point) {
-        ctx.erasePathArea(path, point.clientX, point.clientY);
-      } else {
-        ctx.removePath(path);
-      }
-      break;
-    case 'nodes':
-      ctx.setSelectedPath(path);
-      break;
-    case 'labels':
-      ctx.setEditingLabelPath(path);
       break;
     default:
       break;
@@ -106,26 +111,30 @@ export function resolvePathFromEvent(
 ): SVGPathElement | null {
   if (!(target instanceof Element) || !container) return null;
 
-  if (point && typeof document.elementsFromPoint === 'function') {
-    const paths = document
-      .elementsFromPoint(point.clientX, point.clientY)
-      .filter((el): el is SVGPathElement => el instanceof SVGPathElement && container.contains(el));
+  // Trust the event target first.  `elementsFromPoint` includes every shape
+  // below the pointer; choosing the smallest of those paths made clicks on a
+  // large background shape select a smaller, overlapping detail instead.
+  const directPath = target.closest('path');
+  if (directPath && container.contains(directPath)) {
+    return directPath as SVGPathElement;
+  }
 
-    if (paths.length > 0) {
-      return paths.sort((a, b) => pathHitArea(a) - pathHitArea(b))[0];
+  if (point && typeof document.elementsFromPoint === 'function') {
+    const path = document
+      .elementsFromPoint(point.clientX, point.clientY)
+      .find(
+        (el): el is SVGPathElement =>
+          el instanceof SVGPathElement &&
+          container.contains(el) &&
+          !el.closest('[data-svgcraft-editor]')
+      );
+
+    // The browser returns this list from front to back, so the first path is
+    // the visible figure the user intended to select.
+    if (path) {
+      return path;
     }
   }
 
-  const path = target.closest('path');
-  if (!path || !container.contains(path)) return null;
-  return path as SVGPathElement;
-}
-
-function pathHitArea(path: SVGPathElement): number {
-  try {
-    const box = path.getBBox();
-    return Math.max(0, box.width) * Math.max(0, box.height);
-  } catch {
-    return Number.POSITIVE_INFINITY;
-  }
+  return null;
 }

@@ -102,6 +102,16 @@ describe('routePathClick', () => {
     expect(selected).toBe(path);
   });
 
+  it('nodes selects path without fill', () => {
+    const path = mockPath('none');
+    let selected: SVGPathElement | null = null;
+    routePathClick('nodes', path, {
+      ...baseCtx,
+      setSelectedPath: (p) => { selected = p; },
+    });
+    expect(selected).toBe(path);
+  });
+
   it('labels sets editing path', () => {
     const path = mockPath('rgb(255, 0, 0)');
     let editing: SVGPathElement | null = null;
@@ -123,9 +133,10 @@ describe('getToolCursor', () => {
 });
 
 describe('resolvePathFromEvent', () => {
-  it('prefers the smallest path under the click point', () => {
+  it('selects the path that received the click, even when a smaller shape overlaps it', () => {
     class TestElement {
-      closest() {
+      closest(selector: string) {
+        if (selector === 'path') return this;
         return null;
       }
     }
@@ -157,7 +168,7 @@ describe('resolvePathFromEvent', () => {
     } as unknown as Document;
 
     try {
-      expect(resolvePathFromEvent(small, container, { clientX: 1, clientY: 1 })).toBe(small);
+      expect(resolvePathFromEvent(large, container, { clientX: 1, clientY: 1 })).toBe(large);
     } finally {
       globalThis.Element = previousElement;
       globalThis.SVGPathElement = previousPath;
