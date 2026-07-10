@@ -7,30 +7,32 @@ function readSource(relativePath: string): string {
 }
 
 describe('icon-only product surface', () => {
-  it('does not expose removed vectorization modes or presets in the settings UI', () => {
+  it('exposes only standard and icon vectorization modes', () => {
     const settingsPanel = readSource('components/vectorize/VectorizeSettings.tsx');
     const i18n = readSource('lib/i18n.tsx');
     const types = readSource('types/svg.types.ts');
 
     expect(settingsPanel).not.toContain('VECTORIZE_PRESETS');
-    expect(settingsPanel).not.toContain('settings.mode');
-    expect(settingsPanel).not.toContain('set.mode');
+    expect(settingsPanel).toContain("setTraceMode('standard')");
+    expect(settingsPanel).toContain("setTraceMode('icon')");
     expect(settingsPanel).not.toContain('set.preset');
     expect(i18n).not.toContain('set.preset.logo');
     expect(i18n).not.toContain('set.preset.photo');
     expect(i18n).not.toContain('set.mode.color');
     expect(i18n).not.toContain('set.mode.lineart');
     expect(types).not.toContain('VectorizePreset');
-    expect(types).not.toContain("mode: 'icon' | 'color' | 'lineart'");
+    expect(types).toContain("traceMode: 'standard' | 'icon'");
   });
 
-  it('keeps vectorization on the vtracer pipeline', () => {
+  it('keeps standard vectorization on the vtracer pipeline', () => {
     const worker = readSource('workers/vectorizer.worker.ts');
     const route = readSource('app/api/vectorize/route.ts');
     const packageJson = readSource('package.json');
 
     expect(worker).toContain("fetch('/api/vectorize'");
     expect(worker).toContain('applyBilateralFilter');
+    expect(worker).toContain('quantizeImageToPalette');
+    expect(worker).toContain('smoothQuantizedPalette');
     expect(route).toContain("from '@neplex/vectorizer'");
     expect(route).toContain('Hierarchical.Stacked');
     expect(route).toContain('PathSimplifyMode.Spline');
@@ -39,8 +41,6 @@ describe('icon-only product surface', () => {
     expect(worker).not.toContain('traceIconByColorLayers');
     expect(worker).not.toContain('traceIconColorLayers');
     expect(worker).not.toContain('strokeWidth');
-    expect(worker).not.toContain("options.mode");
-    expect(worker).not.toContain("mode ===");
     expect(worker).not.toContain('vectorizeLineart');
     expect(worker).not.toContain('quantizeToDominantPalette');
     expect(worker).not.toContain('normalizeSvgPalette');

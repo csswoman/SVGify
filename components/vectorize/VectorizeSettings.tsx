@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { VectorizeSettings } from '@/types/svg.types';
+import { VECTORIZE_DEFAULTS, VectorizeSettings } from '@/types/svg.types';
 import { Tooltip } from '@/components/shared/Tooltip';
 import { useI18n } from '@/lib/i18n';
 
@@ -16,12 +16,95 @@ export function VectorizeSettingsPanel({ settings, onSettingsChange }: Vectorize
   const setColorPrecision = (colorPrecision: number) => {
     onSettingsChange({ ...settings, colorPrecision, numberofcolors: 2 ** colorPrecision });
   };
+  const setTraceMode = (traceMode: VectorizeSettings['traceMode']) => {
+    if (traceMode === settings.traceMode) return;
+    if (traceMode === 'icon') {
+      onSettingsChange({
+        ...settings,
+        traceMode,
+        colorPrecision: 2,
+        numberofcolors: 4,
+        filterSpeckle: 8,
+        pathomit: 8,
+        cornerThreshold: 95,
+        pathPrecision: 1,
+        roundcoords: 1,
+        paletteMergeThreshold: 64,
+        bilateralRadius: 1,
+        blurRadius: 1,
+        layerDifference: 18,
+        lengthThreshold: 10,
+        maxIterations: 3,
+        spliceThreshold: 75,
+        fillOverlap: 1,
+        lineSmoothing: 1,
+        curveSmoothing: 1,
+      });
+      return;
+    }
+
+    onSettingsChange({
+      ...settings,
+      traceMode,
+      colorPrecision: VECTORIZE_DEFAULTS.colorPrecision,
+      numberofcolors: VECTORIZE_DEFAULTS.numberofcolors,
+      filterSpeckle: VECTORIZE_DEFAULTS.filterSpeckle,
+      pathomit: VECTORIZE_DEFAULTS.pathomit,
+      cornerThreshold: VECTORIZE_DEFAULTS.cornerThreshold,
+      pathPrecision: VECTORIZE_DEFAULTS.pathPrecision,
+      roundcoords: VECTORIZE_DEFAULTS.roundcoords,
+      paletteMergeThreshold: VECTORIZE_DEFAULTS.paletteMergeThreshold,
+      bilateralRadius: VECTORIZE_DEFAULTS.bilateralRadius,
+      blurRadius: VECTORIZE_DEFAULTS.blurRadius,
+      layerDifference: VECTORIZE_DEFAULTS.layerDifference,
+      lengthThreshold: VECTORIZE_DEFAULTS.lengthThreshold,
+      maxIterations: VECTORIZE_DEFAULTS.maxIterations,
+      spliceThreshold: VECTORIZE_DEFAULTS.spliceThreshold,
+      fillOverlap: VECTORIZE_DEFAULTS.fillOverlap,
+      lineSmoothing: VECTORIZE_DEFAULTS.lineSmoothing,
+      curveSmoothing: VECTORIZE_DEFAULTS.curveSmoothing,
+    });
+  };
 
   return (
     <div className="space-y-6">
       {/* ── Basic ── */}
       <div className="space-y-4">
         <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">{t('set.basic')}</p>
+
+        <div>
+          <label className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
+            {t('set.traceMode')}
+            <Tooltip text={t('set.traceMode.help')} label={t('set.traceMode')} />
+          </label>
+          <div className="grid grid-cols-2 rounded-lg border border-gray-200 bg-gray-50 p-1 text-sm dark:border-gray-700 dark:bg-gray-900">
+            <button
+              type="button"
+              onClick={() => setTraceMode('standard')}
+              className={`focus-ring rounded-md px-3 py-2 font-semibold transition ${
+                settings.traceMode === 'standard'
+                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-gray-100'
+                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+              }`}
+            >
+              {t('set.traceMode.standard')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setTraceMode('icon')}
+              className={`focus-ring rounded-md px-3 py-2 font-semibold transition ${
+                settings.traceMode === 'icon'
+                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-gray-100'
+                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+              }`}
+            >
+              {t('set.traceMode.icon')}
+            </button>
+          </div>
+          {settings.traceMode === 'icon' && (
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('set.traceMode.icon.help')}</p>
+          )}
+        </div>
 
         <div>
           <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">

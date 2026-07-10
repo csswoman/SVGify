@@ -8,6 +8,7 @@ import {
   quantizeImageToPalette,
   removeNearWhitePixels,
   smoothQuantizedPalette,
+  suggestFlatIconPaletteFromImage,
   snapSvgToPalette,
   suggestPaletteFromImage,
 } from './paletteExtraction';
@@ -329,5 +330,48 @@ describe('palette extraction', () => {
     expect(output.data[16]).toBe(255);
     expect(output.data[17]).toBe(246);
     expect(output.data[18]).toBe(214);
+  });
+
+  it('prioritizes distinct flat icon colors over duplicate dark variants', () => {
+    const navy = [5, 24, 72, 255];
+    const darkAa = [4, 8, 18, 255];
+    const white = [255, 255, 255, 255];
+    const yellow = [246, 197, 38, 255];
+    const pixels: number[] = [];
+
+    for (let i = 0; i < 18; i++) pixels.push(...navy);
+    for (let i = 0; i < 2; i++) pixels.push(...darkAa);
+    for (let i = 0; i < 10; i++) pixels.push(...white);
+    for (let i = 0; i < 8; i++) pixels.push(...yellow);
+
+    const palette = suggestFlatIconPaletteFromImage(
+      new ImageData(new Uint8ClampedArray(pixels), pixels.length / 4, 1),
+      4
+    );
+
+    expect(palette).toContainEqual({ r: 5, g: 24, b: 72, a: 255 });
+    expect(palette).toContainEqual({ r: 255, g: 255, b: 255, a: 255 });
+    expect(palette).toContainEqual({ r: 246, g: 197, b: 38, a: 255 });
+    expect(palette).not.toContainEqual({ r: 4, g: 8, b: 18, a: 255 });
+  });
+
+  it('keeps a small saturated third icon color in the flat icon palette', () => {
+    const navy = [5, 24, 72, 255];
+    const white = [255, 255, 255, 255];
+    const yellow = [246, 197, 38, 255];
+    const pixels: number[] = [];
+
+    for (let i = 0; i < 120; i++) pixels.push(...navy);
+    for (let i = 0; i < 64; i++) pixels.push(...white);
+    for (let i = 0; i < 3; i++) pixels.push(...yellow);
+
+    const palette = suggestFlatIconPaletteFromImage(
+      new ImageData(new Uint8ClampedArray(pixels), pixels.length / 4, 1),
+      4
+    );
+
+    expect(palette).toContainEqual({ r: 5, g: 24, b: 72, a: 255 });
+    expect(palette).toContainEqual({ r: 255, g: 255, b: 255, a: 255 });
+    expect(palette).toContainEqual({ r: 246, g: 197, b: 38, a: 255 });
   });
 });

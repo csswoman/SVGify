@@ -42,6 +42,7 @@ export const DEFAULT_COLOR_PRECISION = 4;
 export const DEFAULT_COLOR_COUNT = 2 ** DEFAULT_COLOR_PRECISION;
 
 export interface VectorizeSettings {
+  traceMode: 'standard' | 'icon';
   numberofcolors: number;      // UI alias for vtracer colorPrecision estimate
   customPalette?: RGBColor[];  // User-approved palette for icon mode
   colorPrecision: number;      // 1-8 significant RGB bits per channel
@@ -74,6 +75,7 @@ export interface VectorizeSettings {
 }
 
 export const VECTORIZE_DEFAULTS: VectorizeSettings = {
+  traceMode: 'standard',
   numberofcolors: DEFAULT_COLOR_COUNT,
   colorPrecision: DEFAULT_COLOR_PRECISION,
   filterSpeckle: 6,

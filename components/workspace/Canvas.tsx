@@ -89,6 +89,7 @@ export function Canvas({
   const vectorizeContainerRef = useRef<HTMLDivElement>(null);
   const vectorizeZoom = useSvgZoom({ containerRef: vectorizeContainerRef });
   const imageZoom = useImageZoom();
+  const previewStyle = previewBackground === 'black' ? BLACK_BG : CHECKERBOARD_BG;
 
   const handleVectorizeSvgMount = useCallback(
     (svg: SVGSVGElement | null) => {
@@ -189,7 +190,10 @@ export function Canvas({
               {t('tool.vectorize')}
             </p>
           </div>
-          <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 transparent-preview">
+          <div
+            className="relative min-h-0 flex-1 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
+            style={previewStyle}
+          >
             <ImagePreview
               imageData={imageData}
               label={t('vec.original')}
@@ -206,7 +210,6 @@ export function Canvas({
   }
 
   const { processedImageData, svg, removeBg, handlePick, seeds, error, isLoading } = vectorizeSession;
-  const previewStyle = previewBackground === 'black' ? BLACK_BG : CHECKERBOARD_BG;
   const { containerRef, zoom, pushSnapshot, svgEl } = editor ?? {
     containerRef: { current: null },
     zoom: null,
@@ -216,7 +219,7 @@ export function Canvas({
   const { selectedPath, brushColor, brushSize } = shapeTools;
   const svgForPortals = svgEl as SVGSVGElement | null;
   const showEditorSurface = canEdit && !isVectorizeView;
-  const compareOriginalSvg = vectorizeSession.svg;
+  const compareOriginalImage = processedImageData ?? imageData;
 
   return (
     <section
@@ -281,7 +284,10 @@ export function Canvas({
                 </div>
               </div>
 
-              <div className="relative flex-1 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 transparent-preview">
+              <div
+                className="relative flex-1 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
+                style={previewStyle}
+              >
                 <CanvasOverlay isVisible={isLoading} />
                 {isPreTrace && (
                   <div className="absolute left-3 top-3 rounded-full border border-gray-200 bg-white/90 px-3 py-1 text-[11px] font-medium text-gray-600 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-300">
@@ -336,7 +342,7 @@ export function Canvas({
                   onZoomOut={zoom.zoomOut}
                   onReset={zoom.reset}
                 />
-                {compareOriginalSvg && (
+                {compareOriginalImage && (
                   <button
                     type="button"
                     onClick={() => setShowOriginalPreview((v) => !v)}
@@ -356,28 +362,36 @@ export function Canvas({
               }}
             >
               <CanvasOverlay isVisible={editor?.isBusy ?? false} />
-              <ZoomableSvgViewport
-                containerRef={containerRef}
-                zoom={zoom}
-                displaySize={displaySize}
-                onClick={showEditorSurface ? handleCanvasClick : undefined}
-                onMouseMove={showEditorSurface ? handleCanvasMouseMove : undefined}
-                className="relative flex items-center justify-center overflow-hidden"
-                style={{
-                  cursor: zoom.isPanning
-                    ? 'grabbing'
-                    : zoom.isPanMode
-                      ? 'grab'
-                      : showEditorSurface
-                        ? cursor
-                        : undefined,
-                }}
-                aria-label="SVG editor canvas"
-              />
-              {showOriginalPreview && compareOriginalSvg && (
-                <div className="absolute inset-0 pointer-events-none">
-                  <SvgPreview svgString={compareOriginalSvg} />
-                </div>
+              <div
+                className="h-full w-full"
+                style={{ visibility: showOriginalPreview ? 'hidden' : 'visible' }}
+              >
+                <ZoomableSvgViewport
+                  containerRef={containerRef}
+                  zoom={zoom}
+                  displaySize={displaySize}
+                  onClick={showEditorSurface ? handleCanvasClick : undefined}
+                  onMouseMove={showEditorSurface ? handleCanvasMouseMove : undefined}
+                  className="relative flex items-center justify-center overflow-hidden"
+                  style={{
+                    cursor: zoom.isPanning
+                      ? 'grabbing'
+                      : zoom.isPanMode
+                        ? 'grab'
+                        : showEditorSurface
+                          ? cursor
+                          : undefined,
+                  }}
+                  aria-label="SVG editor canvas"
+                />
+              </div>
+              {showOriginalPreview && compareOriginalImage && (
+                <ImagePreview
+                  imageData={compareOriginalImage}
+                  label={t('vec.original')}
+                  displaySize={displaySize}
+                  zoomTransform="scale(1)"
+                />
               )}
             </div>
           </div>

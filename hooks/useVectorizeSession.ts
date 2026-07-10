@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useVectorizer } from '@/hooks/useVectorizer';
 import { VectorizeSettings, VECTORIZE_DEFAULTS } from '@/types/svg.types';
 import { removeBackground, type SeedPoint } from '@/lib/backgroundRemoval';
-import { suggestPaletteFromImage } from '@/lib/paletteExtraction';
+import { suggestFlatIconPaletteFromImage, suggestPaletteFromImage } from '@/lib/paletteExtraction';
 import { useEditablePalette } from '@/hooks/useEditablePalette';
 
 interface UseVectorizeSessionOptions {
@@ -34,6 +34,7 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
   const updateSettings = useCallback((next: VectorizeSettings) => {
     setSettings({
       ...next,
+      traceMode: next.traceMode === 'icon' ? 'icon' : 'standard',
       colorPrecision: Math.max(1, Math.min(8, Math.round(next.colorPrecision))),
       numberofcolors: 2 ** Math.max(1, Math.min(8, Math.round(next.colorPrecision))),
       filterSpeckle: Math.max(0, Math.min(40, Math.round(next.filterSpeckle))),
@@ -74,12 +75,15 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
 
   const suggestedPalette = useMemo(() => {
     if (!processedImageData) return [];
-    return suggestPaletteFromImage(processedImageData, settings.numberofcolors, settings.colorQuantCycles).map(({ r, g, b }) => ({
+    const suggestPalette = settings.traceMode === 'icon'
+      ? suggestFlatIconPaletteFromImage
+      : suggestPaletteFromImage;
+    return suggestPalette(processedImageData, settings.numberofcolors, settings.colorQuantCycles).map(({ r, g, b }) => ({
       r,
       g,
       b,
     }));
-  }, [processedImageData, settings.numberofcolors, settings.colorQuantCycles]);
+  }, [processedImageData, settings.traceMode, settings.numberofcolors, settings.colorQuantCycles]);
 
   useEffect(() => {
     replacePalette(suggestedPalette);

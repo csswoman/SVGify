@@ -1,5 +1,6 @@
 import { WorkerMessage, WorkerResponse, VectorizeSettings, VECTORIZE_DEFAULTS } from '@/types/svg.types';
 import { applyAlphaThreshold, applyBilateralFilter, upscaleImageData } from '@/lib/imageFilters';
+import { quantizeImageToPalette, smoothQuantizedPalette } from '@/lib/paletteExtraction';
 
 self.postMessage({ type: 'ready' } satisfies WorkerResponse);
 
@@ -54,6 +55,7 @@ function normalizeSettings(settings: VectorizeSettings): VectorizeSettings {
 
   return {
     ...merged,
+    traceMode: merged.traceMode === 'icon' ? 'icon' : 'standard',
     numberofcolors: 2 ** colorPrecision,
     colorPrecision,
     filterSpeckle,
@@ -78,7 +80,25 @@ function normalizeSettings(settings: VectorizeSettings): VectorizeSettings {
 function preprocessForVTracer(imageData: ImageData, settings: VectorizeSettings): ImageData {
   const upscaled = upscaleImageData(imageData, settings.preprocessingScale);
   const alphaCleaned = applyAlphaThreshold(upscaled, settings.alphaThreshold);
+  if (settings.traceMode === 'icon') {
+    return preprocessIconForVTracer(alphaCleaned, settings);
+  }
+
   return applyBilateralFilter(alphaCleaned, settings.bilateralRadius, settings.bilateralColorSigma);
+}
+
+function preprocessIconForVTracer(imageData: ImageData, settings: VectorizeSettings): ImageData {
+  const palette = (settings.customPalette ?? []).slice(
+    0,
+    Math.max(1, Math.min(16, settings.numberofcolors))
+  );
+
+  if (palette.length === 0) {
+    return applyBilateralFilter(imageData, settings.bilateralRadius, settings.bilateralColorSigma);
+  }
+
+  const quantized = quantizeImageToPalette(imageData, palette);
+  return smoothQuantizedPalette(quantized, palette, settings.bilateralRadius);
 }
 
 async function vectorizeImage(imageData: ImageData, settings: VectorizeSettings, requestId: number): Promise<void> {

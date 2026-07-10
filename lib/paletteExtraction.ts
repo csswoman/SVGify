@@ -434,6 +434,123 @@ function refinePaletteFromImage(
   return palette;
 }
 
+function candidateRgb(color: ColorCandidate): RGBColor {
+  return { r: color.r, g: color.g, b: color.b };
+}
+
+function colorProminence(color: ColorCandidate, totalOpaque: number): number {
+  return color.count / Math.max(1, totalOpaque);
+}
+
+function accentScore(color: ColorCandidate): number {
+  const sat = saturationRange(color);
+  const light = luminance(color);
+  const midLightBonus = 1 - Math.min(1, Math.abs(light - 150) / 150);
+  return color.count * (sat / 255) * (0.65 + midLightBonus * 0.35);
+}
+
+function distanceToPaletteSq(color: RGBColor, palette: readonly RGBColor[]): number {
+  if (palette.length === 0) return Number.POSITIVE_INFINITY;
+  return Math.min(...palette.map((entry) => colorDistanceSq(color, entry)));
+}
+
+function distinctColorScore(color: ColorCandidate, selected: readonly RGBColor[]): number {
+  const distance = Math.sqrt(distanceToPaletteSq(color, selected));
+  return distance * Math.sqrt(color.count);
+}
+
+export function suggestFlatIconPaletteFromImage(
+  imageData: ImageData,
+  maxColors: number,
+  colorQuantCycles = 6
+): TracePaletteColor[] {
+  const limit = Math.max(2, Math.min(8, Math.floor(maxColors)));
+  const candidates = collectVisibleColorBuckets(imageData);
+  const selected: RGBColor[] = [];
+  const fixedColors: RGBColor[] = [];
+  const totalOpaque = totalOpaquePixels(imageData);
+  const minProminentCount = Math.max(2, Math.ceil(totalOpaque * 0.004));
+  const minAccentCount = Math.max(1, Math.ceil(totalOpaque * 0.001));
+
+  const addColor = (color: RGBColor, threshold = 34) => {
+    if (selected.length >= limit) return;
+    if (!isSimilarToAny(color, selected, threshold)) selected.push({ ...color });
+  };
+  const addFixedColor = (color: RGBColor, threshold = 18) => {
+    if (selected.length >= limit) return;
+    if (isSimilarToAny(color, selected, threshold)) return;
+    selected.push({ ...color });
+    fixedColors.push({ ...color });
+  };
+
+  const source = candidates.filter((color) => color.count >= minProminentCount);
+  const outline = pickDarkOutlineColorFromImage(imageData);
+  if (outline) addFixedColor(outline);
+
+  const nearWhitePixels = countOpaqueNearWhitePixels(imageData);
+  if (nearWhitePixels / Math.max(1, totalOpaque) >= 0.015) {
+    addColor({ r: 255, g: 255, b: 255 }, 20);
+  }
+
+  const accents = candidates
+    .filter((color) => {
+      const sat = saturationRange(color);
+      const light = luminance(color);
+      return (
+        color.count >= minAccentCount &&
+        sat >= 42 &&
+        light >= 45 &&
+        !isDarkOutlineColor(color) &&
+        !isDarkLineColor(color)
+      );
+    })
+    .sort((a, b) => accentScore(b) - accentScore(a));
+
+  for (const color of accents) {
+    addColor(candidateRgb(color), 42);
+  }
+
+  const blackCandidates = source
+    .filter(isTrueBlackFill)
+    .filter((color) => {
+      const prominence = colorProminence(color, totalOpaque);
+      const edgeRatio = color.edgeCount / Math.max(1, color.count);
+      return prominence >= 0.045 && (!outline || edgeRatio < 0.5);
+    })
+    .sort((a, b) => b.count - a.count);
+  if (blackCandidates[0]) {
+    addColor(candidateRgb(blackCandidates[0]), 22);
+  }
+
+  const neutralCandidates = source
+    .filter((color) => isDropShadowColor(color) && colorProminence(color, totalOpaque) >= 0.025)
+    .sort((a, b) => b.count - a.count);
+  if (neutralCandidates[0]) {
+    addColor(candidateRgb(neutralCandidates[0]), 32);
+  }
+
+  const minExpectedColors = Math.min(limit, 3);
+  while (selected.length < minExpectedColors) {
+    const distinct = candidates
+      .filter((color) => color.count >= minAccentCount)
+      .filter((color) => !isSimilarToAny(candidateRgb(color), selected, 38))
+      .sort((a, b) => distinctColorScore(b, selected) - distinctColorScore(a, selected))[0];
+    if (!distinct) break;
+    addColor(candidateRgb(distinct), 24);
+  }
+
+  for (const color of source.sort((a, b) => b.count - a.count)) {
+    if (selected.length >= limit) break;
+    if (isTrueBlackFill(color) && outline && colorProminence(color, totalOpaque) < 0.08) continue;
+    addColor(candidateRgb(color), isDarkOutlineColor(color) || isDarkLineColor(color) ? 54 : 38);
+  }
+
+  if (selected.length === 0) addColor(ICON_BASE_PALETTE[0].color);
+
+  const refined = refinePaletteFromImage(imageData, selected, colorQuantCycles, fixedColors);
+  return refined.map((color) => ({ ...color, a: 255 }));
+}
+
 export function suggestPaletteFromImage(imageData: ImageData, maxColors: number, colorQuantCycles = 6): TracePaletteColor[] {
   const limit = Math.max(2, Math.min(64, Math.floor(maxColors)));
   const candidates = collectVisibleColorBuckets(imageData);

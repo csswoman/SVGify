@@ -76,6 +76,11 @@ const DICT = {
   'set.basic': { en: 'Basic', es: 'Básico' },
   'set.advanced': { en: 'Advanced', es: 'Avanzado' },
   // Settings controls
+  'set.traceMode': { en: 'Mode', es: 'Modo' },
+  'set.traceMode.help': { en: 'Standard uses the current settings. Icon flattens the image to the palette before tracing, then uses the same vectorizer.', es: 'Estándar usa la configuración actual. Icono aplana la imagen a la paleta antes de trazar y luego usa el mismo vectorizador.' },
+  'set.traceMode.standard': { en: 'Standard', es: 'Estándar' },
+  'set.traceMode.icon': { en: 'Icon', es: 'Icono' },
+  'set.traceMode.icon.help': { en: 'Use for flat logos, icons, UI assets and simple illustrations. It removes anti-aliased color noise before VTracer sees the image.', es: 'Úsalo para logos planos, iconos, assets de UI e ilustraciones simples. Elimina ruido de color y anti-alias antes de que VTracer vea la imagen.' },
   'set.colors': { en: 'Colors', es: 'Colores' },
   'set.colors.levels': { en: '4 = 16 colors · 5 = 32 colors · 6 = 64 colors · 7 = 128 colors', es: '4 = 16 colores · 5 = 32 colores · 6 = 64 colores · 7 = 128 colores' },
   'set.colors.hint': { en: 'Default: 16 colors', es: 'Predeterminado: 16 colores' },
