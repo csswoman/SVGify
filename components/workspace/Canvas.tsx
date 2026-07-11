@@ -11,7 +11,6 @@ import { EraseEditor } from '@/components/shape/EraseEditor';
 import { ZoomableSvgViewport } from '@/components/shared/ZoomableSvgViewport';
 import { formatBytes, svgByteSize } from '@/lib/optimizeSvg';
 import { useSvgColors } from '@/hooks/useSvgColors';
-import { useCanvasDisplaySize } from '@/hooks/useCanvasDisplaySize';
 import { useCanvasToolInteraction } from '@/hooks/useCanvasToolInteraction';
 import type { CanvasStatusEvent } from '@/lib/canvasToolInteraction';
 import { useSvgZoom } from '@/hooks/useSvgZoom';
@@ -87,9 +86,6 @@ export function Canvas({
   const { t } = useI18n();
   const canvasPanelRef = useRef<HTMLElement>(null);
   const [showOriginalPreview, setShowOriginalPreview] = useState(false);
-  const displaySize = useCanvasDisplaySize({
-    svgEl: editor?.svgEl ?? null,
-  });
   const isVectorizeView = activeTool === 'vectorize';
   const canEdit = svgString !== null && editor !== null;
   const tracedSvg = svgString ?? vectorizeSession.svg;
@@ -408,7 +404,6 @@ export function Canvas({
                 <ZoomableSvgViewport
                   containerRef={containerRef}
                   zoom={zoom}
-                  displaySize={displaySize}
                   onClick={showEditorSurface ? handleCanvasClick : undefined}
                   onMouseMove={showEditorSurface ? handleCanvasMouseMove : undefined}
                   className="relative flex items-center justify-center overflow-hidden"
@@ -428,7 +423,6 @@ export function Canvas({
                 <ImagePreview
                   imageData={compareOriginalImage}
                   label={t('vec.original')}
-                  displaySize={displaySize}
                   zoomTransform="scale(1)"
                 />
               )}

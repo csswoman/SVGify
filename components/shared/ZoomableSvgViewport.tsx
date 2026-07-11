@@ -1,13 +1,11 @@
 'use client';
 
-import type { RefObject } from 'react';
-import type { CanvasDisplaySize } from '@/lib/canvasDisplaySize';
+import { useEffect, type RefObject } from 'react';
 import { useSvgZoom } from '@/hooks/useSvgZoom';
 
 interface ZoomableSvgViewportProps {
   containerRef: RefObject<HTMLDivElement | null>;
   zoom: ReturnType<typeof useSvgZoom>;
-  displaySize?: CanvasDisplaySize | null;
   className?: string;
   style?: React.CSSProperties;
   onClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
@@ -18,7 +16,6 @@ interface ZoomableSvgViewportProps {
 export function ZoomableSvgViewport({
   containerRef,
   zoom,
-  displaySize,
   className,
   style,
   onClick,
@@ -34,9 +31,16 @@ export function ZoomableSvgViewport({
     onClick?.(event);
   };
 
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.addEventListener('wheel', zoom.onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', zoom.onWheel);
+  }, [containerRef, zoom.onWheel]);
+
   return (
     <div
-      className="relative flex h-full w-full items-center justify-center"
+      className="relative h-full w-full"
       onPointerDown={zoom.onPointerDown}
       onPointerMove={zoom.onPointerMove}
       onPointerUp={zoom.onPointerUp}
@@ -53,10 +57,8 @@ export function ZoomableSvgViewport({
         className={className}
         style={{
           touchAction: 'none',
-          margin: 'auto',
-          ...(displaySize
-            ? { width: displaySize.width, height: displaySize.height }
-            : undefined),
+          width: '100%',
+          height: '100%',
           ...style,
         }}
         aria-label={ariaLabel}

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   computeCanvasDisplaySize,
   computeVectorizePreviewSize,
-  ICON_EDITOR_VIEWPORT,
   MIN_CANVAS_PX,
 } from './canvasDisplaySize';
 
@@ -42,12 +41,6 @@ describe('computeCanvasDisplaySize', () => {
       width: MIN_CANVAS_PX,
       height: MIN_CANVAS_PX,
     });
-  });
-});
-
-describe('ICON_EDITOR_VIEWPORT', () => {
-  it('uses the requested fixed editor dimensions', () => {
-    expect(ICON_EDITOR_VIEWPORT).toEqual({ width: 700, height: 650 });
   });
 });
 

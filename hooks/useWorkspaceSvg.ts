@@ -35,7 +35,10 @@ export function useWorkspaceSvg({
     historyIndexRef.current = historyIndex;
   }, [historyIndex]);
 
-  const zoom = useSvgZoom({ viewport: zoomViewport, onViewportChange: onZoomViewportChange });
+  const zoom = useSvgZoom({
+    viewport: zoomViewport,
+    onViewportChange: onZoomViewportChange,
+  });
   const attachZoom = zoom.attach;
   const serializeMountedSvg = zoom.serializeMountedSvg;
 

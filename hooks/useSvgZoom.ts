@@ -224,6 +224,15 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
     return true;
   }, []);
 
+  const onWheel = useCallback(
+    (event: WheelEvent) => {
+      event.preventDefault();
+      const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
+      setZoom(scaleRef.current * factor);
+    },
+    [setZoom]
+  );
+
   const serializeMountedSvg = useCallback((): string | null => {
     const svg = svgRef.current;
     const base = baseRef.current;
@@ -236,14 +245,9 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
   useEffect(() => {
     const el = options.containerRef?.current;
     if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
-      setZoom(scaleRef.current * factor);
-    };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [options.containerRef, setZoom]);
+  }, [options.containerRef, onWheel]);
 
   return {
     attach,
@@ -256,6 +260,7 @@ export function useSvgZoom(options: UseSvgZoomOptions = {}) {
     onPointerDown,
     onPointerMove,
     onPointerUp,
+    onWheel,
     shouldSuppressClick,
     serializeMountedSvg,
     getBaseViewBox,

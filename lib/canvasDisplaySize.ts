@@ -1,11 +1,5 @@
 export const MIN_CANVAS_PX = 200;
 
-/** Fixed editor viewport for traced SVG editing. */
-export const ICON_EDITOR_VIEWPORT = {
-  width: 700,
-  height: 650,
-} as const;
-
 export interface CanvasViewBoxSize {
   w: number;
   h: number;
