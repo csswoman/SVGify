@@ -14,7 +14,8 @@ import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { ToolBar } from './ToolBar';
 import { TopBar } from './TopBar';
 import { StatusBar } from './StatusBar';
-import { Canvas } from './Canvas';
+import { FirstSvgTip } from './FirstSvgTip';
+import { Canvas, type CanvasViewControls } from './Canvas';
 import { Inspector } from './Inspector';
 
 export function Workspace() {
@@ -28,6 +29,8 @@ export function Workspace() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [canvasViewControls, setCanvasViewControls] = useState<CanvasViewControls | null>(null);
+  const [guidanceTipActive, setGuidanceTipActive] = useState(false);
 
   const vectorizeSession = useVectorizeSession({
     imageData,
@@ -77,18 +80,46 @@ export function Workspace() {
     onToolChange: handleToolChange,
     onUndo: () => editor.undo(),
     onRedo: () => editor.redo(),
-    onZoomIn: activeTool === 'vectorize' ? undefined : () => editor.zoom.zoomIn(),
-    onZoomOut: activeTool === 'vectorize' ? undefined : () => editor.zoom.zoomOut(),
-    onZoomReset: activeTool === 'vectorize' ? undefined : () => editor.zoom.reset(),
+    onZoomIn: canvasViewControls
+      ? () => canvasViewControls.zoomIn()
+      : workspaceSvgString
+        ? () => editor.zoom.zoomIn()
+        : undefined,
+    onZoomOut: canvasViewControls
+      ? () => canvasViewControls.zoomOut()
+      : workspaceSvgString
+        ? () => editor.zoom.zoomOut()
+        : undefined,
+    onZoomReset: canvasViewControls
+      ? () => canvasViewControls.reset()
+      : workspaceSvgString
+        ? () => editor.zoom.reset()
+        : undefined,
   });
 
   const isPreTrace = activeTool === 'vectorize' && workspaceSvgString === null;
   const pathCount = workspaceSvgString ? countPaths(workspaceSvgString) : null;
   const byteSize = workspaceSvgString ? svgByteSize(workspaceSvgString) : null;
+  const statusZoom = canvasViewControls
+    ? {
+        scale: canvasViewControls.scale,
+        zoomIn: () => canvasViewControls.zoomIn(),
+        zoomOut: () => canvasViewControls.zoomOut(),
+        reset: () => canvasViewControls.reset(),
+      }
+    : workspaceSvgString
+      ? {
+          scale: editor.zoom.scale,
+          zoomIn: () => editor.zoom.zoomIn(),
+          zoomOut: () => editor.zoom.zoomOut(),
+          reset: () => editor.zoom.reset(),
+        }
+      : null;
+  const showPreviewBg = imageData !== null;
 
   return (
     <ErrorBoundary>
-      <div className="flex h-[calc(100vh-7rem)] min-h-[46rem] flex-col overflow-hidden rounded-xl border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gray-100 dark:bg-gray-900">
         <TopBar
           svgString={workspaceSvgString}
           labels={labelTools.labels}
@@ -122,6 +153,7 @@ export function Workspace() {
             onUploadError={setUploadError}
             onToolChange={handleToolChange}
             onStatusMessage={setStatusMessage}
+            onViewControlsChange={setCanvasViewControls}
           />
           <Inspector
             activeTool={activeTool}
@@ -142,19 +174,24 @@ export function Workspace() {
             onToolChange={handleToolChange}
           />
         </div>
-          <StatusBar
-            pathCount={pathCount}
-            byteSize={byteSize}
-            activeTool={activeTool}
-            statusMessage={statusMessage}
-            hasSvg={workspaceSvgString !== null}
-            isPreTrace={isPreTrace}
-            zoomScale={editor?.zoom.scale}
-          onZoomIn={editor ? () => editor.zoom.zoomIn() : undefined}
-          onZoomOut={editor ? () => editor.zoom.zoomOut() : undefined}
-          onZoomReset={editor ? () => editor.zoom.reset() : undefined}
-          previewBackground={previewBackground}
-          onPreviewBackgroundChange={setPreviewBackground}
+        <FirstSvgTip
+          visible={workspaceSvgString !== null}
+          onActiveChange={setGuidanceTipActive}
+        />
+        <StatusBar
+          pathCount={pathCount}
+          byteSize={byteSize}
+          activeTool={activeTool}
+          statusMessage={statusMessage}
+          suppressGuidance={guidanceTipActive}
+          hasSvg={workspaceSvgString !== null}
+          isPreTrace={isPreTrace}
+          zoomScale={statusZoom?.scale}
+          onZoomIn={statusZoom?.zoomIn}
+          onZoomOut={statusZoom?.zoomOut}
+          onZoomReset={statusZoom?.reset}
+          previewBackground={showPreviewBg ? previewBackground : undefined}
+          onPreviewBackgroundChange={showPreviewBg ? setPreviewBackground : undefined}
         />
       </div>
     </ErrorBoundary>

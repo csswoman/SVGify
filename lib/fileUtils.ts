@@ -73,16 +73,20 @@ export async function validateFile(file: File): Promise<ValidationResult> {
 
 export async function fileToImageData(file: File): Promise<ImageData> {
   return new Promise((resolve, reject) => {
+    const fail = (code: FileValidationError['code'] | 'LOAD_FAILED' | 'READ_FAILED' | 'NO_CONTEXT', message: string) => {
+      const error = new Error(message) as Error & { code: string };
+      error.code = code;
+      reject(error);
+    };
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        // Check dimensions
         if (img.width > MAX_DIMENSIONS || img.height > MAX_DIMENSIONS) {
-          reject(
-            new Error(
-              `Image dimensions too large (${img.width}x${img.height}). Max: ${MAX_DIMENSIONS}x${MAX_DIMENSIONS}.`
-            )
+          fail(
+            'INVALID_DIMENSIONS',
+            `Image dimensions too large (${img.width}x${img.height}). Max: ${MAX_DIMENSIONS}x${MAX_DIMENSIONS}.`
           );
           return;
         }
@@ -96,7 +100,7 @@ export async function fileToImageData(file: File): Promise<ImageData> {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          reject(new Error('Could not get 2D context'));
+          fail('NO_CONTEXT', 'Could not get 2D context');
           return;
         }
         ctx.imageSmoothingEnabled = true;
@@ -105,10 +109,10 @@ export async function fileToImageData(file: File): Promise<ImageData> {
         const imageData = ctx.getImageData(0, 0, width, height);
         resolve(imageData);
       };
-      img.onerror = () => reject(new Error('Failed to load image'));
+      img.onerror = () => fail('LOAD_FAILED', 'Failed to load image');
       img.src = e.target?.result as string;
     };
-    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.onerror = () => fail('READ_FAILED', 'Failed to read file');
     reader.readAsDataURL(file);
   });
 }

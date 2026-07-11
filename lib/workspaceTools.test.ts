@@ -1,10 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { isToolEnabled, toolFromKeyboard, WORKSPACE_TOOLS } from './workspaceTools';
+import {
+  isShapeTool,
+  isToolEnabled,
+  toolFromKeyboard,
+  WORKSPACE_TOOL_GROUPS,
+  WORKSPACE_TOOLS,
+} from './workspaceTools';
 import type { WorkspaceDocument } from '@/types/workspace.types';
 
 const empty: WorkspaceDocument = { imageData: null, svgString: null };
 const withImage: WorkspaceDocument = { imageData: {} as ImageData, svgString: null };
 const withSvg: WorkspaceDocument = { imageData: {} as ImageData, svgString: '<svg></svg>' };
+
+describe('WORKSPACE_TOOL_GROUPS order', () => {
+  it('follows Fill → Refine → Optimize spine', () => {
+    expect(WORKSPACE_TOOL_GROUPS.map((g) => g.id)).toEqual([
+      'file',
+      'edit',
+      'shape',
+      'output',
+    ]);
+  });
+});
 
 describe('isToolEnabled', () => {
   it('enables import always', () => {
@@ -20,6 +37,15 @@ describe('isToolEnabled', () => {
       expect(isToolEnabled(tool, withImage)).toBe(false);
       expect(isToolEnabled(tool, withSvg)).toBe(true);
     }
+  });
+});
+
+describe('isShapeTool', () => {
+  it('marks refine tools only', () => {
+    expect(isShapeTool('erase')).toBe(true);
+    expect(isShapeTool('labels')).toBe(true);
+    expect(isShapeTool('fill')).toBe(false);
+    expect(isShapeTool('optimize')).toBe(false);
   });
 });
 

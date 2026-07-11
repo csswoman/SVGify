@@ -69,8 +69,8 @@ export function Inspector({
       <aside
         aria-label={t('workspace.inspector')}
         className={[
-          'fixed inset-y-0 right-0 z-40 w-72 shrink-0 overflow-y-auto border-l border-gray-200 bg-white p-4 transition-transform duration-200 lg:static lg:z-auto lg:translate-x-0 dark:border-gray-700 dark:bg-gray-800',
-          open ? 'translate-x-0' : 'translate-x-full lg:translate-x-0',
+          'fixed inset-y-0 right-0 z-40 w-[min(100%,18rem)] max-h-dvh shrink-0 overflow-y-auto border-l border-gray-200 bg-white px-3 py-3 transition-transform duration-200 ease-out lg:static lg:z-auto lg:max-h-none lg:w-72 lg:translate-x-0 dark:border-gray-700 dark:bg-gray-800',
+          open ? 'translate-x-0' : 'pointer-events-none translate-x-full lg:pointer-events-auto lg:translate-x-0',
         ].join(' ')}
       >
         {(activeTool === 'import' || !imageData) && (

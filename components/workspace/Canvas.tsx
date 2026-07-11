@@ -5,11 +5,9 @@ import { createPortal } from 'react-dom';
 import { ImageDropzone } from '@/components/upload/ImageDropzone';
 import { ImagePreview } from '@/components/vectorize/ImagePreview';
 import { SvgPreview } from '@/components/vectorize/SvgPreview';
-import { PalettePreview } from '@/components/vectorize/PalettePreview';
 import { NodeEditor } from '@/components/shape/NodeEditor';
 import { BrushEditor } from '@/components/shape/BrushEditor';
 import { EraseEditor } from '@/components/shape/EraseEditor';
-import { ZoomControls } from '@/components/shared/ZoomControls';
 import { ZoomableSvgViewport } from '@/components/shared/ZoomableSvgViewport';
 import { formatBytes, svgByteSize } from '@/lib/optimizeSvg';
 import { useSvgColors } from '@/hooks/useSvgColors';
@@ -26,6 +24,7 @@ import type { useWorkspaceShapeTools } from '@/hooks/useWorkspaceShapeTools';
 import type { useWorkspaceLabels } from '@/hooks/useWorkspaceLabels';
 import { useI18n } from '@/lib/i18n';
 import { CanvasOverlay } from '@/components/shared/CanvasOverlay';
+import { createSampleIconImageData } from '@/lib/sampleImage';
 
 const CHECKERBOARD_BG: React.CSSProperties = {
   backgroundImage: 'repeating-conic-gradient(#f3f4f6 0% 25%, #ffffff 0% 50%)',
@@ -35,6 +34,13 @@ const CHECKERBOARD_BG: React.CSSProperties = {
 const BLACK_BG: React.CSSProperties = {
   backgroundColor: '#000000',
 };
+
+export interface CanvasViewControls {
+  scale: number;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  reset: () => void;
+}
 
 interface CanvasProps {
   activeTool: WorkspaceTool;
@@ -54,6 +60,8 @@ interface CanvasProps {
   onUploadError: (error: string) => void;
   onToolChange: (tool: WorkspaceTool) => void;
   onStatusMessage: (message: string) => void;
+  /** Zoom for vectorize / image preview; null when the editor owns zoom. */
+  onViewControlsChange?: (controls: CanvasViewControls | null) => void;
 }
 
 export function Canvas({
@@ -74,6 +82,7 @@ export function Canvas({
   onUploadError,
   onToolChange,
   onStatusMessage,
+  onViewControlsChange,
 }: CanvasProps) {
   const { t } = useI18n();
   const canvasPanelRef = useRef<HTMLElement>(null);
@@ -85,6 +94,7 @@ export function Canvas({
   const canEdit = svgString !== null && editor !== null;
   const tracedSvg = svgString ?? vectorizeSession.svg;
   const isPreTrace = isVectorizeView && !svgString;
+  const showEditorSurface = canEdit && !isVectorizeView;
   const { replacePathColor } = useSvgColors(editor?.svgEl ?? null);
   const vectorizeContainerRef = useRef<HTMLDivElement>(null);
   const vectorizeZoom = useSvgZoom({ containerRef: vectorizeContainerRef });
@@ -97,6 +107,42 @@ export function Canvas({
     },
     [vectorizeZoom.attach]
   );
+
+  useEffect(() => {
+    if (!onViewControlsChange) return;
+
+    if (!imageData || showEditorSurface) {
+      onViewControlsChange(null);
+      return;
+    }
+
+    const useVectorizeZoom =
+      isVectorizeView && Boolean(tracedSvg) && !showOriginalPreview && !isPreTrace;
+    const active = useVectorizeZoom ? vectorizeZoom : imageZoom;
+
+    onViewControlsChange({
+      scale: active.scale,
+      zoomIn: active.zoomIn,
+      zoomOut: active.zoomOut,
+      reset: active.reset,
+    });
+  }, [
+    imageData,
+    showEditorSurface,
+    isVectorizeView,
+    tracedSvg,
+    showOriginalPreview,
+    isPreTrace,
+    vectorizeZoom.scale,
+    vectorizeZoom.zoomIn,
+    vectorizeZoom.zoomOut,
+    vectorizeZoom.reset,
+    imageZoom.scale,
+    imageZoom.zoomIn,
+    imageZoom.zoomOut,
+    imageZoom.reset,
+    onViewControlsChange,
+  ]);
 
   useEffect(() => {
     if (!isVectorizeView || !tracedSvg || showOriginalPreview) return;
@@ -157,11 +203,19 @@ export function Canvas({
     [onImageData, onToolChange]
   );
 
+  const handleSample = useCallback(() => {
+    try {
+      handleUpload(createSampleIconImageData());
+    } catch {
+      onUploadError(t('upload.error.UNKNOWN'));
+    }
+  }, [handleUpload, onUploadError, t]);
+
   if (!imageData) {
     return (
       <section
         aria-label={t('workspace.canvas')}
-        className="flex min-w-0 flex-1 flex-col items-center justify-center gap-4 bg-gray-200/60 p-4 sm:p-8 dark:bg-gray-950/60"
+        className="flex min-w-0 flex-1 flex-col items-center justify-center gap-5 bg-gray-200/60 p-4 sm:p-8 dark:bg-gray-950/60"
       >
         {uploadError && (
           <div
@@ -171,8 +225,28 @@ export function Canvas({
             {uploadError}
           </div>
         )}
-        <div className="w-full max-w-lg">
+        <div className="w-full max-w-lg space-y-4">
+          <div className="space-y-1 text-center">
+            <h2 className="text-balance text-base font-semibold text-gray-900 dark:text-gray-100">
+              {t('onboard.emptyTitle')}
+            </h2>
+            <p className="text-pretty text-sm text-gray-600 dark:text-gray-300">
+              {t('onboard.emptyBody')}
+            </p>
+          </div>
           <ImageDropzone onImageData={handleUpload} onError={onUploadError} />
+          <div className="flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSample}
+              className="focus-ring min-h-11 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+            >
+              {t('onboard.trySample')}
+            </button>
+            <p className="text-center text-xs text-gray-500 dark:text-gray-400">
+              {t('upload.privacy')}
+            </p>
+          </div>
         </div>
       </section>
     );
@@ -184,14 +258,14 @@ export function Canvas({
         aria-label={t('workspace.canvas')}
         className="flex min-w-0 flex-1 flex-col bg-gray-200/60 dark:bg-gray-950/60"
       >
-        <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
             <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
               {t('tool.vectorize')}
             </p>
           </div>
           <div
-            className="relative min-h-0 flex-1 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
+            className="relative min-h-0 flex-1 overflow-hidden border border-gray-200 dark:border-gray-700"
             style={previewStyle}
           >
             <ImagePreview
@@ -218,14 +292,13 @@ export function Canvas({
   };
   const { selectedPath, brushColor, brushSize } = shapeTools;
   const svgForPortals = svgEl as SVGSVGElement | null;
-  const showEditorSurface = canEdit && !isVectorizeView;
   const compareOriginalImage = processedImageData ?? imageData;
 
   return (
     <section
       ref={canvasPanelRef}
       aria-label={t('workspace.canvas')}
-      className="relative min-w-0 flex-1 overflow-hidden bg-gray-200/60 p-4 flex flex-col dark:bg-gray-950/60"
+      className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-gray-200/60 p-3 dark:bg-gray-950/60"
     >
       {isVectorizeView && (
         <>
@@ -248,49 +321,23 @@ export function Canvas({
                     </span>
                   )}
                 </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => showOriginalPreview ? imageZoom.reset() : vectorizeZoom.reset()}
-                    className="focus-ring rounded border border-gray-300 bg-white px-2 py-1 text-xs font-mono text-gray-600 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                    aria-label="Reset zoom"
-                  >
-                    {Math.round((showOriginalPreview ? imageZoom.scale : vectorizeZoom.scale) * 100)}%
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { if (!showOriginalPreview) vectorizeZoom.zoomIn(); }}
-                    className="focus-ring rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-600 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                    aria-label="Zoom in"
-                  >
-                    +
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { if (!showOriginalPreview) vectorizeZoom.zoomOut(); }}
-                    className="focus-ring rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-600 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                    aria-label="Zoom out"
-                  >
-                    −
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowOriginalPreview((v) => !v)}
-                    className="focus-ring rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-                    aria-expanded={showOriginalPreview}
-                  >
-                    {showOriginalPreview ? t('vec.hideOriginal') : t('workflow.compareOriginal')}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowOriginalPreview((v) => !v)}
+                  className="focus-ring min-h-8 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                  aria-expanded={showOriginalPreview}
+                >
+                  {showOriginalPreview ? t('vec.hideOriginal') : t('workflow.compareOriginal')}
+                </button>
               </div>
 
               <div
-                className="relative flex-1 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
+                className="relative flex-1 overflow-hidden border border-gray-200 dark:border-gray-700"
                 style={previewStyle}
               >
-                <CanvasOverlay isVisible={isLoading} />
+                <CanvasOverlay isVisible={isLoading} label={t('vec.vectorizing')} />
                 {isPreTrace && (
-                  <div className="absolute left-3 top-3 rounded-full border border-gray-200 bg-white/90 px-3 py-1 text-[11px] font-medium text-gray-600 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-300">
+                  <div className="absolute left-3 top-3 rounded-md border border-gray-200 bg-white px-3 py-1 text-[11px] font-medium text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
                     {t('vec.notTracedYet')}
                   </div>
                 )}
@@ -335,33 +382,25 @@ export function Canvas({
               <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
                 {t(`tool.${activeTool}`)}
               </p>
-              <div className="flex items-center gap-2">
-                <ZoomControls
-                  scale={zoom.scale}
-                  onZoomIn={zoom.zoomIn}
-                  onZoomOut={zoom.zoomOut}
-                  onReset={zoom.reset}
-                />
-                {compareOriginalImage && (
-                  <button
-                    type="button"
-                    onClick={() => setShowOriginalPreview((v) => !v)}
-                    className="focus-ring rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-                    aria-expanded={showOriginalPreview}
-                  >
-                    {showOriginalPreview ? t('vec.hideOriginal') : t('workflow.compareOriginal')}
-                  </button>
-                )}
-              </div>
+              {compareOriginalImage && (
+                <button
+                  type="button"
+                  onClick={() => setShowOriginalPreview((v) => !v)}
+                  className="focus-ring min-h-8 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                  aria-expanded={showOriginalPreview}
+                >
+                  {showOriginalPreview ? t('vec.hideOriginal') : t('workflow.compareOriginal')}
+                </button>
+              )}
             </div>
             <div
-              className="relative min-h-0 flex-1 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
+              className="relative min-h-0 flex-1 overflow-hidden border border-gray-200 dark:border-gray-700"
               style={{
                 ...previewStyle,
                 cursor: showEditorSurface && !showOriginalPreview ? cursor : undefined,
               }}
             >
-              <CanvasOverlay isVisible={editor?.isBusy ?? false} />
+              <CanvasOverlay isVisible={editor?.isBusy ?? false} label={t('workspace.working')} />
               <div
                 className="h-full w-full"
                 style={{ visibility: showOriginalPreview ? 'hidden' : 'visible' }}

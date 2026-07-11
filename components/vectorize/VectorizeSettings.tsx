@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { CaretDown, CaretUp } from '@phosphor-icons/react';
 import { VECTORIZE_DEFAULTS, VectorizeSettings } from '@/types/svg.types';
 import { Tooltip } from '@/components/shared/Tooltip';
 import { useI18n } from '@/lib/i18n';
@@ -68,10 +69,7 @@ export function VectorizeSettingsPanel({ settings, onSettingsChange }: Vectorize
 
   return (
     <div className="space-y-6">
-      {/* ── Basic ── */}
       <div className="space-y-4">
-        <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">{t('set.basic')}</p>
-
         <div>
           <label className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
             {t('set.traceMode')}
@@ -144,35 +142,23 @@ export function VectorizeSettingsPanel({ settings, onSettingsChange }: Vectorize
       </div>
 
       {/* ── Advanced (collapsible) ── */}
-      <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+      <div className="border-t border-gray-100 pt-4 dark:border-gray-700">
         <button
+          type="button"
           onClick={() => setShowAdvanced((v) => !v)}
-          className="focus-ring flex w-full items-center text-xs font-semibold text-gray-600 transition hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+          className="focus-ring flex min-h-11 w-full items-center justify-between gap-2 rounded py-1 text-xs font-semibold text-gray-600 transition hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
           aria-expanded={showAdvanced}
         >
-          <span className="mr-1">{showAdvanced ? '▾' : '▸'}</span>
           {t('set.advanced')}
+          {showAdvanced ? (
+            <CaretUp size={14} className="text-gray-400" aria-hidden />
+          ) : (
+            <CaretDown size={14} className="text-gray-400" aria-hidden />
+          )}
         </button>
 
         {showAdvanced && (
           <div className="space-y-5 mt-4">
-            <div>
-              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('set.colorPrecision')}: <span className="font-mono ml-1">{2 ** settings.colorPrecision}</span>
-                <Tooltip text={t('set.colorPrecision.help')} label={t('set.colorPrecision')} />
-              </label>
-              <input
-                type="range"
-                min={1}
-                max={8}
-                step={1}
-                value={settings.colorPrecision}
-                onChange={(e) => setColorPrecision(Number(e.target.value))}
-                className="w-full accent-blue-600"
-                aria-label={`${t('set.colorPrecision')}: ${2 ** settings.colorPrecision}`}
-              />
-            </div>
-
             <div>
               <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 {t('set.noise')}: <span className="font-mono ml-1">{settings.filterSpeckle}</span>
@@ -238,23 +224,6 @@ export function VectorizeSettingsPanel({ settings, onSettingsChange }: Vectorize
                 onChange={(e) => onSettingsChange({ ...settings, preprocessingScale: Number(e.target.value), traceScale: Number(e.target.value) })}
                 className="w-full accent-blue-600"
                 aria-label={`${t('set.traceScale')}: ${settings.preprocessingScale}`}
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('set.blur')}: <span className="font-mono ml-1">{settings.bilateralRadius}</span>
-                <Tooltip text={t('set.blur.help')} label={t('set.blur')} />
-              </label>
-              <input
-                type="range"
-                min={0}
-                max={3}
-                step={1}
-                value={settings.bilateralRadius}
-                onChange={(e) => onSettingsChange({ ...settings, bilateralRadius: Number(e.target.value), blurRadius: Number(e.target.value) })}
-                className="w-full accent-blue-600"
-                aria-label={`${t('set.blur')}: ${settings.bilateralRadius}`}
               />
             </div>
 

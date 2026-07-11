@@ -53,7 +53,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <ErrorFallback
-          message={this.state.error?.message ?? ''}
+          message=""
           onRetry={() => this.setState({ hasError: false, error: null })}
         />
       );

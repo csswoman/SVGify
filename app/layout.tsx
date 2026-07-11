@@ -37,7 +37,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+      <body className="flex h-dvh flex-col overflow-hidden bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
         <AppShell>{children}</AppShell>
       </body>
     </html>

@@ -26,11 +26,6 @@ export const WORKSPACE_TOOL_GROUPS: WorkspaceToolGroup[] = [
     tools: [{ id: 'fill', shortcut: 'G' }],
   },
   {
-    id: 'output',
-    requiresSvg: true,
-    tools: [{ id: 'optimize' }],
-  },
-  {
     id: 'shape',
     requiresSvg: true,
     tools: [
@@ -40,6 +35,11 @@ export const WORKSPACE_TOOL_GROUPS: WorkspaceToolGroup[] = [
       { id: 'nodes', shortcut: 'A' },
       { id: 'labels', shortcut: 'L' },
     ],
+  },
+  {
+    id: 'output',
+    requiresSvg: true,
+    tools: [{ id: 'optimize' }],
   },
 ];
 
@@ -65,4 +65,17 @@ export function isToolEnabled(tool: WorkspaceTool, doc: WorkspaceDocument): bool
 
 export function toolFromKeyboard(key: string): WorkspaceTool | null {
   return KEY_MAP[key.toLowerCase()] ?? null;
+}
+
+const SHAPE_TOOL_IDS = new Set<WorkspaceTool>([
+  'erase',
+  'erasePath',
+  'brush',
+  'nodes',
+  'labels',
+]);
+
+/** Shape/refine tools — progressive disclosure in the toolbar. */
+export function isShapeTool(tool: WorkspaceTool): boolean {
+  return SHAPE_TOOL_IDS.has(tool);
 }

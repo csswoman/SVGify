@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { prependLabelLegend } from '@/lib/labelUtils';
 import { LabelInfo } from '@/lib/labelUtils';
 
@@ -16,32 +17,39 @@ export function DownloadButton({
   fileName = 'image.svg',
   label = 'Download SVG',
 }: DownloadButtonProps) {
+  const [busy, setBusy] = useState(false);
+
   const handleDownload = () => {
-    if (!svgString) return;
+    if (!svgString || busy) return;
+    setBusy(true);
 
-    // Add label legend comment if labels exist
-    let content = svgString;
-    if (labels.length > 0) {
-      content = prependLabelLegend(svgString, labels);
+    try {
+      let content = svgString;
+      if (labels.length > 0) {
+        content = prependLabelLegend(svgString, labels);
+      }
+
+      const blob = new Blob([content], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } finally {
+      window.setTimeout(() => setBusy(false), 400);
     }
-
-    const blob = new Blob([content], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   };
 
   return (
     <button
       type="button"
       onClick={handleDownload}
-      disabled={!svgString}
-      className="focus-ring min-h-11 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-400 sm:px-6 sm:py-3 dark:disabled:bg-gray-600"
+      disabled={!svgString || busy}
+      aria-busy={busy}
+      className="focus-ring min-h-10 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-400 dark:disabled:bg-gray-600"
     >
       {label}
     </button>
