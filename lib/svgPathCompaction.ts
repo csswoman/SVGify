@@ -7,11 +7,6 @@ interface PathRecord {
   mergeable: boolean;
 }
 
-interface OutputItem {
-  index: number;
-  tag: string;
-}
-
 const PATH_RE = /<path\b[^>]*>/g;
 const ATTR_RE = /([a-zA-Z_:][-a-zA-Z0-9_:.]*)="([^"]*)"/g;
 
@@ -64,8 +59,17 @@ function parsePaths(svg: string): PathRecord[] {
   });
 }
 
+/**
+ * A leading relative moveto (`m`) is treated as absolute only when it is the
+ * first command of a path element. After concatenation it becomes relative to
+ * the previous subpath and shifts geometry — often outside the viewBox.
+ */
+function ensureAbsoluteSubpathStart(d: string): string {
+  return d.replace(/^\s*m/, 'M');
+}
+
 function mergedPathTag(fill: string, paths: PathRecord[]): string {
-  const d = paths.map((path) => path.d).join('');
+  const d = paths.map((path) => ensureAbsoluteSubpathStart(path.d)).join('');
   return `<path fill="${fill}" d="${d}"/>`;
 }
 
@@ -92,12 +96,12 @@ export function compactSvgPaths(svg: string, targetCount = 50): string {
   if (paths.length <= target) return svg;
 
   const keep = chooseKeepCount(paths, target);
-  const outputs: OutputItem[] = [];
+  const tagsByIndex = new Array<string>(paths.length).fill('');
   const mergeGroups = new Map<string, PathRecord[]>();
 
   for (const path of paths) {
     if (keep.has(path.index) || !path.mergeable || !path.fill) {
-      outputs.push({ index: path.index, tag: path.tag });
+      tagsByIndex[path.index] = path.tag;
       continue;
     }
 
@@ -107,15 +111,11 @@ export function compactSvgPaths(svg: string, targetCount = 50): string {
   }
 
   for (const [fill, group] of mergeGroups) {
-    outputs.push({
-      index: group[0].index,
-      tag: mergedPathTag(fill, group),
-    });
+    tagsByIndex[group[0].index] = mergedPathTag(fill, group);
   }
 
-  const tags = outputs.sort((a, b) => a.index - b.index).map((item) => item.tag);
   let i = 0;
-  return svg.replace(PATH_RE, () => tags[i++] ?? '');
+  return svg.replace(PATH_RE, () => tagsByIndex[i++] ?? '');
 }
 
 export function countSvgPaths(svg: string): number {
