@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { getEditableNodes, parsePathD } from './pathEditor';
 import { compactSvgPaths, countSvgPaths } from './svgPathCompaction';
 
 function rectPath(fill: string, x: number, y: number, size = 1): string {
@@ -31,20 +32,22 @@ describe('svg path compaction', () => {
     expect(countSvgPaths(compacted)).toBe(2);
   });
 
-  it('keeps relative-start subpaths in place when merging (leading m must become absolute M)', () => {
-    // Standalone, leading `m` is treated as absolute. After concatenation it is
-    // relative to the previous subpath's current point — which shifts geometry
-    // outside the viewBox unless we normalize to absolute M.
-    const a = '<path fill="#cba681" d="m0 0l10 0l0 10l-10 0z"/>';
-    const b = '<path fill="#cba681" d="m50 50l10 0l0 10l-10 0z"/>';
-    const large = rectPath('#111', 0, 0, 100);
-    const svg = `<svg viewBox="0 0 100 100">${large}${a}${b}</svg>`;
+  it('absolutizes SVGO-style relative paths before merging (implicit moveto pairs)', () => {
+    // SVGO often emits `m` + implicit relative lineto pairs.
+    // A naive leading m→M turns `m150 200 10 0` into absolute L10 0 (spike to origin).
+    const a = '<path fill="#cba681" d="m150 200 10 0 0 10 -10 0z"/>';
+    const b = '<path fill="#cba681" d="m50 60 10 0 0 10 -10 0z"/>';
+    const large = rectPath('#111', 200, 200, 100);
+    const svg = `<svg viewBox="0 0 400 400">${large}${a}${b}</svg>`;
 
     const compacted = compactSvgPaths(svg, 2);
     const mergedD = compacted.match(/fill="#cba681" d="([^"]+)"/)?.[1] ?? '';
+    const nodes = getEditableNodes(parsePathD(mergedD));
 
-    expect(mergedD).toMatch(/M50[\s,]50|M50 50/);
-    expect(mergedD).not.toMatch(/zm50/);
+    expect(nodes.some((n) => n.x >= 150 && n.y >= 200)).toBe(true);
+    expect(nodes.some((n) => n.x >= 50 && n.x <= 70 && n.y >= 60 && n.y <= 80)).toBe(true);
+    expect(nodes.filter((n) => n.x < 20 && n.y < 20)).toHaveLength(0);
+    expect(mergedD).not.toMatch(/[mlhvcsqt]/);
   });
 
   it('replaces merged paths at their original indices so later shapes are not shifted', () => {

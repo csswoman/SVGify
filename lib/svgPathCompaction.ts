@@ -1,3 +1,5 @@
+import { parsePathD, serializePathD } from './pathEditor';
+
 interface PathRecord {
   index: number;
   tag: string;
@@ -60,16 +62,17 @@ function parsePaths(svg: string): PathRecord[] {
 }
 
 /**
- * A leading relative moveto (`m`) is treated as absolute only when it is the
- * first command of a path element. After concatenation it becomes relative to
- * the previous subpath and shifts geometry — often outside the viewBox.
+ * Convert path data to absolute M/L/C/Q/Z before concatenation.
+ * A naive leading `m`→`M` swap is unsafe: SVGO emits implicit relative lineto
+ * pairs after `m`, and uppercasing only the moveto turns those into absolute
+ * jumps near the origin (starburst spikes).
  */
-function ensureAbsoluteSubpathStart(d: string): string {
-  return d.replace(/^\s*m/, 'M');
+function toAbsolutePathD(d: string): string {
+  return serializePathD(parsePathD(d), 2);
 }
 
 function mergedPathTag(fill: string, paths: PathRecord[]): string {
-  const d = paths.map((path) => ensureAbsoluteSubpathStart(path.d)).join('');
+  const d = paths.map((path) => toAbsolutePathD(path.d)).join('');
   return `<path fill="${fill}" d="${d}"/>`;
 }
 
