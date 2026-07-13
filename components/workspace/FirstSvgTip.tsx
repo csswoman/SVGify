@@ -1,64 +1,76 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { X } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 
-const STORAGE_KEY = 'svgcraft:onboard:first-svg-tip';
-
 interface FirstSvgTipProps {
+  /** Show when SVG is ready and guidance still applies. */
   visible: boolean;
+  onGoFill: () => void;
+  onGoOptimize: () => void;
+  onDismiss: () => void;
   /** True while the tip is on screen — parent can mute other guidance. */
   onActiveChange?: (active: boolean) => void;
 }
 
-export function FirstSvgTip({ visible, onActiveChange }: FirstSvgTipProps) {
+/**
+ * Post-vectorize coach: one primary path (prepare), one quieter alternative (fill).
+ * Refine stays on the toolbar — not a competing CTA here.
+ */
+export function FirstSvgTip({
+  visible,
+  onGoFill,
+  onGoOptimize,
+  onDismiss,
+  onActiveChange,
+}: FirstSvgTipProps) {
   const { t } = useI18n();
-  const [dismissed, setDismissed] = useState<boolean | null>(null);
 
   useEffect(() => {
-    try {
-      setDismissed(window.localStorage.getItem(STORAGE_KEY) === '1');
-    } catch {
-      setDismissed(false);
-    }
-  }, []);
-
-  const active = Boolean(visible && dismissed === false);
-
-  useEffect(() => {
-    onActiveChange?.(active);
+    onActiveChange?.(visible);
     return () => onActiveChange?.(false);
-  }, [active, onActiveChange]);
+  }, [visible, onActiveChange]);
 
-  if (!active) return null;
-
-  const dismiss = () => {
-    setDismissed(true);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, '1');
-    } catch {
-      // ignore quota / private mode
-    }
-  };
+  if (!visible) return null;
 
   return (
     <div
-      role="status"
-      className="flex shrink-0 items-start justify-between gap-3 border-t border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-200"
+      role="region"
+      aria-label={t('onboard.nextStepsLabel')}
+      className="flex shrink-0 flex-col gap-2 border-t border-gray-200 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 dark:border-gray-700 dark:bg-gray-800"
     >
-      <p className="min-w-0 text-pretty leading-relaxed text-gray-600 dark:text-gray-300">
-        {t('onboard.firstSvgTip')}
-      </p>
-      <button
-        type="button"
-        onClick={dismiss}
-        className="focus-ring inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
-        aria-label={t('onboard.dismissTip')}
-      >
-        <span className="max-sm:hidden">{t('onboard.gotIt')}</span>
-        <X size={14} weight="bold" aria-hidden />
-      </button>
+      <div className="min-w-0 space-y-0.5">
+        <p className="text-xs font-medium text-gray-800 dark:text-gray-100">
+          {t('onboard.nextStepsTitle')}
+        </p>
+        <p className="text-pretty text-xs text-gray-500 dark:text-gray-400">
+          {t('onboard.nextShapesHint')}
+        </p>
+      </div>
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <button type="button" onClick={onGoOptimize} className="btn-tertiary min-h-9 px-3 py-1.5 text-xs">
+          {t('onboard.nextOptimize')}
+        </button>
+        <button
+          type="button"
+          onClick={onGoFill}
+          className="focus-ring rounded-md px-2 py-1.5 text-xs font-medium text-gray-600 underline-offset-2 hover:text-gray-900 hover:underline dark:text-gray-400 dark:hover:text-gray-200"
+        >
+          {t('onboard.nextFill')}
+          <kbd className="ml-1.5 hidden font-mono text-[10px] font-normal opacity-70 sm:inline">
+            G
+          </kbd>
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="focus-ring flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+          aria-label={t('onboard.nextStepsDismiss')}
+        >
+          <X size={14} aria-hidden />
+        </button>
+      </div>
     </div>
   );
 }

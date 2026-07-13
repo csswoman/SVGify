@@ -5,6 +5,8 @@ import { DEFAULT_ZOOM_VIEWPORT, type SvgZoomViewport, type RGBColor } from '@/ty
 import type { WorkspaceTool } from '@/types/workspace.types';
 import { countPaths } from '@/lib/simplifyPath';
 import { svgByteSize } from '@/lib/optimizeSvg';
+import { isShapeTool } from '@/lib/workspaceTools';
+import { useI18n } from '@/lib/i18n';
 import { useVectorizeSession } from '@/hooks/useVectorizeSession';
 import { useWorkspaceSvg } from '@/hooks/useWorkspaceSvg';
 import { useWorkspaceShapeTools } from '@/hooks/useWorkspaceShapeTools';
@@ -19,6 +21,7 @@ import { Canvas, type CanvasViewControls } from './Canvas';
 import { Inspector } from './Inspector';
 
 export function Workspace() {
+  const { t } = useI18n();
   const [activeTool, setActiveTool] = useState<WorkspaceTool>('import');
   const [imageData, setImageData] = useState<ImageData | null>(null);
   const [svgString, setSvgString] = useState<string | null>(null);
@@ -31,6 +34,10 @@ export function Workspace() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [canvasViewControls, setCanvasViewControls] = useState<CanvasViewControls | null>(null);
   const [guidanceTipActive, setGuidanceTipActive] = useState(false);
+  const [nextStepsDismissed, setNextStepsDismissed] = useState(false);
+  const [hasOpenedRefine, setHasOpenedRefine] = useState(false);
+  const [downloadHighlight, setDownloadHighlight] = useState(false);
+  const [hasPrepared, setHasPrepared] = useState(false);
 
   const vectorizeSession = useVectorizeSession({
     imageData,
@@ -62,17 +69,39 @@ export function Workspace() {
       if (activeTool === 'vectorize' && tool !== 'vectorize' && vectorizeSession.svg) {
         setSvgString(vectorizeSession.svg);
       }
+      if (isShapeTool(tool)) setHasOpenedRefine(true);
       setActiveTool(tool);
       setInspectorOpen(true);
     },
     [activeTool, vectorizeSession.svg]
   );
 
+  const handleOptimizePrepared = useCallback(() => {
+    setStatusMessage(t('optimize.preparedStatus'));
+    setDownloadHighlight(true);
+    setHasPrepared(true);
+    setNextStepsDismissed(true);
+  }, [t]);
+
+  useEffect(() => {
+    if (!downloadHighlight) return;
+    const id = window.setTimeout(() => setDownloadHighlight(false), 4000);
+    return () => window.clearTimeout(id);
+  }, [downloadHighlight]);
+
   useEffect(() => {
     if (activeTool !== 'vectorize') return;
     if (!vectorizeSession.svg) return;
     setSvgString((current) => (current === vectorizeSession.svg ? current : vectorizeSession.svg));
   }, [activeTool, vectorizeSession.svg]);
+
+  useEffect(() => {
+    if (!workspaceSvgString) {
+      setNextStepsDismissed(false);
+      setHasOpenedRefine(false);
+      setHasPrepared(false);
+    }
+  }, [workspaceSvgString]);
 
   useWorkspaceShortcuts({
     document,
@@ -129,9 +158,17 @@ export function Workspace() {
           onRedo={() => editor.redo()}
           inspectorOpen={inspectorOpen}
           onInspectorToggle={() => setInspectorOpen((open) => !open)}
+          downloadHighlight={downloadHighlight}
+          downloadPrepared={hasPrepared}
+          onDownloadComplete={() => setDownloadHighlight(false)}
         />
         <div className="relative flex min-h-0 flex-1">
-          <ToolBar activeTool={activeTool} document={document} onToolChange={handleToolChange} />
+          <ToolBar
+            activeTool={activeTool}
+            document={document}
+            onToolChange={handleToolChange}
+            showRefineHint={!hasOpenedRefine && workspaceSvgString !== null}
+          />
           <Canvas
             activeTool={activeTool}
             imageData={imageData}
@@ -171,11 +208,29 @@ export function Workspace() {
             onFillColorChange={setFillColor}
             onResetDocument={handleResetDocument}
             onSvgString={setSvgString}
-            onToolChange={handleToolChange}
+            onOptimizePrepared={handleOptimizePrepared}
           />
         </div>
         <FirstSvgTip
-          visible={workspaceSvgString !== null}
+          visible={
+            workspaceSvgString !== null &&
+            activeTool === 'vectorize' &&
+            !vectorizeSession.isLoading &&
+            !nextStepsDismissed &&
+            !hasOpenedRefine &&
+            !hasPrepared
+          }
+          onGoFill={() => {
+            if (vectorizeSession.svg) setSvgString(vectorizeSession.svg);
+            handleToolChange('fill');
+            setNextStepsDismissed(true);
+          }}
+          onGoOptimize={() => {
+            if (vectorizeSession.svg) setSvgString(vectorizeSession.svg);
+            handleToolChange('optimize');
+            setNextStepsDismissed(true);
+          }}
+          onDismiss={() => setNextStepsDismissed(true)}
           onActiveChange={setGuidanceTipActive}
         />
         <StatusBar
