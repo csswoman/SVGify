@@ -1,6 +1,16 @@
 import { WorkerMessage, WorkerResponse, VectorizeSettings, VECTORIZE_DEFAULTS } from '@/types/svg.types';
-import { applyAlphaThreshold, applyBilateralFilter, upscaleImageData } from '@/lib/imageFilters';
-import { quantizeImageToPalette, smoothQuantizedPalette } from '@/lib/paletteExtraction';
+import {
+  anchorAntialiasedEdgeColors,
+  applyAlphaThreshold,
+  applyBilateralFilter,
+  upscaleImageData,
+} from '@/lib/imageFilters';
+import { paletteForTrace, resolveRasterSpeckleArea } from '@/lib/iconModeSettings';
+import {
+  absorbSmallPaletteComponents,
+  quantizeImageToPalette,
+  smoothQuantizedPalette,
+} from '@/lib/paletteExtraction';
 
 self.postMessage({ type: 'ready' } satisfies WorkerResponse);
 
@@ -79,19 +89,36 @@ function normalizeSettings(settings: VectorizeSettings): VectorizeSettings {
 
 function preprocessForVTracer(imageData: ImageData, settings: VectorizeSettings): ImageData {
   const upscaled = upscaleImageData(imageData, settings.preprocessingScale);
-  const alphaCleaned = applyAlphaThreshold(upscaled, settings.alphaThreshold);
+  const edgeAnchored = anchorAntialiasedEdgeColors(upscaled, settings.alphaThreshold);
+  const alphaCleaned = applyAlphaThreshold(edgeAnchored, settings.alphaThreshold);
   if (settings.traceMode === 'icon') {
     return preprocessIconForVTracer(alphaCleaned, settings);
   }
 
-  return applyBilateralFilter(alphaCleaned, settings.bilateralRadius, settings.bilateralColorSigma);
+  const filtered = applyBilateralFilter(
+    alphaCleaned,
+    settings.bilateralRadius,
+    settings.bilateralColorSigma
+  );
+  const palette = paletteForTrace(settings);
+
+  // Standard used to calculate and display this palette but sent the original
+  // colors to VTracer. Posterizing here makes the color-count control real:
+  // requested shades become traceable regions instead of being discarded by
+  // a second, unrelated quantization pass.
+  if (palette.length === 0) return filtered;
+
+  const quantized = quantizeImageToPalette(filtered, palette);
+  const minComponentArea = resolveRasterSpeckleArea(
+    settings.filterSpeckle,
+    quantized.width,
+    quantized.height
+  );
+  return absorbSmallPaletteComponents(quantized, minComponentArea);
 }
 
 function preprocessIconForVTracer(imageData: ImageData, settings: VectorizeSettings): ImageData {
-  const palette = (settings.customPalette ?? []).slice(
-    0,
-    Math.max(1, Math.min(16, settings.numberofcolors))
-  );
+  const palette = paletteForTrace(settings);
 
   if (palette.length === 0) {
     return applyBilateralFilter(imageData, settings.bilateralRadius, settings.bilateralColorSigma);

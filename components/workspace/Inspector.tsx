@@ -33,7 +33,7 @@ interface InspectorProps {
   onFillColorChange: (color: RGBColor) => void;
   onResetDocument: () => void;
   onSvgString: (svg: string) => void;
-  onToolChange: (tool: WorkspaceTool) => void;
+  onOptimizePrepared?: () => void;
 }
 
 export function Inspector({
@@ -52,7 +52,7 @@ export function Inspector({
   onFillColorChange,
   onResetDocument,
   onSvgString,
-  onToolChange,
+  onOptimizePrepared,
 }: InspectorProps) {
   const { t } = useI18n();
 
@@ -82,13 +82,7 @@ export function Inspector({
         )}
 
         {activeTool === 'vectorize' && imageData && (
-          <VectorizeInspector
-            session={vectorizeSession}
-            onContinueToEdit={() => {
-              if (vectorizeSession.svg) onSvgString(vectorizeSession.svg);
-              onToolChange('fill');
-            }}
-          />
+          <VectorizeInspector session={vectorizeSession} />
         )}
 
         {(activeTool === 'fill' || activeTool === 'eyedropper') && (
@@ -98,7 +92,6 @@ export function Inspector({
             isSampling={activeTool === 'eyedropper'}
             sampledColor={selectedColor}
             onFillColorChange={onFillColorChange}
-            onToolChange={onToolChange}
           />
         )}
 
@@ -154,6 +147,7 @@ export function Inspector({
             serializeMountedSvg={editor.serializeMountedSvg}
             pathOmit={VECTORIZE_DEFAULTS.pathomit}
             onSvgString={onSvgString}
+            onPrepared={onOptimizePrepared}
           />
         )}
 

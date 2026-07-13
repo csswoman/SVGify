@@ -2,6 +2,7 @@
 
 import { ZoomControls } from '@/components/shared/ZoomControls';
 import { useI18n, type TKey } from '@/lib/i18n';
+import { isShapeTool } from '@/lib/workspaceTools';
 import { DEFAULT_ZOOM_SCALE } from '@/types/svg.types';
 import type { WorkspaceTool } from '@/types/workspace.types';
 
@@ -25,7 +26,7 @@ interface StatusBarProps {
   byteSize: number | null;
   activeTool: WorkspaceTool;
   statusMessage?: string | null;
-  /** When true, hide ambient tool hints (one-shot tip owns guidance). */
+  /** When true, hide ambient tool hints (next-steps chrome owns guidance). */
   suppressGuidance?: boolean;
   hasSvg?: boolean;
   isPreTrace?: boolean;
@@ -76,12 +77,18 @@ export function StatusBar({
           : null;
   const hint = statusMessage || ambientHint;
 
+  const activeToolLabel = isShapeTool(activeTool)
+    ? `${t('tool.refine')} · ${t(`tool.${activeTool}`)}`
+    : activeTool === 'eyedropper'
+      ? `${t('tool.fill')} · ${t('tool.eyedropper')}`
+      : t(`tool.${activeTool}`);
+
   return (
     <footer className="grid shrink-0 grid-cols-1 items-center gap-x-4 gap-y-1.5 border-t border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 sm:grid-cols-[minmax(0,1fr)_auto_auto] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
         {isPreTrace ? (
           <span>{t('vec.notTracedYet')}</span>
-        ) : (
+        ) : hasSvg ? (
           <span className="inline-flex items-center gap-2 font-mono tabular-nums">
             <span>
               {pathCount ?? 0} {t('workspace.paths')}
@@ -91,7 +98,7 @@ export function StatusBar({
             </span>
             <span>{byteSize !== null ? formatBytes(byteSize) : '0 B'}</span>
           </span>
-        )}
+        ) : null}
         {hint && (
           <span
             aria-live="polite"
@@ -117,7 +124,7 @@ export function StatusBar({
                   onClick={() => onPreviewBackgroundChange(bg)}
                   className={`min-h-8 rounded px-2 py-1 text-[11px] font-medium transition ${
                     previewBackground === bg
-                      ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
+                      ? 'bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100'
                       : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                   }`}
                   aria-pressed={previewBackground === bg}
@@ -141,7 +148,7 @@ export function StatusBar({
       )}
 
       <div className="flex flex-wrap items-center justify-self-start gap-3 sm:justify-self-end">
-        <span className="text-gray-500 dark:text-gray-400">{t(`tool.${activeTool}`)}</span>
+        <span className="text-gray-500 dark:text-gray-400">{activeToolLabel}</span>
         {showPanHint && (
           <span className="max-lg:hidden text-gray-400 dark:text-gray-500">{t('zoom.panHint')}</span>
         )}

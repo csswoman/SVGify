@@ -1,23 +1,45 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { prependLabelLegend } from '@/lib/labelUtils';
 import { LabelInfo } from '@/lib/labelUtils';
+import { useI18n } from '@/lib/i18n';
 
 interface DownloadButtonProps {
   svgString: string | null;
   labels?: LabelInfo[];
   fileName?: string;
   label?: string;
+  /** Brief attention after Prepare for download. */
+  highlight?: boolean;
+  /** True after the user ran Prepare at least once this document. */
+  prepared?: boolean;
+  onDownloaded?: () => void;
 }
 
 export function DownloadButton({
   svgString,
   labels = [],
-  fileName = 'image.svg',
-  label = 'Download SVG',
+  fileName = 'vectorized.svg',
+  label,
+  highlight = false,
+  prepared = false,
+  onDownloaded,
 }: DownloadButtonProps) {
+  const { t } = useI18n();
   const [busy, setBusy] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const buttonLabel = label ?? (prepared ? t('workspace.downloadPrepared') : t('workspace.download'));
+  const titleHint = !svgString
+    ? t('workspace.downloadDisabled')
+    : prepared
+      ? undefined
+      : t('workspace.downloadRaw');
+
+  useEffect(() => {
+    if (!highlight || !svgString) return;
+    buttonRef.current?.focus({ preventScroll: true });
+  }, [highlight, svgString]);
 
   const handleDownload = () => {
     if (!svgString || busy) return;
@@ -38,6 +60,7 @@ export function DownloadButton({
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+      onDownloaded?.();
     } finally {
       window.setTimeout(() => setBusy(false), 400);
     }
@@ -45,13 +68,16 @@ export function DownloadButton({
 
   return (
     <button
+      ref={buttonRef}
       type="button"
       onClick={handleDownload}
       disabled={!svgString || busy}
       aria-busy={busy}
-      className="focus-ring min-h-10 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-400 dark:disabled:bg-gray-600"
+      aria-label={buttonLabel}
+      title={titleHint}
+      className={['btn-primary', highlight ? 'download-attention' : ''].filter(Boolean).join(' ')}
     >
-      {label}
+      {buttonLabel}
     </button>
   );
 }

@@ -57,7 +57,7 @@ export function EyedropperInspector({
               onFillColorChange(selectedColor);
               onToolChange('fill');
             }}
-            className="focus-ring w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+            className="btn-secondary w-full"
           >
             {t('col.useAsFill')}
           </button>

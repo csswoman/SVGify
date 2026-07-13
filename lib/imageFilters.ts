@@ -173,6 +173,78 @@ export function applyAlphaThreshold(imageData: ImageData, threshold: number): Im
   return new ImageData(out, imageData.width, imageData.height);
 }
 
+/**
+ * Transparent PNG edges may carry arbitrary RGB values that are invisible
+ * while alpha-blended. Turning those pixels fully opaque can reveal invented
+ * color fringes. Re-anchor only antialiased boundary pixels to a nearby fully
+ * opaque source color before hardening alpha.
+ */
+export function anchorAntialiasedEdgeColors(
+  imageData: ImageData,
+  alphaThreshold: number,
+  radius = 2
+): ImageData {
+  const threshold = Math.max(0, Math.min(255, Math.round(alphaThreshold)));
+  const searchRadius = Math.max(1, Math.min(3, Math.round(radius)));
+  const { width, height, data } = imageData;
+  const out = new Uint8ClampedArray(data);
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const index = (y * width + x) * 4;
+      const alpha = data[index + 3];
+      if (alpha < threshold || alpha >= 250) continue;
+
+      let bordersTransparency = false;
+      for (let dy = -1; dy <= 1 && !bordersTransparency; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= width || ny >= height) {
+            bordersTransparency = true;
+            break;
+          }
+          if (data[(ny * width + nx) * 4 + 3] < threshold) {
+            bordersTransparency = true;
+            break;
+          }
+        }
+      }
+      if (!bordersTransparency) continue;
+
+      let bestIndex = -1;
+      let bestScore = Number.POSITIVE_INFINITY;
+      for (let dy = -searchRadius; dy <= searchRadius; dy++) {
+        for (let dx = -searchRadius; dx <= searchRadius; dx++) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+          const candidate = (ny * width + nx) * 4;
+          if (data[candidate + 3] < 250) continue;
+
+          const dr = data[candidate] - data[index];
+          const dg = data[candidate + 1] - data[index + 1];
+          const db = data[candidate + 2] - data[index + 2];
+          const score = dr * dr + dg * dg + db * db + (dx * dx + dy * dy) * 64;
+          if (score < bestScore) {
+            bestScore = score;
+            bestIndex = candidate;
+          }
+        }
+      }
+
+      if (bestIndex >= 0) {
+        out[index] = data[bestIndex];
+        out[index + 1] = data[bestIndex + 1];
+        out[index + 2] = data[bestIndex + 2];
+      }
+    }
+  }
+
+  return new ImageData(out, width, height);
+}
+
 function morphAlpha(imageData: ImageData, radius: number, mode: 'dilate' | 'erode'): ImageData {
   if (radius <= 0) return imageData;
 

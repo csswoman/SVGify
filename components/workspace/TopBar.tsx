@@ -23,6 +23,9 @@ interface TopBarProps {
   onRedo: () => void;
   inspectorOpen: boolean;
   onInspectorToggle: () => void;
+  downloadHighlight?: boolean;
+  downloadPrepared?: boolean;
+  onDownloadComplete?: () => void;
 }
 
 export function TopBar({
@@ -34,6 +37,9 @@ export function TopBar({
   onRedo,
   inspectorOpen,
   onInspectorToggle,
+  downloadHighlight = false,
+  downloadPrepared = false,
+  onDownloadComplete,
 }: TopBarProps) {
   const { t, lang, setLang } = useI18n();
   const { theme, setTheme } = useTheme();
@@ -72,12 +78,16 @@ export function TopBar({
       </div>
 
       <div className="flex items-center justify-self-end gap-1.5">
-        <DownloadButton
-          svgString={svgString}
-          labels={labels}
-          fileName="vectorized.svg"
-          label={t('workspace.download')}
-        />
+        {svgString ? (
+          <DownloadButton
+            svgString={svgString}
+            labels={labels}
+            fileName="vectorized.svg"
+            prepared={downloadPrepared}
+            highlight={downloadHighlight}
+            onDownloaded={onDownloadComplete}
+          />
+        ) : null}
         <button
           type="button"
           onClick={onInspectorToggle}

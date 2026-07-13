@@ -61,20 +61,22 @@ export function ColorPicker({ color, onChange, onCommit, actionLabel }: ColorPic
           maxLength={7}
           placeholder="#000000"
           className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-          aria-label="Hex color value"
+          aria-label={t('a11y.hexColor')}
         />
         {actionLabel && (
           <button
             type="button"
             onClick={() => onCommit?.()}
-            className="focus-ring shrink-0 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700"
+          className="btn-secondary min-h-11 shrink-0 px-3 text-xs"
           >
             {actionLabel}
           </button>
         )}
       </div>
       {!isValidHex(hexInput) && hexInput !== '' && (
-        <p className="text-xs text-red-500">#ff0000</p>
+        <p role="alert" className="text-xs text-red-600 dark:text-red-400">
+          {t('col.invalidHex')}
+        </p>
       )}
     </div>
   );

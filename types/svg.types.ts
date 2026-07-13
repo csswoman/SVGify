@@ -44,7 +44,7 @@ export const DEFAULT_COLOR_COUNT = 2 ** DEFAULT_COLOR_PRECISION;
 export interface VectorizeSettings {
   traceMode: 'standard' | 'icon';
   numberofcolors: number;      // UI alias for vtracer colorPrecision estimate
-  customPalette?: RGBColor[];  // User-approved palette for icon mode
+  customPalette?: RGBColor[];  // User-approved palette used by both trace modes
   colorPrecision: number;      // 1-8 significant RGB bits per channel
   filterSpeckle: number;       // discard small patches
   cornerThreshold: number;     // degrees; higher = fewer corners

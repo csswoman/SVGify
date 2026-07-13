@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
+  absorbSmallPaletteComponents,
   applyAlphaMask,
   hardenIconAlpha,
   mergeSimilarPaletteColors,
@@ -33,6 +34,93 @@ beforeAll(() => {
 });
 
 describe('palette extraction', () => {
+  it('absorbs tiny palette islands into an existing neighboring color', () => {
+    const teal = [37, 185, 181, 255];
+    const beige = [224, 205, 164, 255];
+    const pixels = Array.from({ length: 25 }, () => teal.slice());
+    pixels[12] = beige;
+    const input = new ImageData(new Uint8ClampedArray(pixels.flat()), 5, 5);
+
+    const cleaned = absorbSmallPaletteComponents(input, 4);
+
+    expect([...cleaned.data.slice(12 * 4, 12 * 4 + 4)]).toEqual(teal);
+  });
+
+  it('preserves a detached small accent surrounded only by transparency', () => {
+    const pixels = Array.from({ length: 9 }, () => [0, 0, 0, 0]);
+    pixels[4] = [246, 196, 52, 255];
+    const input = new ImageData(new Uint8ClampedArray(pixels.flat()), 3, 3);
+
+    const cleaned = absorbSmallPaletteComponents(input, 4);
+
+    expect([...cleaned.data.slice(4 * 4, 4 * 4 + 4)]).toEqual([246, 196, 52, 255]);
+  });
+
+  it('preserves a small transition shade between two real color regions', () => {
+    const teal = [37, 185, 181, 255];
+    const transition = [116, 139, 108, 255];
+    const brown = [129, 83, 48, 255];
+    const input = new ImageData(
+      new Uint8ClampedArray([...teal, ...transition, ...brown]),
+      3,
+      1
+    );
+
+    const cleaned = absorbSmallPaletteComponents(input, 8);
+
+    expect([...cleaned.data.slice(4, 8)]).toEqual(transition);
+  });
+
+  it('preserves small contour shades that touch transparency', () => {
+    const transparent = [0, 0, 0, 0];
+    const contour = [92, 65, 43, 255];
+    const cream = [248, 232, 195, 255];
+    const input = new ImageData(
+      new Uint8ClampedArray([...transparent, ...contour, ...cream]),
+      3,
+      1
+    );
+
+    const cleaned = absorbSmallPaletteComponents(input, 8);
+
+    expect([...cleaned.data.slice(4, 8)]).toEqual(contour);
+  });
+
+  it('keeps smaller Standard palettes as stable anchors when colors increase', () => {
+    const colors = [
+      [18, 24, 32, 255],
+      [244, 224, 180, 255],
+      [37, 185, 181, 255],
+      [129, 83, 48, 255],
+      [246, 196, 52, 255],
+      [238, 164, 176, 255],
+      [91, 122, 158, 255],
+      [181, 151, 97, 255],
+    ];
+    const pixels = colors.flatMap((color, index) =>
+      Array.from({ length: 20 - index }, () => color).flat()
+    );
+    const input = new ImageData(new Uint8ClampedArray(pixels), pixels.length / 4, 1);
+
+    const four = suggestPaletteFromImage(input, 4);
+    const eight = suggestPaletteFromImage(input, 8);
+
+    expect(eight.slice(0, four.length)).toEqual(four);
+  });
+
+  it('ignores colors that exist only in mostly transparent antialias pixels', () => {
+    const pixels = [
+      ...Array.from({ length: 20 }, () => [37, 185, 181, 255]).flat(),
+      ...Array.from({ length: 8 }, () => [224, 205, 164, 180]).flat(),
+      ...Array.from({ length: 20 }, () => [129, 83, 48, 255]).flat(),
+    ];
+    const input = new ImageData(new Uint8ClampedArray(pixels), pixels.length / 4, 1);
+
+    const palette = suggestPaletteFromImage(input, 8);
+
+    expect(palette).not.toContainEqual({ r: 224, g: 205, b: 164, a: 255 });
+  });
+
   it('suggests a clean palette from visible raster colors and removes near-white background first', () => {
     const input = new ImageData(
       new Uint8ClampedArray([
@@ -373,5 +461,28 @@ describe('palette extraction', () => {
     expect(palette).toContainEqual({ r: 5, g: 24, b: 72, a: 255 });
     expect(palette).toContainEqual({ r: 255, g: 255, b: 255, a: 255 });
     expect(palette).toContainEqual({ r: 246, g: 197, b: 38, a: 255 });
+  });
+
+  it('normalizes an off-white icon letter to white instead of a gray shadow', () => {
+    const navy = [9, 18, 30, 255];
+    const offWhite = [232, 232, 233, 255];
+    const gray = [151, 155, 160, 255];
+    const yellow = [246, 197, 38, 255];
+    const pixels: number[] = [];
+
+    for (let i = 0; i < 180; i++) pixels.push(...navy);
+    for (let i = 0; i < 64; i++) pixels.push(...offWhite);
+    for (let i = 0; i < 80; i++) pixels.push(...gray);
+    for (let i = 0; i < 12; i++) pixels.push(...yellow);
+
+    const input = new ImageData(new Uint8ClampedArray(pixels), pixels.length / 4, 1);
+    const palette = suggestFlatIconPaletteFromImage(input, 3);
+    const quantized = quantizeImageToPalette(
+      new ImageData(new Uint8ClampedArray(offWhite), 1, 1),
+      palette
+    );
+
+    expect(palette).toContainEqual({ r: 255, g: 255, b: 255, a: 255 });
+    expect([...quantized.data]).toEqual([255, 255, 255, 255]);
   });
 });

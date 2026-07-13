@@ -31,29 +31,49 @@ export function resolveTraceSmallCircle(traceMode: VectorizeSettings['traceMode'
   return traceMode === 'icon' ? 16 : undefined;
 }
 
-export function shouldPreserveIconPalette(
-  settings: Pick<VectorizeSettings, 'traceMode' | 'customPalette'>
+/** Keep higher color-count settings from immediately merging their extra shades. */
+export function resolvePaletteMergeCeiling(colorCount: number): number {
+  if (colorCount >= 128) return 4;
+  if (colorCount >= 64) return 12;
+  if (colorCount >= 32) return 24;
+  return 44;
+}
+
+/** Mildly scale cleanup without erasing the transition shades that keep large artwork smooth. */
+export function resolveRasterSpeckleArea(
+  filterSpeckle: number,
+  width: number,
+  height: number
+): number {
+  const base = Math.max(1, Math.min(40, Math.round(filterSpeckle)));
+  const sizeScale = Math.min(1.25, Math.max(1, Math.sqrt(Math.max(1, width * height)) / 512));
+  return Math.max(2, Math.min(12, Math.round(base * sizeScale)));
+}
+
+export function shouldPreserveTracePalette(
+  settings: Pick<VectorizeSettings, 'customPalette'>
 ): boolean {
-  return settings.traceMode === 'icon' && (settings.customPalette?.length ?? 0) > 0;
+  return (settings.customPalette?.length ?? 0) > 0;
 }
 
 /**
- * When the raster is already posterized to a flat icon palette, VTracer must
- * not re-quantize with a coarse colorPrecision (2 collapses light fills).
+ * When the raster is already posterized to the selected palette, VTracer must
+ * not re-quantize it with a lower precision. Otherwise Standard can discard
+ * requested shades even when the color-count control is raised.
  */
 export function resolveTraceColorPrecision(
   settings: Pick<VectorizeSettings, 'traceMode' | 'colorPrecision' | 'customPalette'>
 ): number {
   const base = Math.max(1, Math.min(8, Math.round(settings.colorPrecision)));
-  if (shouldPreserveIconPalette(settings)) return 8;
+  if (shouldPreserveTracePalette(settings)) return 8;
   return base;
 }
 
-export function iconPaletteForTrace(
+export function paletteForTrace(
   settings: Pick<VectorizeSettings, 'customPalette' | 'numberofcolors'>
 ): RGBColor[] {
   return (settings.customPalette ?? []).slice(
     0,
-    Math.max(1, Math.min(16, settings.numberofcolors))
+    Math.max(1, Math.min(256, settings.numberofcolors))
   );
 }

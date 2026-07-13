@@ -52,14 +52,14 @@ export function NodesInspector({
           <button
             type="button"
             onClick={() => onSimplifySelected(simplifyStrength)}
-            className="focus-ring w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+            className="btn-secondary w-full"
           >
             {t('shape.simplifySelected')}
           </button>
           <button
             type="button"
             onClick={onDeselect}
-            className="focus-ring w-full rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium transition hover:bg-gray-200 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-600"
+            className="btn-tertiary w-full"
           >
             {t('shape.deselect')}
           </button>

@@ -4,7 +4,11 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useVectorizer } from '@/hooks/useVectorizer';
 import { VectorizeSettings, VECTORIZE_DEFAULTS } from '@/types/svg.types';
 import { removeBackground, type SeedPoint } from '@/lib/backgroundRemoval';
-import { suggestFlatIconPaletteFromImage, suggestPaletteFromImage } from '@/lib/paletteExtraction';
+import {
+  mergeSimilarPaletteColors as mergeSuggestedPaletteColors,
+  suggestFlatIconPaletteFromImage,
+  suggestPaletteFromImage,
+} from '@/lib/paletteExtraction';
 import { useEditablePalette } from '@/hooks/useEditablePalette';
 
 interface UseVectorizeSessionOptions {
@@ -17,7 +21,6 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
   const [settings, setSettings] = useState<VectorizeSettings>(VECTORIZE_DEFAULTS);
   const [removeBg, setRemoveBg] = useState(false);
   const [bgTolerance, setBgTolerance] = useState(48);
-  const [contiguous, setContiguous] = useState(true);
   const [seeds, setSeeds] = useState<SeedPoint[]>([]);
   const { svg, isLoading, error, vectorize } = useVectorizer();
   const {
@@ -68,22 +71,35 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
     if (!removeBg) return imageData;
     return removeBackground(imageData, {
       tolerance: bgTolerance,
-      contiguous,
+      // Background removal is deliberately topology-aware. A global color key
+      // can erase enclosed artwork (for example, a light letter that happens
+      // to match the canvas background).
+      contiguous: true,
       seeds: seeds.length > 0 ? seeds : undefined,
     });
-  }, [removeBg, imageData, bgTolerance, contiguous, seeds]);
+  }, [removeBg, imageData, bgTolerance, seeds]);
 
   const suggestedPalette = useMemo(() => {
     if (!processedImageData) return [];
     const suggestPalette = settings.traceMode === 'icon'
       ? suggestFlatIconPaletteFromImage
       : suggestPaletteFromImage;
-    return suggestPalette(processedImageData, settings.numberofcolors, settings.colorQuantCycles).map(({ r, g, b }) => ({
+    const palette = suggestPalette(processedImageData, settings.numberofcolors, settings.colorQuantCycles).map(({ r, g, b }) => ({
       r,
       g,
       b,
     }));
-  }, [processedImageData, settings.traceMode, settings.numberofcolors, settings.colorQuantCycles]);
+
+    return settings.traceMode === 'standard'
+      ? mergeSuggestedPaletteColors(palette, settings.paletteMergeThreshold)
+      : palette;
+  }, [
+    processedImageData,
+    settings.traceMode,
+    settings.numberofcolors,
+    settings.colorQuantCycles,
+    settings.paletteMergeThreshold,
+  ]);
 
   useEffect(() => {
     replacePalette(suggestedPalette);
@@ -114,8 +130,6 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
     setRemoveBg,
     bgTolerance,
     setBgTolerance,
-    contiguous,
-    setContiguous,
     seeds,
     setSeeds,
     handlePick,

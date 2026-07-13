@@ -35,7 +35,7 @@ describe('icon-only product surface', () => {
     expect(worker).toContain('applyBilateralFilter');
     expect(worker).toContain('quantizeImageToPalette');
     expect(worker).toContain('smoothQuantizedPalette');
-    expect(worker).toContain('iconPaletteForTrace');
+    expect(worker).toContain('paletteForTrace');
     expect(route).toContain("from '@neplex/vectorizer'");
     expect(route).toContain('Hierarchical.Stacked');
     expect(route).toContain('PathSimplifyMode.Spline');

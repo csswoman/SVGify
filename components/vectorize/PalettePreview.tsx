@@ -35,7 +35,7 @@ export function PalettePreview({ svg }: PalettePreviewProps) {
             <span
               key={hex}
               title={hex}
-              className="h-7 w-7 rounded border border-gray-200 dark:border-gray-700 shadow-sm"
+              className="h-7 w-7 rounded border border-gray-200 dark:border-gray-700"
               style={{ backgroundColor: hex }}
               aria-label={`Color ${hex}`}
             />

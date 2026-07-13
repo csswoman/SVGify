@@ -3,7 +3,10 @@ import {
   ICON_MODE_SETTINGS,
   resolveTraceColorPrecision,
   resolveTraceSmallCircle,
-  shouldPreserveIconPalette,
+  paletteForTrace,
+  resolvePaletteMergeCeiling,
+  resolveRasterSpeckleArea,
+  shouldPreserveTracePalette,
 } from './iconModeSettings';
 import type { VectorizeSettings } from '../types/svg.types';
 import { VECTORIZE_DEFAULTS } from '../types/svg.types';
@@ -43,17 +46,47 @@ describe('icon mode settings', () => {
         { r: 253, g: 175, b: 219 },
       ],
     };
-    expect(shouldPreserveIconPalette(settings)).toBe(true);
+    expect(shouldPreserveTracePalette(settings)).toBe(true);
     expect(resolveTraceColorPrecision(settings)).toBe(8);
   });
 
-  it('does not force precision 8 in standard mode', () => {
+  it('also preserves the selected palette in standard mode', () => {
     const settings: VectorizeSettings = {
       ...VECTORIZE_DEFAULTS,
       traceMode: 'standard',
       colorPrecision: 4,
       customPalette: [{ r: 253, g: 175, b: 219 }],
     };
-    expect(resolveTraceColorPrecision(settings)).toBe(4);
+    expect(shouldPreserveTracePalette(settings)).toBe(true);
+    expect(resolveTraceColorPrecision(settings)).toBe(8);
+  });
+
+  it('allows Standard to use its full requested palette', () => {
+    const customPalette = Array.from({ length: 32 }, (_, value) => ({
+      r: value,
+      g: value,
+      b: value,
+    }));
+    const settings: VectorizeSettings = {
+      ...VECTORIZE_DEFAULTS,
+      traceMode: 'standard',
+      colorPrecision: 5,
+      numberofcolors: 32,
+      customPalette,
+    };
+
+    expect(paletteForTrace(settings)).toHaveLength(32);
+  });
+
+  it('merges progressively fewer shades as the requested color count rises', () => {
+    expect(resolvePaletteMergeCeiling(16)).toBe(44);
+    expect(resolvePaletteMergeCeiling(32)).toBe(24);
+    expect(resolvePaletteMergeCeiling(64)).toBe(12);
+    expect(resolvePaletteMergeCeiling(128)).toBe(4);
+  });
+
+  it('scales speckle cleanup for large illustration rasters', () => {
+    expect(resolveRasterSpeckleArea(6, 256, 256)).toBe(6);
+    expect(resolveRasterSpeckleArea(6, 1024, 1024)).toBe(8);
   });
 });

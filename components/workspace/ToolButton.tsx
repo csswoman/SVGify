@@ -1,12 +1,19 @@
 'use client';
 
 import type { Icon } from '@phosphor-icons/react';
+import { ToolTooltip } from '@/components/shared/ToolTooltip';
+import { useI18n } from '@/lib/i18n';
 
 interface ToolButtonProps {
   icon: Icon;
   label: string;
   shortcut?: string;
+  /** Selected tool (blue ring). Mutually exclusive with mode-only expanded. */
   active?: boolean;
+  /** Mode toggle engaged without claiming the selected-tool ring. */
+  expanded?: boolean;
+  /** Soft discovery cue (e.g. first-time Refine). */
+  badge?: boolean;
   disabled?: boolean;
   onClick: () => void;
 }
@@ -16,48 +23,49 @@ export function ToolButton({
   label,
   shortcut,
   active,
+  expanded,
+  badge,
   disabled,
   onClick,
 }: ToolButtonProps) {
+  const { t } = useI18n();
   const accessibleName = shortcut ? `${label} (${shortcut})` : label;
+  const filled = Boolean(active || expanded);
+  const announcedName = badge
+    ? `${accessibleName}. ${t('tool.refine.badge')}`
+    : accessibleName;
 
   return (
-    <button
-      type="button"
-      aria-label={accessibleName}
-      aria-pressed={active}
-      disabled={disabled}
-      onClick={onClick}
-      title={accessibleName}
-      className={[
-        'focus-ring flex w-full flex-col items-center justify-center gap-0.5 rounded-md border px-0.5 py-1.5 transition',
-        active
-          ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
-          : 'border-transparent text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800',
-        disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer',
-      ].join(' ')}
-    >
-      <IconComponent
-        size={20}
-        weight={active ? 'fill' : 'regular'}
-        className="shrink-0"
-        aria-hidden
-      />
-      <span
+    <ToolTooltip label={label} shortcut={shortcut}>
+      <button
+        type="button"
+        aria-label={announcedName}
+        aria-pressed={active === undefined ? undefined : active}
+        aria-expanded={expanded === undefined ? undefined : expanded}
+        disabled={disabled ? true : undefined}
+        onClick={onClick}
         className={[
-          'flex max-w-full items-center justify-center gap-0.5 px-0.5 text-[10px] font-medium leading-none',
+          'focus-ring relative flex h-10 w-10 items-center justify-center rounded-md border transition-colors duration-150 ease-out',
           active
-            ? 'text-blue-700 dark:text-blue-300'
-            : 'text-gray-600 dark:text-gray-300',
+            ? 'border-action-blue bg-action-blue-surface text-action-blue dark:bg-blue-950/50 dark:text-blue-300'
+            : expanded
+              ? 'border-transparent text-action-blue dark:text-blue-300'
+              : 'border-transparent text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800',
+          disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer',
         ].join(' ')}
       >
-        <span className="truncate">{label}</span>
-        {shortcut ? (
-          <kbd className="shrink-0 font-mono text-[10px] font-semibold tracking-wide opacity-80">
-            {shortcut}
-          </kbd>
+        <IconComponent
+          size={20}
+          weight={filled ? 'fill' : 'regular'}
+          aria-hidden
+        />
+        {badge ? (
+          <span
+            className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-action-blue ring-2 ring-white dark:ring-gray-800"
+            aria-hidden
+          />
         ) : null}
-      </span>
-    </button>
+      </button>
+    </ToolTooltip>
   );
 }

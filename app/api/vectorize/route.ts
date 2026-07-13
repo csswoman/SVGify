@@ -34,7 +34,8 @@ function toVTracerConfig(settings: VectorizeSettings): VTracerConfig {
     colorMode: ColorMode.Color,
     hierarchical: Hierarchical.Stacked,
     // Flat logos need boundary-faithful polygons; post-processing rounds only
-    // the appropriate large shapes. Standard artwork keeps spline fitting.
+    // the appropriate large shapes. Standard artwork keeps spline fitting,
+    // while its selected palette is enforced during raster preprocessing.
     mode: settings.traceMode === 'icon' ? PathSimplifyMode.Polygon : PathSimplifyMode.Spline,
     colorPrecision: resolveTraceColorPrecision(settings),
     filterSpeckle: clampInt(settings.filterSpeckle, 0, 40),

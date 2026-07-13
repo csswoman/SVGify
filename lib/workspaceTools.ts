@@ -75,7 +75,7 @@ const SHAPE_TOOL_IDS = new Set<WorkspaceTool>([
   'labels',
 ]);
 
-/** Shape/refine tools — progressive disclosure in the toolbar. */
+/** Shape/refine tools — shown when Refine mode is active in the toolbar. */
 export function isShapeTool(tool: WorkspaceTool): boolean {
   return SHAPE_TOOL_IDS.has(tool);
 }

@@ -32,8 +32,6 @@ export function EditablePalette({
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-gray-500 dark:text-gray-400">{t('vec.palettePreviewHint')}</p>
-
       <ColorSwatches
         colors={colors}
         selectedColor={selectedColor}
@@ -56,41 +54,35 @@ export function EditablePalette({
           aria-label={t('vec.paletteReset')}
           className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30"
         >
-          <p className="text-xs text-amber-950 dark:text-amber-100">{t('vec.paletteReset.confirm')}</p>
-          <div className="flex flex-wrap gap-2">
+          <p className="text-pretty text-xs text-amber-950 dark:text-amber-100">
+            {t('vec.paletteReset.confirm')}
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row">
             <button
               type="button"
               onClick={() => {
                 onReset();
                 setConfirmReset(false);
               }}
-              className="focus-ring rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+              className="btn-tertiary flex-1"
             >
               {t('vec.paletteReset.confirmAction')}
             </button>
             <button
               type="button"
               onClick={() => setConfirmReset(false)}
-              className="focus-ring rounded-md px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-white/60 dark:text-gray-300"
+              className="focus-ring min-h-11 flex-1 rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-white/60 dark:text-gray-300 dark:hover:bg-gray-900/40"
             >
               {t('vec.paletteReset.cancel')}
             </button>
           </div>
         </div>
       ) : (
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={onMergeSimilar}
-            className="focus-ring rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
-          >
+        <div className="flex flex-col gap-2">
+          <button type="button" onClick={onMergeSimilar} className="btn-tertiary w-full">
             {t('vec.paletteMerge')}
           </button>
-          <button
-            type="button"
-            onClick={() => setConfirmReset(true)}
-            className="focus-ring rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
-          >
+          <button type="button" onClick={() => setConfirmReset(true)} className="btn-tertiary w-full">
             {t('vec.paletteReset')}
           </button>
         </div>

@@ -20,7 +20,7 @@ interface ImagePreviewProps {
 
 export function ImagePreview({
   imageData,
-  label = 'Original',
+  label,
   displaySize,
   onPick,
   seeds,
@@ -103,7 +103,7 @@ export function ImagePreview({
           ref={canvasRef}
           onClick={handleClick}
           className={`block h-full w-full${onPick ? ' cursor-crosshair' : ''}`}
-          aria-label={onPick ? `${label} — click the background to remove it` : label}
+          aria-label={label}
         />
       </div>
     </div>

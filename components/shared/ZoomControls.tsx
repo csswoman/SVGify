@@ -22,7 +22,7 @@ export function ZoomControls({ scale, onZoomIn, onZoomOut, onReset }: ZoomContro
         type="button"
         onClick={onZoomOut}
         disabled={atMin}
-        className="focus-ring min-h-8 min-w-8 rounded px-2 py-1 text-xs font-semibold text-gray-700 transition hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-40 dark:text-gray-200 dark:hover:bg-gray-800"
+        className="focus-ring min-h-10 min-w-10 rounded px-2 py-1 text-xs font-semibold text-gray-700 transition hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-40 dark:text-gray-200 dark:hover:bg-gray-800"
         aria-label={t('zoom.out')}
       >
         −
@@ -31,7 +31,7 @@ export function ZoomControls({ scale, onZoomIn, onZoomOut, onReset }: ZoomContro
         type="button"
         onClick={onReset}
         disabled={atDefault}
-        className="focus-ring min-h-8 min-w-[3rem] rounded px-2 py-1 font-mono text-xs text-gray-600 transition hover:bg-gray-100 disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-800"
+        className="focus-ring min-h-10 min-w-[3.5rem] rounded px-2 py-1 font-mono text-xs text-gray-600 transition hover:bg-gray-100 disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-800"
         aria-label={t('zoom.reset')}
       >
         {Math.round(scale * 100)}%
@@ -40,7 +40,7 @@ export function ZoomControls({ scale, onZoomIn, onZoomOut, onReset }: ZoomContro
         type="button"
         onClick={onZoomIn}
         disabled={atMax}
-        className="focus-ring min-h-8 min-w-8 rounded px-2 py-1 text-xs font-semibold text-gray-700 transition hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-40 dark:text-gray-200 dark:hover:bg-gray-800"
+        className="focus-ring min-h-10 min-w-10 rounded px-2 py-1 text-xs font-semibold text-gray-700 transition hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-40 dark:text-gray-200 dark:hover:bg-gray-800"
         aria-label={t('zoom.in')}
       >
         +

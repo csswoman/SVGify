@@ -1,6 +1,6 @@
 import type { VectorizeSettings } from '../types/svg.types';
 import { reduceSvgStringColorsToCount, simplifyColors } from './colorUtils';
-import { shouldPreserveIconPalette } from './iconModeSettings';
+import { shouldPreserveTracePalette } from './iconModeSettings';
 import { snapSvgToPalette } from './paletteExtraction';
 import { optimizeSvg } from './optimizeSvg';
 import { regularizeLogoDetails } from './regularizeLogoDetails';
@@ -16,9 +16,10 @@ export function finalizeTracedSvg(rawSvg: string, settings: VectorizeSettings): 
 
   let svg: string;
 
-  if (shouldPreserveIconPalette(settings) && palette.length > 0) {
-    // Snap first so light fills land on approved palette colors, then avoid
-    // merging distinct palette entries (e.g. light pink ↔ near-white ≈ 52).
+  if (shouldPreserveTracePalette(settings) && palette.length > 0) {
+    // Both modes are pre-quantized to the palette. Snap the small numeric drift
+    // produced by VTracer back to those approved colors instead of merging
+    // distinct entries after the trace.
     svg = snapSvgToPalette(rawSvg, palette);
     svg = reduceSvgStringColorsToCount(svg, Math.max(colorCap, palette.length));
   } else {
@@ -33,12 +34,15 @@ export function finalizeTracedSvg(rawSvg: string, settings: VectorizeSettings): 
     sealSeams: settings.traceMode === 'icon' ? 0.5 : undefined,
     dropDefaultOpacity: true,
     coordDecimals: Math.max(0, Math.min(8, Math.round(settings.pathPrecision))),
-    mergePaths: false,
-    // Compound paths often encode cutouts (for example, a dark badge ring
-    // around a light center). The generic splitter cannot distinguish those
-    // cutouts from disconnected same-color islands yet; splitting them fills
-    // the hole and can cover an icon's background color.
-    splitCompoundPaths: settings.traceMode !== 'icon',
+    // Standard can produce hundreds of adjacent fragments at higher color
+    // counts. SVGO safely joins only compatible neighboring paths without
+    // moving them across other paint layers, reducing tags and file size.
+    mergePaths: settings.traceMode === 'standard',
+    // Compound paths encode both disconnected islands and transparent cutouts.
+    // Splitting them cannot preserve that distinction: holes between legs or
+    // inside layered artwork become filled shapes, and lower stacked colors
+    // can show through as stray marks. Keep their topology in both modes.
+    splitCompoundPaths: false,
   });
 
   return settings.traceMode === 'icon' ? regularizeLogoDetails(optimized) : optimized;

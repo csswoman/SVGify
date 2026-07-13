@@ -36,14 +36,14 @@ export function ImportInspector({ hasImage, hasSvg, onReplace }: ImportInspector
                   setConfirmReplace(false);
                   onReplace();
                 }}
-                className="focus-ring min-h-11 flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                className="btn-tertiary flex-1"
               >
                 {t('workspace.replaceImage.confirmAction')}
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmReplace(false)}
-                className="focus-ring min-h-11 flex-1 rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-white/60 dark:text-gray-300 dark:hover:bg-gray-900/40"
+                className="btn-tertiary flex-1"
               >
                 {t('workspace.replaceImage.cancel')}
               </button>
@@ -53,7 +53,7 @@ export function ImportInspector({ hasImage, hasSvg, onReplace }: ImportInspector
           <button
             type="button"
             onClick={() => setConfirmReplace(true)}
-            className="focus-ring min-h-11 w-full rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+            className="btn-tertiary w-full"
           >
             {t('workspace.replaceImage')}
           </button>
@@ -72,10 +72,7 @@ export function ImportInspector({ hasImage, hasSvg, onReplace }: ImportInspector
           {t('onboard.inspectorBody')}
         </p>
       </div>
-      <WorkflowSteps activeStep={1} />
-      <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:border-gray-700 dark:bg-gray-900/50 dark:text-gray-300">
-        {t('upload.privacy')}
-      </p>
+      <WorkflowSteps activeStep={1} defaultCollapsed />
     </div>
   );
 }

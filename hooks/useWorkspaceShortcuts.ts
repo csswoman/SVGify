@@ -30,12 +30,13 @@ export function useWorkspaceShortcuts({
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.target instanceof HTMLElement && e.target.isContentEditable) return;
 
-      if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         onUndo();
         return;
       }
-      if (e.ctrlKey && e.key === 'z' && e.shiftKey) {
+      if (mod && ((e.key === 'z' && e.shiftKey) || e.key === 'y')) {
         e.preventDefault();
         onRedo();
         return;

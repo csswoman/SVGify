@@ -1,5 +1,5 @@
 import { RGBColor } from '@/types/svg.types';
-import { colorDistanceSq, rgbToString } from './colorUtils';
+import { colorDistanceSq, parseRgbString, rgbToString } from './colorUtils';
 
 export type TracePaletteColor = RGBColor & { a: number };
 
@@ -19,6 +19,10 @@ interface ColorBucket {
 }
 
 type ColorCandidate = RGBColor & { count: number; edgeCount: number };
+
+// Colors that only exist in antialiased transparency must not become palette
+// entries when the SVG output later hardens those pixels to opaque shapes.
+const PALETTE_SAMPLE_ALPHA = 224;
 
 const BASE_ICON_COLORS = ICON_BASE_PALETTE.map((entry) => entry.color);
 
@@ -44,9 +48,14 @@ export function isNearWhite(color: RGBColor, threshold = 244): boolean {
   return colorDistanceSq(color, { r: 255, g: 255, b: 255 }) <= maxChannelDelta * maxChannelDelta * 3;
 }
 
+/** Light neutral artwork (white text/fills affected by antialiasing or capture). */
+export function isLightNeutralFill(color: RGBColor): boolean {
+  return saturationRange(color) <= 28 && luminance(color) >= 210;
+}
+
 /** Neutral gray used in soft drop shadows (not white, not saturated accents). */
 export function isDropShadowColor(color: RGBColor): boolean {
-  if (isNearWhite(color)) return false;
+  if (isNearWhite(color) || isLightNeutralFill(color)) return false;
   const sat = saturationRange(color);
   const light = luminance(color);
   return sat <= 34 && light >= 48 && light < 245;
@@ -297,24 +306,111 @@ export function quantizeImageToPalette(
   return out;
 }
 
+/**
+ * Remove small islands created by palette quantization without inventing a
+ * replacement color. A tiny component is repainted only when it touches an
+ * existing opaque neighboring color; isolated artwork on transparency (stars,
+ * dots, detached accents) is preserved.
+ */
+export function absorbSmallPaletteComponents(
+  imageData: ImageData,
+  minArea: number
+): ImageData {
+  const threshold = Math.max(1, Math.floor(minArea));
+  if (threshold <= 1) return imageData;
+
+  const { width, height, data } = imageData;
+  const pixelCount = width * height;
+  const visited = new Uint8Array(pixelCount);
+  const out = new Uint8ClampedArray(data);
+  const colorKeyAt = (pixel: number) => {
+    const i = pixel * 4;
+    return (data[i] << 16) | (data[i + 1] << 8) | data[i + 2];
+  };
+
+  for (let start = 0; start < pixelCount; start++) {
+    if (visited[start] || data[start * 4 + 3] < 16) continue;
+
+    const colorKey = colorKeyAt(start);
+    const component: number[] = [];
+    const queue = [start];
+    const boundaryColors = new Map<number, number>();
+    let touchesTransparency = false;
+    visited[start] = 1;
+
+    for (let cursor = 0; cursor < queue.length; cursor++) {
+      const pixel = queue[cursor];
+      component.push(pixel);
+      const x = pixel % width;
+      const y = Math.floor(pixel / width);
+      const neighbors = [
+        x > 0 ? pixel - 1 : -1,
+        x + 1 < width ? pixel + 1 : -1,
+        y > 0 ? pixel - width : -1,
+        y + 1 < height ? pixel + width : -1,
+      ];
+
+      for (const neighbor of neighbors) {
+        if (neighbor < 0 || data[neighbor * 4 + 3] < 16) {
+          touchesTransparency = true;
+          continue;
+        }
+        const neighborKey = colorKeyAt(neighbor);
+        if (neighborKey === colorKey) {
+          if (!visited[neighbor]) {
+            visited[neighbor] = 1;
+            queue.push(neighbor);
+          }
+        } else {
+          boundaryColors.set(neighborKey, (boundaryColors.get(neighborKey) ?? 0) + 1);
+        }
+      }
+    }
+
+    // A transition shade normally touches two color families, while an outer
+    // antialiased contour touches transparency. Both are part of a smooth edge.
+    // Only absorb a tiny island fully enclosed by one uniform color.
+    if (
+      component.length >= threshold ||
+      touchesTransparency ||
+      boundaryColors.size !== 1
+    ) continue;
+    const replacement = [...boundaryColors.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+    if (replacement === undefined) continue;
+    const r = (replacement >> 16) & 255;
+    const g = (replacement >> 8) & 255;
+    const b = replacement & 255;
+    for (const pixel of component) {
+      const i = pixel * 4;
+      out[i] = r;
+      out[i + 1] = g;
+      out[i + 2] = b;
+    }
+  }
+
+  return new ImageData(out, width, height);
+}
+
 export function snapSvgToPalette(
   svg: string,
   palette: readonly RGBColor[] = BASE_ICON_COLORS
 ): string {
   return svg.replace(
-    /(fill|stroke)="rgb\((\d+),\s*(\d+),\s*(\d+)\)"/g,
-    (_full, attr: string, r: string, g: string, b: string) => {
-      const snapped = nearestPaletteColor({ r: Number(r), g: Number(g), b: Number(b) }, palette);
+    /(fill|stroke)="(#[0-9a-f]{3}|#[0-9a-f]{6}|rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\))"/gi,
+    (full, attr: string, value: string) => {
+      const color = parseRgbString(value);
+      if (!color) return full;
+      const snapped = nearestPaletteColor(color, palette);
       return `${attr}="${rgbToString(snapped)}"`;
     }
   );
 }
 
-function countOpaqueNearWhitePixels(imageData: ImageData, threshold = 244): number {
+function countOpaqueLightNeutralPixels(imageData: ImageData): number {
   let count = 0;
   for (let i = 0; i < imageData.data.length; i += 4) {
-    if (imageData.data[i + 3] < 16) continue;
-    if (isNearWhite({ r: imageData.data[i], g: imageData.data[i + 1], b: imageData.data[i + 2] }, threshold)) {
+    if (imageData.data[i + 3] < PALETTE_SAMPLE_ALPHA) continue;
+    if (isLightNeutralFill({ r: imageData.data[i], g: imageData.data[i + 1], b: imageData.data[i + 2] })) {
       count++;
     }
   }
@@ -324,7 +420,7 @@ function countOpaqueNearWhitePixels(imageData: ImageData, threshold = 244): numb
 function totalOpaquePixels(imageData: ImageData): number {
   let count = 0;
   for (let i = 3; i < imageData.data.length; i += 4) {
-    if (imageData.data[i] >= 16) count++;
+    if (imageData.data[i] >= PALETTE_SAMPLE_ALPHA) count++;
   }
   return count;
 }
@@ -344,7 +440,7 @@ function collectVisibleColorBuckets(imageData: ImageData): ColorCandidate[] {
   const buckets = new Map<number, ColorBucket>();
 
   for (let i = 0; i < imageData.data.length; i += 4) {
-    if (imageData.data[i + 3] < 16) continue;
+    if (imageData.data[i + 3] < PALETTE_SAMPLE_ALPHA) continue;
     const color = { r: imageData.data[i], g: imageData.data[i + 1], b: imageData.data[i + 2] };
     if (isNearWhite(color)) continue;
 
@@ -409,7 +505,7 @@ function refinePaletteFromImage(
     const sums = palette.map(() => ({ r: 0, g: 0, b: 0, count: 0 }));
 
     for (let i = 0; i < imageData.data.length; i += 4) {
-      if (imageData.data[i + 3] < 16) continue;
+      if (imageData.data[i + 3] < PALETTE_SAMPLE_ALPHA) continue;
       const color = { r: imageData.data[i], g: imageData.data[i + 1], b: imageData.data[i + 2] };
       if (isNearWhite(color)) continue;
       const index = paletteColorIndex(color, palette);
@@ -487,9 +583,9 @@ export function suggestFlatIconPaletteFromImage(
   const outline = pickDarkOutlineColorFromImage(imageData);
   if (outline) addFixedColor(outline);
 
-  const nearWhitePixels = countOpaqueNearWhitePixels(imageData);
-  if (nearWhitePixels / Math.max(1, totalOpaque) >= 0.015) {
-    addColor({ r: 255, g: 255, b: 255 }, 20);
+  const lightNeutralPixels = countOpaqueLightNeutralPixels(imageData);
+  if (lightNeutralPixels / Math.max(1, totalOpaque) >= 0.015) {
+    addFixedColor({ r: 255, g: 255, b: 255 }, 20);
   }
 
   const accents = candidates
@@ -533,6 +629,7 @@ export function suggestFlatIconPaletteFromImage(
   while (selected.length < minExpectedColors) {
     const distinct = candidates
       .filter((color) => color.count >= minAccentCount)
+      .filter((color) => !isLightNeutralFill(color))
       .filter((color) => !isSimilarToAny(candidateRgb(color), selected, 38))
       .sort((a, b) => distinctColorScore(b, selected) - distinctColorScore(a, selected))[0];
     if (!distinct) break;
@@ -541,6 +638,7 @@ export function suggestFlatIconPaletteFromImage(
 
   for (const color of source.sort((a, b) => b.count - a.count)) {
     if (selected.length >= limit) break;
+    if (isLightNeutralFill(color)) continue;
     if (isTrueBlackFill(color) && outline && colorProminence(color, totalOpaque) < 0.08) continue;
     addColor(candidateRgb(color), isDarkOutlineColor(color) || isDarkLineColor(color) ? 54 : 38);
   }
@@ -551,8 +649,8 @@ export function suggestFlatIconPaletteFromImage(
   return refined.map((color) => ({ ...color, a: 255 }));
 }
 
-export function suggestPaletteFromImage(imageData: ImageData, maxColors: number, colorQuantCycles = 6): TracePaletteColor[] {
-  const limit = Math.max(2, Math.min(64, Math.floor(maxColors)));
+function suggestPaletteAtLimit(imageData: ImageData, maxColors: number, colorQuantCycles = 6): TracePaletteColor[] {
+  const limit = Math.max(2, Math.min(256, Math.floor(maxColors)));
   const candidates = collectVisibleColorBuckets(imageData);
   const selected: RGBColor[] = [];
   const fixedColors: RGBColor[] = [];
@@ -578,9 +676,9 @@ export function suggestPaletteFromImage(imageData: ImageData, maxColors: number,
   }
 
   // Enclosed white fills (face, belly, highlights) survive edge flood-fill — keep them in the palette.
-  const nearWhitePixels = countOpaqueNearWhitePixels(imageData);
-  if (nearWhitePixels > 0 && nearWhitePixels / Math.max(1, totalOpaque) >= 0.02) {
-    addColor({ r: 255, g: 255, b: 255 });
+  const lightNeutralPixels = countOpaqueLightNeutralPixels(imageData);
+  if (lightNeutralPixels > 0 && lightNeutralPixels / Math.max(1, totalOpaque) >= 0.02) {
+    addFixedColor({ r: 255, g: 255, b: 255 });
   }
 
   const shadowCandidates = source
@@ -606,6 +704,7 @@ export function suggestPaletteFromImage(imageData: ImageData, maxColors: number,
 
   for (const color of source) {
     if (selected.length >= limit) break;
+    if (isLightNeutralFill(color)) continue;
     const isAccent = saturationRange(color) >= 36 && luminance(color) > 45;
     const isCream = colorDistanceSq(color, ICON_BASE_PALETTE[1].color) <= 56 * 56;
     if (isAccent && !isCream && !isDarkOutlineColor(color)) addColor(toRgb(color));
@@ -614,6 +713,7 @@ export function suggestPaletteFromImage(imageData: ImageData, maxColors: number,
   const largeDarkAccentCount = Math.max(minProminentCount * 3, Math.ceil(totalOpaque * 0.01));
   for (const color of source) {
     if (selected.length >= limit) break;
+    if (isLightNeutralFill(color)) continue;
     const isDarkAccent = saturationRange(color) >= 30 && luminance(color) <= 55;
     if (isDarkAccent && !isTrueBlackFill(color) && color.count >= largeDarkAccentCount) {
       addColor(toRgb(color), 14);
@@ -636,6 +736,7 @@ export function suggestPaletteFromImage(imageData: ImageData, maxColors: number,
 
   for (const color of source) {
     if (selected.length >= limit) break;
+    if (isLightNeutralFill(color)) continue;
     const isDarkAccent = saturationRange(color) >= 30 && luminance(color) <= 55;
     addColor(toRgb(color), isDarkOutlineColor(color) ? (limit >= 32 ? 8 : 48) : isDarkAccent ? 14 : defaultThreshold);
   }
@@ -643,6 +744,7 @@ export function suggestPaletteFromImage(imageData: ImageData, maxColors: number,
   if (selected.length < limit && limit >= 12) {
     for (const color of source) {
       if (selected.length >= limit) break;
+      if (isLightNeutralFill(color)) continue;
       const isDarkAccent = saturationRange(color) >= 30 && luminance(color) <= 55;
       addColor(toRgb(color), isDarkOutlineColor(color) ? (limit >= 32 ? 8 : 48) : isDarkAccent ? 10 : 4);
     }
@@ -652,6 +754,59 @@ export function suggestPaletteFromImage(imageData: ImageData, maxColors: number,
 
   const refined = refinePaletteFromImage(imageData, selected, colorQuantCycles, fixedColors);
   return refined.map((color) => ({ ...color, a: 255 }));
+}
+
+const paletteStageCache = new WeakMap<object, Map<string, TracePaletteColor[]>>();
+
+function cachedPaletteStage(
+  imageData: ImageData,
+  limit: number,
+  colorQuantCycles: number
+): TracePaletteColor[] {
+  let cache = paletteStageCache.get(imageData);
+  if (!cache) {
+    cache = new Map();
+    paletteStageCache.set(imageData, cache);
+  }
+  const key = `${limit}:${colorQuantCycles}`;
+  const cached = cache.get(key);
+  if (cached) return cached;
+  const palette = suggestPaletteAtLimit(imageData, limit, colorQuantCycles);
+  cache.set(key, palette);
+  return palette;
+}
+
+/**
+ * Build Standard palettes progressively. Every larger palette begins with the
+ * exact smaller palette, then appends newly supported source colors. Changing
+ * 16 → 32 colors therefore enriches the result instead of re-clustering and
+ * replacing colors that already described the artwork correctly.
+ */
+export function suggestPaletteFromImage(
+  imageData: ImageData,
+  maxColors: number,
+  colorQuantCycles = 6
+): TracePaletteColor[] {
+  const limit = Math.max(2, Math.min(256, Math.floor(maxColors)));
+  if (limit < 4) return cachedPaletteStage(imageData, limit, colorQuantCycles);
+
+  // Four is the smallest palette exposed by the UI and therefore the stable
+  // visual baseline. Starting at two would anchor an overly destructive set.
+  const stages = [4, 8, 16, 32, 64, 128, 256].filter((stage) => stage <= limit);
+  if (stages[stages.length - 1] !== limit) stages.push(limit);
+
+  const stable: TracePaletteColor[] = [];
+  for (const stage of stages) {
+    const candidates = cachedPaletteStage(imageData, stage, colorQuantCycles);
+    for (const candidate of candidates) {
+      if (stable.length >= stage) break;
+      if (!stable.some((color) => colorDistanceSq(color, candidate) === 0)) {
+        stable.push({ ...candidate });
+      }
+    }
+  }
+
+  return stable.slice(0, limit);
 }
 
 export function iconTracePalette(): TracePaletteColor[] {

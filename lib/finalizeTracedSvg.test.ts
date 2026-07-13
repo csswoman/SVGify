@@ -59,6 +59,74 @@ function hasLightPinkFill(svg: string): boolean {
 }
 
 describe('finalizeTracedSvg icon light fills', () => {
+  it('joins compatible neighboring Standard fragments without changing colors', () => {
+    const settings: VectorizeSettings = {
+      ...VECTORIZE_DEFAULTS,
+      traceMode: 'standard',
+      numberofcolors: 2,
+      customPalette: [{ r: 37, g: 185, b: 181 }],
+    };
+    const rawSvg = [
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">',
+      '<path fill="rgb(37,185,181)" d="M0 0H4V4H0Z"/>',
+      '<path fill="rgb(37,185,181)" d="M6 0H10V4H6Z"/>',
+      '</svg>',
+    ].join('');
+
+    const svg = finalizeTracedSvg(rawSvg, settings);
+
+    expect((svg.match(/<path\b/g) ?? [])).toHaveLength(1);
+    expect(svg).toContain('#25b9b5');
+  });
+
+  it('preserves transparent cutouts inside Standard compound paths', async () => {
+    const settings: VectorizeSettings = {
+      ...VECTORIZE_DEFAULTS,
+      traceMode: 'standard',
+      numberofcolors: 2,
+      customPalette: [{ r: 139, g: 90, b: 43 }],
+    };
+    const rawSvg = [
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">',
+      '<path fill="rgb(139,90,43)" fill-rule="evenodd" ',
+      'd="M0 0H10V10H0ZM3 3H7V7H3Z"/>',
+      '</svg>',
+    ].join('');
+
+    const svg = finalizeTracedSvg(rawSvg, settings);
+
+    expect((svg.match(/<path\b/g) ?? [])).toHaveLength(1);
+    expect(svg).toContain('fill-rule="evenodd"');
+
+    const { data, info } = await sharp(Buffer.from(svg))
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const filled = (1 * info.width + 1) * 4;
+    const cutout = (5 * info.width + 5) * 4;
+    expect([...data.subarray(filled, filled + 4)]).toEqual([139, 90, 43, 255]);
+    expect(data[cutout + 3]).toBe(0);
+  });
+
+  it('keeps distinct approved Standard colors instead of merging them', () => {
+    const settings: VectorizeSettings = {
+      ...VECTORIZE_DEFAULTS,
+      traceMode: 'standard',
+      numberofcolors: 4,
+      paletteMergeThreshold: 128,
+      customPalette: [
+        { r: 90, g: 190, b: 175 },
+        { r: 122, g: 208, b: 192 },
+      ],
+    };
+    const rawSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 1"><path fill="rgb(91,189,174)" d="M0 0h1v1H0z"/><path fill="rgb(121,207,191)" d="M1 0h1v1H1z"/></svg>';
+
+    const svg = finalizeTracedSvg(rawSvg, settings);
+
+    expect(svg).toContain('#5abeaf');
+    expect(svg).toContain('#7ad0c0');
+  });
+
   it('preserves the light pink circle fill for the EN logo after icon+removeBg', async () => {
     const { data, info } = await sharp(LOGO_WEBP).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
     const image = new ImageData(new Uint8ClampedArray(data), info.width, info.height);
