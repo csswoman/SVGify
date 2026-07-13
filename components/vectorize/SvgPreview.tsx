@@ -4,16 +4,24 @@ import { useEffect, useRef } from 'react';
 import { sanitizeSvgString } from '@/lib/sanitize';
 import type { CanvasDisplaySize } from '@/lib/canvasDisplaySize';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
+import { useI18n } from '@/lib/i18n';
 
 interface SvgPreviewProps {
   svgString: string | null;
   displaySize?: CanvasDisplaySize | null;
   onPathClick?: (pathEl: SVGPathElement) => void;
   onSvgMount?: (svg: SVGSVGElement | null) => void;
+  transparentBackground?: boolean;
 }
 
-function SvgPreviewInner({ svgString, displaySize, onPathClick, onSvgMount }: SvgPreviewProps) {
-  // Separate refs: one for the imperative SVG mount zone, one for the placeholder
+function SvgPreviewInner({
+  svgString,
+  displaySize,
+  onPathClick,
+  onSvgMount,
+  transparentBackground = true,
+}: SvgPreviewProps) {
+  const { t } = useI18n();
   const mountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -32,13 +40,10 @@ function SvgPreviewInner({ svgString, displaySize, onPathClick, onSvgMount }: Sv
       const doc = parser.parseFromString(sanitized, 'image/svg+xml');
 
       if (doc.documentElement.tagName === 'parsererror') {
-        throw new Error('SVG could not be parsed');
+        throw new Error(t('error.unknown'));
       }
 
       const svg = doc.documentElement as unknown as SVGElement;
-      // Keep the intrinsic viewBox so the whole drawing stays visible.
-      // imagetracerjs emits width/height in px; ensure a viewBox exists, then
-      // let the SVG scale to fit the container without cropping.
       if (!svg.getAttribute('viewBox')) {
         const w = svg.getAttribute('width');
         const h = svg.getAttribute('height');
@@ -59,38 +64,39 @@ function SvgPreviewInner({ svgString, displaySize, onPathClick, onSvgMount }: Sv
         });
       }
 
-      // Safe imperative mount — React never renders children into mountRef
       mount.replaceChildren(svg);
       onSvgMount?.(svg as unknown as SVGSVGElement);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unknown error';
+      const msg = err instanceof Error ? err.message : t('error.unknown');
       mount.replaceChildren(
         Object.assign(document.createElement('p'), {
-          textContent: `Could not render SVG: ${msg}`,
+          textContent: t('vec.renderError').replace('{message}', msg),
           className: 'text-red-500 text-sm p-4',
+          role: 'alert',
         })
       );
     }
-  }, [svgString, onPathClick, onSvgMount]);
+  }, [svgString, onPathClick, onSvgMount, t]);
 
   return (
     <div
-      className={`transparent-preview relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700${
+      className={`${transparentBackground ? 'transparent-preview ' : ''}relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700${
         displaySize ? ' mx-auto w-fit max-w-full' : ' w-full h-full'
       }`}
       style={
         displaySize ? { width: displaySize.width, height: displaySize.height } : undefined
       }
-      aria-label="SVG preview"
+      role="img"
+      aria-label={t('a11y.svgPreview')}
     >
-      {/* Placeholder: React-managed, shown only when there is no SVG yet */}
       {!svgString && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <p className="text-gray-400 text-sm">Preview will appear here after vectorization</p>
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <p className="text-pretty p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+            {t('vec.previewPlaceholder')}
+          </p>
         </div>
       )}
-      {/* Mount zone: React never renders children here — imperative only */}
-      <div ref={mountRef} className="w-full h-full" />
+      <div ref={mountRef} className="h-full w-full" />
     </div>
   );
 }

@@ -235,7 +235,7 @@ export function Canvas({
             <button
               type="button"
               onClick={handleSample}
-              className="focus-ring min-h-11 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+              className="btn-tertiary w-full"
             >
               {t('onboard.trySample')}
             </button>
@@ -346,7 +346,11 @@ export function Canvas({
                   onPointerUp={vectorizeZoom.onPointerUp}
                   onPointerCancel={vectorizeZoom.onPointerUp}
                 >
-                  <SvgPreview svgString={svg} onSvgMount={handleVectorizeSvgMount} />
+                  <SvgPreview
+                    svgString={svg}
+                    onSvgMount={handleVectorizeSvgMount}
+                    transparentBackground={previewBackground === 'checkerboard'}
+                  />
                 </div>
 
                 {showOriginalPreview && (
@@ -416,7 +420,7 @@ export function Canvas({
                           ? cursor
                           : undefined,
                   }}
-                  aria-label="SVG editor canvas"
+                  aria-label={t('workspace.canvas')}
                 />
               </div>
               {showOriginalPreview && compareOriginalImage && (
