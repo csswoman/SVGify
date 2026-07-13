@@ -26,6 +26,15 @@ class TestSVGElement {
   removeAttribute(name: string): void {
     this.attrs.delete(name);
   }
+
+  cloneNode(): TestSVGElement {
+    const clone = new TestSVGElement();
+    for (const [name, value] of this.attrs) clone.setAttribute(name, value);
+    Object.assign(clone, {
+      querySelectorAll: () => [],
+    });
+    return clone;
+  }
 }
 
 beforeAll(() => {
@@ -57,6 +66,22 @@ describe('svgViewBox helpers', () => {
     svg.setAttribute('viewBox', '0 0 64 64');
 
     expect(readSvgViewBox(svg)).toEqual({ x: 0, y: 0, w: 64, h: 64 });
+  });
+
+  it('reads the viewBox attribute when the animated DOM API is unavailable', () => {
+    const svg = {
+      getAttribute: (name: string) => name === 'viewBox' ? '-4, 2, 64, 32' : null,
+    } as unknown as SVGSVGElement;
+
+    expect(readSvgViewBox(svg)).toEqual({ x: -4, y: 2, w: 64, h: 32 });
+  });
+
+  it('falls back to intrinsic dimensions when viewBox is unavailable', () => {
+    const svg = {
+      getAttribute: (name: string) => name === 'width' ? '120px' : name === 'height' ? '80px' : null,
+    } as unknown as SVGSVGElement;
+
+    expect(readSvgViewBox(svg)).toEqual({ x: 0, y: 0, w: 120, h: 80 });
   });
 
   it('centers the zoom window when scale is below 1', () => {

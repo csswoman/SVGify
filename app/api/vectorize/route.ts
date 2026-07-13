@@ -6,8 +6,8 @@ import {
   type Config as VTracerConfig,
 } from '@neplex/vectorizer';
 import { brotliCompressSync, gzipSync } from 'node:zlib';
-import { optimizeSvg } from '@/lib/optimizeSvg';
-import { reduceSvgStringColorsToCount, simplifyColors } from '@/lib/colorUtils';
+import { finalizeTracedSvg } from '@/lib/finalizeTracedSvg';
+import { resolveTraceColorPrecision, resolveTraceSmallCircle } from '@/lib/iconModeSettings';
 import { VectorizeSettings, VECTORIZE_DEFAULTS } from '@/types/svg.types';
 
 export const runtime = 'nodejs';
@@ -33,8 +33,10 @@ function toVTracerConfig(settings: VectorizeSettings): VTracerConfig {
   return {
     colorMode: ColorMode.Color,
     hierarchical: Hierarchical.Stacked,
-    mode: PathSimplifyMode.Spline,
-    colorPrecision: clampInt(settings.colorPrecision, 1, 8),
+    // Flat logos need boundary-faithful polygons; post-processing rounds only
+    // the appropriate large shapes. Standard artwork keeps spline fitting.
+    mode: settings.traceMode === 'icon' ? PathSimplifyMode.Polygon : PathSimplifyMode.Spline,
+    colorPrecision: resolveTraceColorPrecision(settings),
     filterSpeckle: clampInt(settings.filterSpeckle, 0, 40),
     cornerThreshold: clampInt(settings.cornerThreshold, 0, 180),
     pathPrecision: clampInt(settings.pathPrecision, 0, 8),
@@ -42,6 +44,7 @@ function toVTracerConfig(settings: VectorizeSettings): VTracerConfig {
     lengthThreshold: clampInt(settings.lengthThreshold, 1, 32),
     maxIterations: clampInt(settings.maxIterations, 0, 10),
     spliceThreshold: clampInt(settings.spliceThreshold, 0, 180),
+    smallCircle: resolveTraceSmallCircle(settings.traceMode),
   };
 }
 
@@ -84,21 +87,7 @@ export async function POST(request: Request) {
 
     const settings = parseSettings(formData.get('settings'));
     const rawSvg = await vectorizeRaw(source, { width, height }, toVTracerConfig(settings));
-    const mergedPaletteSvg = simplifyColors(
-      rawSvg,
-      clampInt(settings.paletteMergeThreshold, 0, 128)
-    );
-    const paletteCappedSvg = reduceSvgStringColorsToCount(
-      mergedPaletteSvg,
-      clampInt(settings.numberofcolors, 2, 256)
-    );
-    const svg = optimizeSvg(paletteCappedSvg, {
-      removeStroke: true,
-      dropDefaultOpacity: true,
-      coordDecimals: clampInt(settings.pathPrecision, 0, 8),
-      mergePaths: false,
-      splitCompoundPaths: true,
-    });
+    const svg = finalizeTracedSvg(rawSvg, settings);
 
     return jsonResponse(request, { svg });
   } catch (error) {

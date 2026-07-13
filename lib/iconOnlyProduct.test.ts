@@ -28,15 +28,20 @@ describe('icon-only product surface', () => {
     const worker = readSource('workers/vectorizer.worker.ts');
     const route = readSource('app/api/vectorize/route.ts');
     const packageJson = readSource('package.json');
+    const settingsPanel = readSource('components/vectorize/VectorizeSettings.tsx');
 
+    expect(settingsPanel).toContain('ICON_MODE_SETTINGS');
     expect(worker).toContain("fetch('/api/vectorize'");
     expect(worker).toContain('applyBilateralFilter');
     expect(worker).toContain('quantizeImageToPalette');
     expect(worker).toContain('smoothQuantizedPalette');
+    expect(worker).toContain('iconPaletteForTrace');
     expect(route).toContain("from '@neplex/vectorizer'");
     expect(route).toContain('Hierarchical.Stacked');
     expect(route).toContain('PathSimplifyMode.Spline');
     expect(route).toContain('vectorizeRaw');
+    expect(route).toContain('resolveTraceColorPrecision');
+    expect(route).toContain('finalizeTracedSvg');
     expect(worker).not.toContain('applyAlphaMask');
     expect(worker).not.toContain('traceIconByColorLayers');
     expect(worker).not.toContain('traceIconColorLayers');

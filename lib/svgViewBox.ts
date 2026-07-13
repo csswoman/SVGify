@@ -5,9 +5,43 @@ export interface SvgBaseViewBox {
   h: number;
 }
 
+function parseViewBox(value: string | null): SvgBaseViewBox | null {
+  if (!value) return null;
+  const parts = value.trim().split(/[\s,]+/).map(Number);
+  if (
+    parts.length !== 4 ||
+    parts.some((part) => !Number.isFinite(part)) ||
+    parts[2] <= 0 ||
+    parts[3] <= 0
+  ) {
+    return null;
+  }
+
+  return { x: parts[0], y: parts[1], w: parts[2], h: parts[3] };
+}
+
 export function readSvgViewBox(svg: SVGSVGElement): SvgBaseViewBox {
-  const vb = svg.viewBox.baseVal;
-  return { x: vb.x, y: vb.y, w: vb.width, h: vb.height };
+  // Parsed or mocked SVG elements do not always expose the animated
+  // `viewBox.baseVal` DOM API, even though the attribute itself is valid.
+  const fromAttribute = parseViewBox(svg.getAttribute('viewBox'));
+  if (fromAttribute) return fromAttribute;
+
+  const vb = svg.viewBox?.baseVal;
+  if (vb && vb.width > 0 && vb.height > 0) {
+    return { x: vb.x, y: vb.y, w: vb.width, h: vb.height };
+  }
+
+  const width = parseFloat(svg.getAttribute('width') ?? '');
+  const height = parseFloat(svg.getAttribute('height') ?? '');
+  if (width > 0 && height > 0) return { x: 0, y: 0, w: width, h: height };
+
+  const bounds = svg.getBoundingClientRect?.();
+  if (bounds && bounds.width > 0 && bounds.height > 0) {
+    return { x: 0, y: 0, w: bounds.width, h: bounds.height };
+  }
+
+  // SVG's default replaced-element viewport when no intrinsic size exists.
+  return { x: 0, y: 0, w: 300, h: 150 };
 }
 
 /** Read intrinsic dimensions from an SVG string without mounting. */
@@ -16,13 +50,8 @@ export function readViewBoxFromSvgString(svgString: string): { w: number; h: num
   if (doc.documentElement.tagName === 'parsererror') return null;
 
   const svg = doc.documentElement;
-  const viewBox = svg.getAttribute('viewBox');
-  if (viewBox) {
-    const parts = viewBox.split(/\s+/).map(Number);
-    if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) {
-      return { w: parts[2], h: parts[3] };
-    }
-  }
+  const viewBox = parseViewBox(svg.getAttribute('viewBox'));
+  if (viewBox) return { w: viewBox.w, h: viewBox.h };
 
   const width = svg.getAttribute('width');
   const height = svg.getAttribute('height');
