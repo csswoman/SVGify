@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SVGcraft — Free SVG Vectorizer",
+  title: "SVGify — Free SVG Vectorizer",
   description:
     "Convert raster images to SVG, edit colors, and label paths. 100% client-side — your images never leave your device.",
 };

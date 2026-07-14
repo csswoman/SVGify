@@ -1,5 +1,5 @@
 ---
-name: SVGcraft
+name: SVGify
 description: Free SVG vectorizer — accessible workshop UI for client-side raster-to-SVG conversion
 colors:
   action-blue: "#2563eb"
@@ -77,13 +77,13 @@ components:
     size: "40px"
 ---
 
-# Design System: SVGcraft
+# Design System: SVGify
 
 ## Overview
 
 **Creative North Star: "The Friendly Workshop"**
 
-SVGcraft se presenta como un taller digital accesible: herramientas visibles, controles legibles y un lienzo central que manda. La UI no compite con el trabajo del usuario; lo enmarca con bordes suaves, superficies claras y densidad moderada. El sistema rechaza la estética lúdica (ilustraciones cartoon, colores infantiles) y cualquier capa de marketing que distraiga del flujo de vectorización.
+SVGify se presenta como un taller digital accesible: herramientas visibles, controles legibles y un lienzo central que manda. La UI no compite con el trabajo del usuario; lo enmarca con bordes suaves, superficies claras y densidad moderada. El sistema rechaza la estética lúdica (ilustraciones cartoon, colores infantiles) y cualquier capa de marketing que distraiga del flujo de vectorización.
 
 La personalidad es clara y honesta: amigable para perfiles mixtos (diseñadores, desarrolladores, creadores) sin simplificar en exceso. Modo claro por defecto, oscuro opcional. Iconografía Phosphor, sin decoración superflua.
 
@@ -139,7 +139,7 @@ Paleta funcional de herramienta: neutros grises como base, azul para selección 
 
 ### Hierarchy
 
-- **Display** (700, 1.125rem / 18px, 1.2): Logo "SVGcraft" en TopBar. Único uso de bold grande.
+- **Display** (700, 1.125rem / 18px, 1.2): Logo "SVGify" en TopBar. Único uso de bold grande.
 - **Headline** (600, 1rem / 16px, 1.4): Títulos de sección en Inspector.
 - **Title** (500, 0.875rem / 14px, 1.5): Labels de controles, encabezados de panel.
 - **Body** (400, 0.875rem / 14px, 1.5): Copy de ayuda, descripciones en inspector. Máx 65–75ch en bloques de texto.

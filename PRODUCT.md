@@ -10,7 +10,7 @@ Perfiles mixtos: diseñadores que preparan iconos y assets, desarrolladores que 
 
 ## Product Purpose
 
-SVGcraft convierte imágenes raster (PNG, JPG, WEBP) en SVG editables, 100% en el navegador. Permite ajustar la vectorización, editar colores por path, etiquetar formas y descargar un archivo optimizado. Existe para ofrecer vectorización con privacidad real (sin backend, sin subida a servidor) y control fino sobre el output. El éxito se mide por un SVG limpio, optimizado y listo para producción al terminar cada sesión.
+SVGify convierte imágenes raster (PNG, JPG, WEBP) en SVG editables, 100% en el navegador. Permite ajustar la vectorización, editar colores por path, etiquetar formas y descargar un archivo optimizado. Existe para ofrecer vectorización con privacidad real (sin backend, sin subida a servidor) y control fino sobre el output. El éxito se mide por un SVG limpio, optimizado y listo para producción al terminar cada sesión.
 
 ## Brand Personality
 

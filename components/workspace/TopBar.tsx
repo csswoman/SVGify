@@ -52,7 +52,7 @@ export function TopBar({
     <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 border-b border-gray-200 bg-white px-3 py-1.5 dark:border-gray-700 dark:bg-gray-800">
       <div className="flex min-w-0 items-center gap-2.5">
         <span className="text-[1.125rem] font-bold leading-tight tracking-tight text-gray-900 dark:text-gray-100">
-          SVGcraft
+        SVGify
         </span>
         <span className="hidden truncate text-xs text-gray-500 sm:inline dark:text-gray-400">
           {t('app.tagline')}

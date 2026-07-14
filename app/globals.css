@@ -6,7 +6,7 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* SVGcraft design tokens (from DESIGN.md) */
+  /* SVGify design tokens (from DESIGN.md) */
   --color-action-blue: #2563eb;
   --color-action-blue-surface: #eff6ff;
   --color-action-green: #16a34a;
