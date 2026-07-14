@@ -8,13 +8,16 @@ const __impeccableLiveDev =
 
 const csp = [
   "default-src 'self'",
-  // wasm-unsafe-eval is kept for worker-compatible optimizer dependencies.
-  `script-src 'self' 'wasm-unsafe-eval'${__impeccableLiveDev}`,
+  // Next.js App Router emits inline RSC flight scripts (self.__next_f.push).
+  // Without nonces, 'unsafe-inline' is required (see Next.js CSP guide).
+  // wasm-unsafe-eval covers worker-compatible optimizer dependencies.
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${__impeccableLiveDev}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  // blob: allows the worker URL created with new Worker(new URL(...))
-  "worker-src blob:",
+  // Turbopack serves the vectorizer as /_next/static/... (needs 'self');
+  // blob: kept for any blob-backed worker URLs.
+  "worker-src 'self' blob:",
   `connect-src 'self'${__impeccableLiveDev}`,
 ].join("; ");
 
