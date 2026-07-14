@@ -26,6 +26,8 @@ interface OptimizeInspectorProps {
   pathOmit: number;
   onSvgString: (svg: string) => void;
   onPrepared?: () => void;
+  /** True after Prepare ran at least once for this document. */
+  prepared?: boolean;
 }
 
 const secondaryBtn = 'btn-tertiary w-full';
@@ -41,6 +43,7 @@ export function OptimizeInspector({
   pathOmit,
   onSvgString,
   onPrepared,
+  prepared = false,
 }: OptimizeInspectorProps) {
   const { t } = useI18n();
   const { colors, extractColors, replaceColor, deleteColor, mergeSimilar, snapDarksToBlack, normalizePalette } =
@@ -50,8 +53,7 @@ export function OptimizeInspector({
   const [shapeTarget, setShapeTarget] = useState(50);
   const [preparePreset, setPreparePreset] = useState<'smaller' | 'balanced' | 'detail'>('balanced');
   const [showOriginalPalette, setShowOriginalPalette] = useState(false);
-  const [morePalette, setMorePalette] = useState(false);
-  const [moreCompression, setMoreCompression] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [confirmMaxOptimize, setConfirmMaxOptimize] = useState(false);
   const [byteDelta, setByteDelta] = useState<{ before: number; after: number } | null>(null);
 
@@ -186,27 +188,30 @@ export function OptimizeInspector({
     [maxReduce]
   );
 
+  const advancedSummary = prepared
+    ? `${colors.length} ${t('vec.colors')} · ${pathCount} ${t('workspace.paths')}`
+    : t('optimize.advanced.summary');
+
   return (
     <div className="space-y-5">
       <div className="space-y-1">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           {t('tool.optimize')}
         </h2>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{t('optimize.subtitle')}</p>
+        <p className="text-pretty text-xs text-gray-500 dark:text-gray-400">{t('optimize.subtitle')}</p>
         {showComplexWarn && (
-          <p className="text-xs text-amber-800 dark:text-amber-200">{t('vec.complexWarn')}</p>
+          <p className="text-pretty text-xs text-amber-800 dark:text-amber-200">{t('vec.complexWarn')}</p>
         )}
       </div>
 
-      <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/40">
+      {/* Hero: one primary action for production-ready export */}
+      <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/40">
         <div className="flex items-baseline justify-between gap-2 font-mono text-[11px] tabular-nums text-gray-600 dark:text-gray-300">
           <span>
             {pathCount} {t('workspace.paths')} · {byteSizeLabel}
           </span>
           {savedBytes !== null ? (
-            <span className="text-gray-700 dark:text-gray-200">
-              −{formatBytes(savedBytes)}
-            </span>
+            <span className="text-gray-700 dark:text-gray-200">−{formatBytes(savedBytes)}</span>
           ) : null}
         </div>
         <div
@@ -245,7 +250,7 @@ export function OptimizeInspector({
         <button
           type="button"
           onClick={handlePrepareDownload}
-          className="btn-tertiary w-full"
+          className={prepared ? 'btn-tertiary w-full' : 'btn-primary w-full'}
           disabled={pathCount === 0}
         >
           {t('optimize.prepare')}
@@ -255,214 +260,219 @@ export function OptimizeInspector({
         </p>
       </div>
 
-      <section className="space-y-3">
-        <div className="flex items-baseline justify-between gap-2">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            {t('optimize.paletteSection')}
-          </h3>
-          <span className="font-mono text-[11px] text-gray-500 dark:text-gray-400">
-            {colors.length} {t('vec.colors')}
-          </span>
-        </div>
-
-        <ColorSwatches
-          colors={colors}
-          onColorClick={onSelectedColorChange}
-          selectedColor={selectedColor}
-          onColorDelete={handleDeleteColor}
-          showTitle={false}
-        />
-
-        {originalPalette.length > 0 && (
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={() => setShowOriginalPalette((v) => !v)}
-              className="focus-ring flex min-h-11 w-full items-center justify-between gap-2 rounded py-1 text-xs font-semibold text-gray-600 transition hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-              aria-expanded={showOriginalPalette}
-            >
-              {t('col.originalColors')}
-              {showOriginalPalette ? (
-                <CaretUp size={14} className="text-gray-400" aria-hidden />
-              ) : (
-                <CaretDown size={14} className="text-gray-400" aria-hidden />
-              )}
-            </button>
-            {showOriginalPalette && (
-              <div className="flex flex-wrap gap-1.5">
-                {originalPalette.map((c) => {
-                  const hex = rgbToHex(c);
-                  return (
-                    <button
-                      key={hex}
-                      type="button"
-                      title={hex}
-                      onClick={() => handleReapplyOriginal(c)}
-                      className="focus-ring h-8 w-8 rounded border border-gray-200 transition hover:ring-2 hover:ring-blue-400 dark:border-gray-700"
-                      style={{ backgroundColor: hex }}
-                      aria-label={`${t('col.originalColors')}: ${hex}`}
-                    />
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-      </section>
-
       <InspectorDisclosure
-        title={t('optimize.morePalette')}
-        summary={t('optimize.morePalette.summary')}
-        open={morePalette}
-        onOpenChange={setMorePalette}
-      >
-        <div>
-          <label className="mb-1 flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
-            {t('col.reduce')}: <span className="ml-1 font-mono">{targetCount}</span>
-            <Tooltip text={t('col.reduce.help')} label={t('col.reduce')} />
-          </label>
-          <input
-            type="range"
-            min={2}
-            max={maxReduce}
-            value={Math.min(targetCount, maxReduce)}
-            onChange={(e) => {
-              setTargetCount(Number(e.target.value));
-              setPreparePreset('balanced');
-            }}
-            className="w-full accent-blue-600"
-            aria-label={`${t('col.reduce')}: ${targetCount}`}
-          />
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            const before = svgByteSize(svgString);
-            normalizePalette(targetCount);
-            commitMountedSvg();
-            const after = svgByteSize(serializeMountedSvg() ?? svgString);
-            setByteDelta({ before, after });
-          }}
-          className={secondaryBtn}
-          disabled={colors.length === 0}
-        >
-          {t('col.normalize')}
-          <Tooltip nested text={t('col.normalize.help')} label={t('col.normalize')} />
-        </button>
-
-        <div>
-          <label className="mb-1 flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
-            {t('col.merge')}: <span className="ml-1 font-mono">{mergeThreshold}</span>
-            <Tooltip text={t('col.merge.help')} label={t('col.merge')} />
-          </label>
-          <input
-            type="range"
-            min={16}
-            max={96}
-            step={4}
-            value={mergeThreshold}
-            onChange={(e) => setMergeThreshold(Number(e.target.value))}
-            className="w-full accent-blue-600"
-            aria-label={`${t('col.merge')}: ${mergeThreshold}`}
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            mergeSimilar(mergeThreshold);
-            commitMountedSvg();
-          }}
-          className={secondaryBtn}
-        >
-          {t('col.mergeBtn')}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            snapDarksToBlack(72);
-            commitMountedSvg();
-          }}
-          className={secondaryBtn}
-        >
-          {t('col.snapBlackBtn')}
-          <Tooltip nested text={t('col.snapBlack.help')} label={t('col.snapBlack')} />
-        </button>
-      </InspectorDisclosure>
-
-      <InspectorDisclosure
-        title={t('optimize.moreCompression')}
-        summary={t('optimize.moreCompression.summary')}
-        open={moreCompression}
+        title={t('optimize.advanced')}
+        summary={advancedSummary}
+        open={advancedOpen}
         onOpenChange={(open) => {
-          setMoreCompression(open);
+          setAdvancedOpen(open);
           if (!open) setConfirmMaxOptimize(false);
         }}
       >
-        <div>
-          <label className="mb-1 flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
-            {t('shape.compactTarget')}: <span className="ml-1 font-mono">{shapeTarget}</span>
-            <Tooltip text={t('shape.compact.help')} label={t('shape.compactTarget')} />
-          </label>
-          <input
-            type="range"
-            min={20}
-            max={120}
-            step={5}
-            value={shapeTarget}
-            onChange={(e) => {
-              setShapeTarget(Number(e.target.value));
-              setPreparePreset('balanced');
-            }}
-            className="w-full accent-blue-600"
-            aria-label={`${t('shape.compactTarget')}: ${shapeTarget}`}
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between gap-2">
+            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+              {t('optimize.paletteSection')}
+            </h3>
+            <span className="font-mono text-[11px] text-gray-500 dark:text-gray-400">
+              {colors.length} {t('vec.colors')}
+            </span>
+          </div>
+
+          <ColorSwatches
+            colors={colors}
+            onColorClick={onSelectedColorChange}
+            selectedColor={selectedColor}
+            onColorDelete={handleDeleteColor}
+            showTitle={false}
           />
-        </div>
 
-        <button
-          type="button"
-          onClick={handleCompactShapes}
-          className={secondaryBtn}
-          disabled={pathCount === 0}
-        >
-          {t('shape.compact')}
-        </button>
-        <button type="button" onClick={handleCleanFragments} className={secondaryBtn}>
-          {t('vec.cleanFragments')}
-          <Tooltip nested text={t('vec.cleanFragments.help')} label={t('vec.cleanFragments')} />
-        </button>
-
-        {confirmMaxOptimize ? (
-          <div
-            role="group"
-            aria-label={t('vec.maxOptimize')}
-            className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30"
-          >
-            <p className="text-xs text-amber-950 dark:text-amber-100">{t('vec.maxOptimize.confirm')}</p>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <button type="button" onClick={handleMaxOptimize} className={`${secondaryBtn} sm:flex-1`}>
-                {t('vec.maxOptimize.confirmAction')}
-              </button>
+          {originalPalette.length > 0 && (
+            <div className="space-y-2">
               <button
                 type="button"
-                onClick={() => setConfirmMaxOptimize(false)}
-                className="btn-tertiary sm:flex-1"
+                onClick={() => setShowOriginalPalette((v) => !v)}
+                className="focus-ring flex min-h-11 w-full items-center justify-between gap-2 rounded py-1 text-xs font-semibold text-gray-600 transition hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                aria-expanded={showOriginalPalette}
               >
-                {t('vec.maxOptimize.cancel')}
+                {t('col.originalColors')}
+                {showOriginalPalette ? (
+                  <CaretUp size={14} className="text-gray-400" aria-hidden />
+                ) : (
+                  <CaretDown size={14} className="text-gray-400" aria-hidden />
+                )}
               </button>
+              {showOriginalPalette && (
+                <div className="flex flex-wrap gap-1.5">
+                  {originalPalette.map((c) => {
+                    const hex = rgbToHex(c);
+                    return (
+                      <button
+                        key={hex}
+                        type="button"
+                        title={hex}
+                        onClick={() => handleReapplyOriginal(c)}
+                        className="focus-ring h-8 w-8 rounded border border-gray-200 transition hover:ring-2 hover:ring-blue-400 dark:border-gray-700"
+                        style={{ backgroundColor: hex }}
+                        aria-label={`${t('col.originalColors')}: ${hex}`}
+                      />
+                    );
+                  })}
+                </div>
+              )}
             </div>
+          )}
+        </section>
+
+        <div className="space-y-3 border-t border-gray-100 pt-3 dark:border-gray-700">
+          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+            {t('optimize.morePalette')}
+          </p>
+          <div>
+            <label className="mb-1 flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t('col.reduce')}: <span className="ml-1 font-mono">{targetCount}</span>
+              <Tooltip text={t('col.reduce.help')} label={t('col.reduce')} />
+            </label>
+            <input
+              type="range"
+              min={2}
+              max={maxReduce}
+              value={Math.min(targetCount, maxReduce)}
+              onChange={(e) => {
+                setTargetCount(Number(e.target.value));
+                setPreparePreset('balanced');
+              }}
+              className="w-full accent-blue-600"
+              aria-label={`${t('col.reduce')}: ${targetCount}`}
+            />
           </div>
-        ) : (
+
           <button
             type="button"
-            onClick={() => setConfirmMaxOptimize(true)}
+            onClick={() => {
+              const before = svgByteSize(svgString);
+              normalizePalette(targetCount);
+              commitMountedSvg();
+              const after = svgByteSize(serializeMountedSvg() ?? svgString);
+              setByteDelta({ before, after });
+            }}
+            className={secondaryBtn}
+            disabled={colors.length === 0}
+          >
+            {t('col.normalize')}
+            <Tooltip nested text={t('col.normalize.help')} label={t('col.normalize')} />
+          </button>
+
+          <div>
+            <label className="mb-1 flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t('col.merge')}: <span className="ml-1 font-mono">{mergeThreshold}</span>
+              <Tooltip text={t('col.merge.help')} label={t('col.merge')} />
+            </label>
+            <input
+              type="range"
+              min={16}
+              max={96}
+              step={4}
+              value={mergeThreshold}
+              onChange={(e) => setMergeThreshold(Number(e.target.value))}
+              className="w-full accent-blue-600"
+              aria-label={`${t('col.merge')}: ${mergeThreshold}`}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              mergeSimilar(mergeThreshold);
+              commitMountedSvg();
+            }}
+            className={secondaryBtn}
+          >
+            {t('col.mergeBtn')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              snapDarksToBlack(72);
+              commitMountedSvg();
+            }}
+            className={secondaryBtn}
+          >
+            {t('col.snapBlackBtn')}
+            <Tooltip nested text={t('col.snapBlack.help')} label={t('col.snapBlack')} />
+          </button>
+        </div>
+
+        <div className="space-y-3 border-t border-gray-100 pt-3 dark:border-gray-700">
+          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+            {t('optimize.moreCompression')}
+          </p>
+          <div>
+            <label className="mb-1 flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t('shape.compactTarget')}: <span className="ml-1 font-mono">{shapeTarget}</span>
+              <Tooltip text={t('shape.compact.help')} label={t('shape.compactTarget')} />
+            </label>
+            <input
+              type="range"
+              min={20}
+              max={120}
+              step={5}
+              value={shapeTarget}
+              onChange={(e) => {
+                setShapeTarget(Number(e.target.value));
+                setPreparePreset('balanced');
+              }}
+              className="w-full accent-blue-600"
+              aria-label={`${t('shape.compactTarget')}: ${shapeTarget}`}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCompactShapes}
             className={secondaryBtn}
             disabled={pathCount === 0}
           >
-            {t('vec.maxOptimize')}
-            <Tooltip nested text={t('vec.maxOptimize.help')} label={t('vec.maxOptimize')} />
+            {t('shape.compact')}
           </button>
-        )}
+          <button type="button" onClick={handleCleanFragments} className={secondaryBtn}>
+            {t('vec.cleanFragments')}
+            <Tooltip nested text={t('vec.cleanFragments.help')} label={t('vec.cleanFragments')} />
+          </button>
+
+          {confirmMaxOptimize ? (
+            <div
+              role="group"
+              aria-label={t('vec.maxOptimize')}
+              className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30"
+            >
+              <p className="text-pretty text-xs text-amber-950 dark:text-amber-100">
+                {t('vec.maxOptimize.confirm')}
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button type="button" onClick={handleMaxOptimize} className={`${secondaryBtn} sm:flex-1`}>
+                  {t('vec.maxOptimize.confirmAction')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmMaxOptimize(false)}
+                  className="btn-tertiary sm:flex-1"
+                >
+                  {t('vec.maxOptimize.cancel')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmMaxOptimize(true)}
+              className={secondaryBtn}
+              disabled={pathCount === 0}
+            >
+              {t('vec.maxOptimize')}
+              <Tooltip nested text={t('vec.maxOptimize.help')} label={t('vec.maxOptimize')} />
+            </button>
+          )}
+        </div>
       </InspectorDisclosure>
     </div>
   );

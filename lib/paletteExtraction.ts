@@ -20,6 +20,16 @@ interface ColorBucket {
 
 type ColorCandidate = RGBColor & { count: number; edgeCount: number };
 
+interface SourceColorBucket {
+  interiorCount: number;
+  exactCounts: Map<number, number>;
+}
+
+type SourceColorAnchor = RGBColor & {
+  interiorCount: number;
+  representativeCount: number;
+};
+
 // Colors that only exist in antialiased transparency must not become palette
 // entries when the SVG output later hardens those pixels to opaque shapes.
 const PALETTE_SAMPLE_ALPHA = 224;
@@ -41,6 +51,22 @@ function isSimilarToAny(color: RGBColor, colors: readonly RGBColor[], threshold 
 
 function toRgb(color: Pick<TracePaletteColor, 'r' | 'g' | 'b'>): RGBColor {
   return { r: color.r, g: color.g, b: color.b };
+}
+
+function exactColorKey(color: RGBColor): number {
+  return (color.r << 16) | (color.g << 8) | color.b;
+}
+
+function colorFromExactKey(key: number): RGBColor {
+  return {
+    r: (key >> 16) & 255,
+    g: (key >> 8) & 255,
+    b: key & 255,
+  };
+}
+
+function quantizedColorKey(color: RGBColor): number {
+  return ((color.r >> 3) << 10) | ((color.g >> 3) << 5) | (color.b >> 3);
 }
 
 export function isNearWhite(color: RGBColor, threshold = 244): boolean {
@@ -476,6 +502,148 @@ function collectVisibleColorBuckets(imageData: ImageData): ColorCandidate[] {
     .sort((a, b) => b.count - a.count);
 }
 
+const supportedSourceCache = new WeakMap<object, SourceColorAnchor[]>();
+
+/**
+ * Standard palette refinement may average several unrelated edge shades into
+ * a centroid that never existed in the raster. Keep only exact source colors
+ * with either a coherent interior or repeated exact samples, so antialiased
+ * boundary noise cannot expand into a traced region.
+ */
+function collectSupportedSourceColors(imageData: ImageData): SourceColorAnchor[] {
+  const cached = supportedSourceCache.get(imageData);
+  if (cached) return cached;
+
+  const { data, width, height } = imageData;
+  const buckets = new Map<number, SourceColorBucket>();
+
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] < PALETTE_SAMPLE_ALPHA) continue;
+    const color = { r: data[i], g: data[i + 1], b: data[i + 2] };
+    if (isNearWhite(color)) continue;
+
+    const pixel = i / 4;
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+    const key = quantizedColorKey(color);
+    const neighborIndexes = [
+      x > 0 ? i - 4 : -1,
+      x + 1 < width ? i + 4 : -1,
+      y > 0 ? i - width * 4 : -1,
+      y + 1 < height ? i + width * 4 : -1,
+    ];
+    let comparableNeighbors = 0;
+    let sameBucketNeighbors = 0;
+
+    for (const neighbor of neighborIndexes) {
+      if (neighbor < 0 || data[neighbor + 3] < PALETTE_SAMPLE_ALPHA) continue;
+      comparableNeighbors++;
+      if (
+        quantizedColorKey({
+          r: data[neighbor],
+          g: data[neighbor + 1],
+          b: data[neighbor + 2],
+        }) === key
+      ) {
+        sameBucketNeighbors++;
+      }
+    }
+
+    const isInterior =
+      comparableNeighbors > 0 &&
+      sameBucketNeighbors >= Math.max(1, Math.ceil(comparableNeighbors * 0.6));
+    const exactKey = exactColorKey(color);
+    const bucket = buckets.get(key);
+    if (bucket) {
+      if (isInterior) bucket.interiorCount++;
+      bucket.exactCounts.set(exactKey, (bucket.exactCounts.get(exactKey) ?? 0) + 1);
+    } else {
+      buckets.set(key, {
+        interiorCount: isInterior ? 1 : 0,
+        exactCounts: new Map([[exactKey, 1]]),
+      });
+    }
+  }
+
+  const totalOpaque = totalOpaquePixels(imageData);
+  const anchors = [...buckets.values()].map((bucket) => {
+    const representative = [...bucket.exactCounts.entries()].sort(
+      (a, b) => b[1] - a[1] || a[0] - b[0]
+    )[0];
+    return {
+      ...colorFromExactKey(representative[0]),
+      interiorCount: bucket.interiorCount,
+      representativeCount: representative[1],
+    };
+  });
+  const minInteriorCount = Math.max(1, Math.ceil(totalOpaque * 0.00005));
+  const minRepeatedCount = Math.max(2, Math.ceil(totalOpaque * 0.00005));
+  const supported = totalOpaque < 256
+    ? anchors
+    : anchors.filter(
+        (anchor) =>
+          anchor.interiorCount >= minInteriorCount ||
+          anchor.representativeCount >= minRepeatedCount
+      );
+  const result = supported.length > 0 ? supported : anchors;
+  supportedSourceCache.set(imageData, result);
+  return result;
+}
+
+function anchorPaletteToSupportedSource(
+  palette: readonly RGBColor[],
+  fixedCount: number,
+  supported: readonly SourceColorAnchor[]
+): RGBColor[] {
+  const nearestUnusedSource = (color: RGBColor, used: ReadonlySet<number>) => {
+    let best: SourceColorAnchor | undefined;
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    for (const candidate of supported) {
+      if (used.has(exactColorKey(candidate))) continue;
+      const distance = colorDistanceSq(color, candidate);
+      if (
+        distance < bestDistance ||
+        (distance === bestDistance &&
+          (!best ||
+            candidate.interiorCount > best.interiorCount ||
+            (candidate.interiorCount === best.interiorCount &&
+              candidate.representativeCount > best.representativeCount)))
+      ) {
+        best = candidate;
+        bestDistance = distance;
+      }
+    }
+
+    return best;
+  };
+  const anchored: RGBColor[] = [];
+  const used = new Set<number>();
+
+  for (const color of palette.slice(0, fixedCount)) {
+    // Pure white is an intentional semantic anchor for enclosed light fills.
+    const nearest = nearestUnusedSource(color, used);
+    const fixed = exactColorKey(color) === 0xffffff || !nearest
+      ? color
+      : toRgb(nearest);
+    const key = exactColorKey(fixed);
+    if (used.has(key)) continue;
+    used.add(key);
+    anchored.push({ ...fixed });
+  }
+
+  for (const color of palette.slice(fixedCount)) {
+    const source = nearestUnusedSource(color, used);
+    if (!source) break;
+
+    const anchoredColor = toRgb(source);
+    used.add(exactColorKey(anchoredColor));
+    anchored.push({ ...anchoredColor });
+  }
+
+  return anchored;
+}
+
 export function pickDarkOutlineColorFromImage(imageData: ImageData): RGBColor | null {
   const candidates = collectVisibleColorBuckets(imageData)
     .filter((color) => isDarkOutlineColor(color) || isDarkLineColor(color))
@@ -494,7 +662,8 @@ function refinePaletteFromImage(
   imageData: ImageData,
   initialPalette: readonly RGBColor[],
   cycles: number,
-  fixedColors: readonly RGBColor[]
+  fixedColors: readonly RGBColor[],
+  sourceCandidates?: readonly SourceColorAnchor[]
 ): RGBColor[] {
   const passCount = Math.max(1, Math.min(8, Math.round(cycles)));
   const fixedCount = fixedColors.length;
@@ -527,7 +696,9 @@ function refinePaletteFromImage(
     });
   }
 
-  return palette;
+  return sourceCandidates
+    ? anchorPaletteToSupportedSource(palette, fixedCount, sourceCandidates)
+    : palette;
 }
 
 function candidateRgb(color: ColorCandidate): RGBColor {
@@ -752,7 +923,13 @@ function suggestPaletteAtLimit(imageData: ImageData, maxColors: number, colorQua
 
   if (selected.length === 0) addColor(ICON_BASE_PALETTE[0].color);
 
-  const refined = refinePaletteFromImage(imageData, selected, colorQuantCycles, fixedColors);
+  const refined = refinePaletteFromImage(
+    imageData,
+    selected,
+    colorQuantCycles,
+    fixedColors,
+    collectSupportedSourceColors(imageData)
+  );
   return refined.map((color) => ({ ...color, a: 255 }));
 }
 

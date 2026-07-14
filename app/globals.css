@@ -73,6 +73,12 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  /* Static ready cue — pulse would be imperceptible under the rule above */
+  .download-attention {
+    animation: none !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-action-green) 50%, transparent);
+  }
 }
 
 .transparent-preview {

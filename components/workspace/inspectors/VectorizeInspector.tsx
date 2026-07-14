@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { X } from '@phosphor-icons/react';
 import { VectorizeSettingsPanel } from '@/components/vectorize/VectorizeSettings';
 import { EditablePalette } from '@/components/vectorize/EditablePalette';
-import { WorkflowSteps } from '@/components/workspace/WorkflowSteps';
 import { InspectorDisclosure } from '@/components/workspace/InspectorDisclosure';
 import { Tooltip } from '@/components/shared/Tooltip';
 import type { useVectorizeSession } from '@/hooks/useVectorizeSession';
@@ -35,9 +34,11 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
     resetPalette,
     error,
     isLoading,
+    svg,
   } = session;
 
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const hasSvg = svg !== null;
 
   const paletteSummary =
     paletteColors.length === 1
@@ -51,7 +52,12 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('vec.title')}</h2>
           <p className="text-pretty text-xs text-gray-500 dark:text-gray-400">{t('vec.subtitle')}</p>
         </div>
-        <WorkflowSteps activeStep={2} defaultCollapsed />
+
+        {!hasSvg ? (
+          <p className="text-pretty text-xs text-gray-500 dark:text-gray-400" aria-live="polite">
+            {isLoading ? t('onboard.traceAction') : t('onboard.vectorizeCue')}
+          </p>
+        ) : null}
       </div>
 
       {error && (

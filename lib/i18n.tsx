@@ -14,7 +14,7 @@ export type Lang = 'en' | 'es';
 // Translation dictionary. Keys are dotted; values per language.
 const DICT = {
   // Header / footer
-  'app.tagline': { en: 'Free · Open Source · 100% client-side', es: 'Gratis · Código abierto · 100% en tu navegador' },
+  'app.tagline': { en: 'Vectorize on your device', es: 'Vectoriza en tu dispositivo' },
   'app.footer': { en: 'Your images never leave your device', es: 'Tus imágenes nunca salen de tu dispositivo' },
   'app.source': { en: 'Source on GitHub', es: 'Código en GitHub' },
   'lang.toggle': { en: 'EN', es: 'ES' },
@@ -38,7 +38,6 @@ const DICT = {
   // Upload
   'upload.title': { en: 'Upload Image', es: 'Subir imagen' },
   'upload.subtitle': { en: 'Convert a raster image to a scalable SVG vector.', es: 'Convierte una imagen en un vector SVG escalable.' },
-  'upload.privacy': { en: 'Your image never leaves your device. All processing is 100% client-side.', es: 'Tu imagen nunca sale de tu dispositivo. Todo el procesamiento es 100% en tu navegador.' },
   'upload.drop': { en: 'Drag & drop an image here, or click to browse', es: 'Arrastra una imagen aquí, o haz clic para elegir' },
   'upload.formats': { en: 'PNG, JPG or WEBP · up to 10 MB', es: 'PNG, JPG o WEBP · hasta 10 MB' },
   'onboard.emptyTitle': {
@@ -46,20 +45,20 @@ const DICT = {
     es: 'Suelta una imagen para obtener un SVG listo para producción',
   },
   'onboard.emptyBody': {
-    en: 'Vectorize flat icons and logos in the browser — then recolor, refine, and download.',
-    es: 'Vectoriza iconos y logos planos en el navegador — luego recolorea, afina y descarga.',
+    en: 'Trace a flat icon or logo, then recolor, refine shapes, and download.',
+    es: 'Traza un icono o logo plano; luego recolorea, refina formas y descarga.',
   },
   'onboard.trySample': {
     en: 'Try a sample icon',
     es: 'Probar un icono de ejemplo',
   },
-  'onboard.inspectorTitle': {
-    en: 'Start here',
-    es: 'Empieza aquí',
+  'onboard.vectorizeCue': {
+    en: 'The SVG updates live as you adjust. Wait for the first preview, then prepare to download.',
+    es: 'El SVG se actualiza al instante al ajustar. Espera la primera vista previa y luego prepáralo para descargar.',
   },
-  'onboard.inspectorBody': {
-    en: 'Drop an image on the canvas (or try the sample). You’ll vectorize next, then edit and download.',
-    es: 'Suelta una imagen en el lienzo (o prueba el ejemplo). Luego vectorizas, editas y descargas.',
+  'onboard.traceAction': {
+    en: 'Tracing…',
+    es: 'Trazando…',
   },
   'onboard.nextStepsLabel': {
     en: 'Next steps after vectorize',
@@ -76,10 +75,6 @@ const DICT = {
   'onboard.nextOptimize': {
     en: 'Prepare for download',
     es: 'Preparar para descargar',
-  },
-  'onboard.nextShapesHint': {
-    en: 'Or edit colors first. Refine shapes anytime from the toolbar.',
-    es: 'O edita colores primero. Refina formas cuando quieras desde la barra.',
   },
   'onboard.nextStepsDismiss': {
     en: 'Dismiss next steps',
@@ -315,7 +310,7 @@ const DICT = {
   },
 
   // Shape editor
-  'shape.title': { en: 'Refine Shapes', es: 'Perfeccionar formas' },
+  'shape.title': { en: 'Refine shapes', es: 'Refinar formas' },
   'shape.nodesSub': { en: 'Click a shape to show its points, then drag them to fix the silhouette.', es: 'Haz clic en una forma para ver sus puntos, luego arrástralos para corregir la silueta.' },
   'shape.brushSub': { en: 'Paint directly on the image to fill gaps or touch up areas.', es: 'Pinta directamente sobre la imagen para rellenar huecos o retocar zonas.' },
   'shape.modeNodes': { en: 'Move points', es: 'Mover puntos' },
@@ -396,10 +391,6 @@ const DICT = {
   'tool.nodes': { en: 'Points', es: 'Puntos' },
   'tool.labels': { en: 'Labels', es: 'Etiquetas' },
   'tool.optimize': { en: 'Optimize', es: 'Optimizar' },
-  'tool.refine': { en: 'Refine shapes', es: 'Refinar formas' },
-  'tool.refine.exit': { en: 'Exit Refine', es: 'Salir de Refinar' },
-  'tool.refine.more': { en: 'More refine tools', es: 'Más herramientas de refinado' },
-  'tool.refine.badge': { en: 'New', es: 'Nuevo' },
   'tool.zoom': { en: 'Zoom', es: 'Zoom' },
   'tool.import.hint': {
     en: 'Replace the image when you need a fresh start.',
@@ -438,24 +429,24 @@ const DICT = {
     es: 'Haz clic en una forma para nombrarla (CSS y animación).',
   },
   'tool.optimize.hint': {
-    en: 'Use Prepare for download, then Download SVG in the top bar.',
-    es: 'Usa Preparar para descargar y luego Descargar SVG en la barra superior.',
+    en: 'Prepare for download first, then use Download SVG in the top bar.',
+    es: 'Primero prepara para descargar; luego usa Descargar SVG en la barra superior.',
   },
 
   // Optimize inspector sections
   'optimize.paletteSection': { en: 'Palette', es: 'Paleta' },
   'optimize.optimizeSection': { en: 'File size', es: 'Tamaño de archivo' },
   'optimize.subtitle': {
-    en: 'Prepare once for a smaller SVG, or open advanced tools below.',
-    es: 'Prepara una vez para un SVG más liviano, o abre herramientas avanzadas abajo.',
+    en: 'Prepare once for a smaller, production-ready SVG.',
+    es: 'Prepara una vez un SVG más liviano y listo para producción.',
   },
   'optimize.prepare': {
     en: 'Prepare for download',
     es: 'Preparar para descargar',
   },
   'optimize.prepare.help': {
-    en: 'Normalizes the palette and compacts shapes with your current targets.',
-    es: 'Normaliza la paleta y compacta formas con tus objetivos actuales.',
+    en: 'Cleans the palette and compacts shapes so the download is smaller and ready to ship.',
+    es: 'Limpia la paleta y compacta formas para que la descarga sea más liviana y lista para usar.',
   },
   'optimize.prepare.targets': {
     en: '{colors} colors · ~{shapes} shapes',
@@ -465,8 +456,8 @@ const DICT = {
   'optimize.prepare.preset.balanced': { en: 'Balanced', es: 'Equilibrado' },
   'optimize.prepare.preset.detail': { en: 'Keep detail', es: 'Más detalle' },
   'optimize.preparedStatus': {
-    en: 'Prepared — Undo if needed, then Download SVG.',
-    es: 'Listo — Deshaz si hace falta y luego Descarga el SVG.',
+    en: 'Prepared. Undo if needed, then Download SVG in the top bar.',
+    es: 'Preparado. Deshaz si hace falta y luego Descarga el SVG arriba.',
   },
   'optimize.morePalette': { en: 'More palette tools', es: 'Más herramientas de paleta' },
   'optimize.morePalette.summary': {
@@ -478,16 +469,28 @@ const DICT = {
     en: 'Compact shapes, clean fragments, max compress',
     es: 'Compactar formas, limpiar fragmentos, comprimir al máximo',
   },
+  'optimize.advanced': {
+    en: 'Advanced',
+    es: 'Avanzado',
+  },
+  'optimize.advanced.summary': {
+    en: 'Palette, reduce colors, compact, clean fragments',
+    es: 'Paleta, reducir colores, compactar, limpiar fragmentos',
+  },
 
   // Workspace chrome
   'workspace.download': { en: 'Download SVG', es: 'Descargar SVG' },
+  'workspace.downloadUnprepared': {
+    en: 'Download without preparing',
+    es: 'Descargar sin preparar',
+  },
   'workspace.downloadPrepared': {
-    en: 'Download prepared SVG',
-    es: 'Descargar SVG preparado',
+    en: 'Download SVG',
+    es: 'Descargar SVG',
   },
   'workspace.downloadRaw': {
-    en: 'Download without preparing — file may be larger',
-    es: 'Descargar sin preparar — el archivo puede ser más pesado',
+    en: 'Downloads the SVG as-is. For a smaller production file, use Prepare for download in Optimize first.',
+    es: 'Descarga el SVG tal cual. Para un archivo de producción más liviano, usa Preparar para descargar en Optimizar primero.',
   },
   'workspace.downloadDisabled': {
     en: 'Download becomes available after you create an SVG.',
@@ -543,26 +546,7 @@ const DICT = {
     en: 'Continue to Fill colors',
     es: 'Continuar a Rellenar colores',
   },
-  'workflow.title': { en: 'Workflow', es: 'Flujo de trabajo' },
-  'workflow.expand': { en: 'Expand', es: 'Expandir' },
-  'workflow.collapse': { en: 'Collapse', es: 'Colapsar' },
   'workflow.compareOriginal': { en: 'Compare original', es: 'Comparar original' },
-  'workflow.step1': {
-    en: 'Import a PNG, JPG, or WEBP image.',
-    es: 'Importa una imagen PNG, JPG o WEBP.',
-  },
-  'workflow.step2': {
-    en: 'Adjust vectorize settings until the SVG looks right.',
-    es: 'Ajusta la vectorización hasta que el SVG se vea bien.',
-  },
-  'workflow.step3': {
-    en: 'Fill colors or optimize, then download.',
-    es: 'Rellena colores u optimiza, y luego descarga.',
-  },
-  'workflow.step4': {
-    en: 'Download the finished SVG.',
-    es: 'Descarga el SVG terminado.',
-  },
 } as const;
 
 export type TKey = keyof typeof DICT;

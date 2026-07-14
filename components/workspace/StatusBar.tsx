@@ -2,7 +2,6 @@
 
 import { ZoomControls } from '@/components/shared/ZoomControls';
 import { useI18n, type TKey } from '@/lib/i18n';
-import { isShapeTool } from '@/lib/workspaceTools';
 import { DEFAULT_ZOOM_SCALE } from '@/types/svg.types';
 import type { WorkspaceTool } from '@/types/workspace.types';
 
@@ -77,14 +76,16 @@ export function StatusBar({
           : null;
   const hint = statusMessage || ambientHint;
 
-  const activeToolLabel = isShapeTool(activeTool)
-    ? `${t('tool.refine')} · ${t(`tool.${activeTool}`)}`
-    : activeTool === 'eyedropper'
+  const activeToolLabel =
+    activeTool === 'eyedropper'
       ? `${t('tool.fill')} · ${t('tool.eyedropper')}`
       : t(`tool.${activeTool}`);
 
   return (
-    <footer className="grid shrink-0 grid-cols-1 items-center gap-x-4 gap-y-1.5 border-t border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 sm:grid-cols-[minmax(0,1fr)_auto_auto] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+    <div
+      role="status"
+      className="grid shrink-0 grid-cols-1 items-center gap-x-4 gap-y-1.5 border-t border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 sm:grid-cols-[minmax(0,1fr)_auto_auto] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+    >
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
         {isPreTrace ? (
           <span>{t('vec.notTracedYet')}</span>
@@ -153,6 +154,6 @@ export function StatusBar({
           <span className="max-lg:hidden text-gray-400 dark:text-gray-500">{t('zoom.panHint')}</span>
         )}
       </div>
-    </footer>
+    </div>
   );
 }

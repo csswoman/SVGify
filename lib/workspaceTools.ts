@@ -29,10 +29,10 @@ export const WORKSPACE_TOOL_GROUPS: WorkspaceToolGroup[] = [
     id: 'shape',
     requiresSvg: true,
     tools: [
+      { id: 'nodes', shortcut: 'A' },
+      { id: 'brush', shortcut: 'B' },
       { id: 'erase', shortcut: 'E' },
       { id: 'erasePath', shortcut: 'X' },
-      { id: 'brush', shortcut: 'B' },
-      { id: 'nodes', shortcut: 'A' },
       { id: 'labels', shortcut: 'L' },
     ],
   },

@@ -158,6 +158,7 @@ export function Workspace() {
           onRedo={() => editor.redo()}
           inspectorOpen={inspectorOpen}
           onInspectorToggle={() => setInspectorOpen((open) => !open)}
+          showInspectorToggle={imageData !== null}
           downloadHighlight={downloadHighlight}
           downloadPrepared={hasPrepared}
           onDownloadComplete={() => setDownloadHighlight(false)}
@@ -167,7 +168,12 @@ export function Workspace() {
             activeTool={activeTool}
             document={document}
             onToolChange={handleToolChange}
-            showRefineHint={!hasOpenedRefine && workspaceSvgString !== null}
+            showRefineHint={
+              !hasOpenedRefine &&
+              workspaceSvgString !== null &&
+              !guidanceTipActive &&
+              !hasPrepared
+            }
           />
           <Canvas
             activeTool={activeTool}
@@ -186,6 +192,7 @@ export function Workspace() {
             onImageData={(data) => {
               setUploadError(null);
               setImageData(data);
+              setInspectorOpen(true);
             }}
             onUploadError={setUploadError}
             onToolChange={handleToolChange}
@@ -209,6 +216,7 @@ export function Workspace() {
             onResetDocument={handleResetDocument}
             onSvgString={setSvgString}
             onOptimizePrepared={handleOptimizePrepared}
+            downloadPrepared={hasPrepared}
           />
         </div>
         <FirstSvgTip

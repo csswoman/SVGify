@@ -121,6 +121,43 @@ describe('palette extraction', () => {
     expect(palette).not.toContainEqual({ r: 224, g: 205, b: 164, a: 255 });
   });
 
+  it('does not promote unsupported internal antialias colors into the palette', () => {
+    const blue = [32, 92, 178, 255];
+    const orange = [218, 92, 36, 255];
+    const transitionRows = Array.from({ length: 33 }, (_, index) => [
+      88 + (index % 8) * 8,
+      120 + Math.floor(index / 8) * 8,
+      176 - index * 2,
+      255,
+    ]);
+    const pixels: number[] = [];
+
+    for (let y = 0; y < transitionRows.length; y++) {
+      for (let x = 0; x < 65; x++) {
+        pixels.push(...(x < 32 ? blue : x === 32 ? transitionRows[y] : orange));
+      }
+    }
+
+    const input = new ImageData(new Uint8ClampedArray(pixels), 65, transitionRows.length);
+    const palette = suggestPaletteFromImage(input, 8, 6);
+    const sourceColors = new Set<string>();
+    for (let i = 0; i < input.data.length; i += 4) {
+      sourceColors.add(`${input.data[i]},${input.data[i + 1]},${input.data[i + 2]}`);
+    }
+
+    expect(palette).toContainEqual({ r: 32, g: 92, b: 178, a: 255 });
+    expect(palette).toContainEqual({ r: 218, g: 92, b: 36, a: 255 });
+    expect(palette.every((color) => sourceColors.has(`${color.r},${color.g},${color.b}`))).toBe(true);
+    for (const transition of transitionRows) {
+      expect(palette).not.toContainEqual({
+        r: transition[0],
+        g: transition[1],
+        b: transition[2],
+        a: 255,
+      });
+    }
+  });
+
   it('suggests a clean palette from visible raster colors and removes near-white background first', () => {
     const input = new ImageData(
       new Uint8ClampedArray([

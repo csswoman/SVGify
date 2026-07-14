@@ -2,7 +2,6 @@
 
 import type { Icon } from '@phosphor-icons/react';
 import { ToolTooltip } from '@/components/shared/ToolTooltip';
-import { useI18n } from '@/lib/i18n';
 
 interface ToolButtonProps {
   icon: Icon;
@@ -12,7 +11,7 @@ interface ToolButtonProps {
   active?: boolean;
   /** Mode toggle engaged without claiming the selected-tool ring. */
   expanded?: boolean;
-  /** Soft discovery cue (e.g. first-time Refine). */
+  /** Quiet discovery cue (visual only; no “New” marketing copy). */
   badge?: boolean;
   disabled?: boolean;
   onClick: () => void;
@@ -28,18 +27,14 @@ export function ToolButton({
   disabled,
   onClick,
 }: ToolButtonProps) {
-  const { t } = useI18n();
   const accessibleName = shortcut ? `${label} (${shortcut})` : label;
   const filled = Boolean(active || expanded);
-  const announcedName = badge
-    ? `${accessibleName}. ${t('tool.refine.badge')}`
-    : accessibleName;
 
   return (
     <ToolTooltip label={label} shortcut={shortcut}>
       <button
         type="button"
-        aria-label={announcedName}
+        aria-label={accessibleName}
         aria-pressed={active === undefined ? undefined : active}
         aria-expanded={expanded === undefined ? undefined : expanded}
         disabled={disabled ? true : undefined}

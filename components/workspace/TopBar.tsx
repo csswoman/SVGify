@@ -23,6 +23,8 @@ interface TopBarProps {
   onRedo: () => void;
   inspectorOpen: boolean;
   onInspectorToggle: () => void;
+  /** Hide mobile inspector toggle when the inspector column is unavailable. */
+  showInspectorToggle?: boolean;
   downloadHighlight?: boolean;
   downloadPrepared?: boolean;
   onDownloadComplete?: () => void;
@@ -37,6 +39,7 @@ export function TopBar({
   onRedo,
   inspectorOpen,
   onInspectorToggle,
+  showInspectorToggle = true,
   downloadHighlight = false,
   downloadPrepared = false,
   onDownloadComplete,
@@ -88,15 +91,17 @@ export function TopBar({
             onDownloaded={onDownloadComplete}
           />
         ) : null}
-        <button
-          type="button"
-          onClick={onInspectorToggle}
-          aria-label={inspectorOpen ? t('workspace.closeInspector') : t('workspace.openInspector')}
-          aria-pressed={inspectorOpen}
-          className="focus-ring flex h-10 w-10 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 lg:hidden dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
-        >
-          {inspectorOpen ? <X size={18} aria-hidden /> : <Sidebar size={18} aria-hidden />}
-        </button>
+        {showInspectorToggle ? (
+          <button
+            type="button"
+            onClick={onInspectorToggle}
+            aria-label={inspectorOpen ? t('workspace.closeInspector') : t('workspace.openInspector')}
+            aria-pressed={inspectorOpen}
+            className="focus-ring flex h-10 w-10 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 lg:hidden dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            {inspectorOpen ? <X size={18} aria-hidden /> : <Sidebar size={18} aria-hidden />}
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => setTheme(nextTheme)}

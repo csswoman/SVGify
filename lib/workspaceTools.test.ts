@@ -21,6 +21,17 @@ describe('WORKSPACE_TOOL_GROUPS order', () => {
       'output',
     ]);
   });
+
+  it('lists refine tools at first level in constructive order', () => {
+    const shape = WORKSPACE_TOOL_GROUPS.find((g) => g.id === 'shape');
+    expect(shape?.tools.map((t) => t.id)).toEqual([
+      'nodes',
+      'brush',
+      'erase',
+      'erasePath',
+      'labels',
+    ]);
+  });
 });
 
 describe('isToolEnabled', () => {

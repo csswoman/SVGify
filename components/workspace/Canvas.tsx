@@ -235,13 +235,10 @@ export function Canvas({
             <button
               type="button"
               onClick={handleSample}
-              className="btn-tertiary w-full"
+              className="focus-ring rounded-md px-2 py-1.5 text-xs font-medium text-gray-600 underline-offset-2 hover:text-gray-900 hover:underline dark:text-gray-400 dark:hover:text-gray-200"
             >
               {t('onboard.trySample')}
             </button>
-            <p className="text-center text-xs text-gray-500 dark:text-gray-400">
-              {t('upload.privacy')}
-            </p>
           </div>
         </div>
       </section>
