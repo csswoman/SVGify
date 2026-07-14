@@ -51,6 +51,9 @@ export function Workspace() {
     setSelectedColor(null);
     setZoomViewport(DEFAULT_ZOOM_VIEWPORT);
     setActiveTool('import');
+    setNextStepsDismissed(false);
+    setHasOpenedRefine(false);
+    setHasPrepared(false);
   }, []);
 
   const editor = useWorkspaceSvg({
@@ -89,19 +92,14 @@ export function Workspace() {
     return () => window.clearTimeout(id);
   }, [downloadHighlight]);
 
-  useEffect(() => {
-    if (activeTool !== 'vectorize') return;
-    if (!vectorizeSession.svg) return;
-    setSvgString((current) => (current === vectorizeSession.svg ? current : vectorizeSession.svg));
-  }, [activeTool, vectorizeSession.svg]);
-
-  useEffect(() => {
-    if (!workspaceSvgString) {
-      setNextStepsDismissed(false);
-      setHasOpenedRefine(false);
-      setHasPrepared(false);
-    }
-  }, [workspaceSvgString]);
+  // Promote live vectorize output into owned workspace SVG while staying on that tool.
+  if (
+    activeTool === 'vectorize' &&
+    vectorizeSession.svg &&
+    svgString !== vectorizeSession.svg
+  ) {
+    setSvgString(vectorizeSession.svg);
+  }
 
   useWorkspaceShortcuts({
     document,

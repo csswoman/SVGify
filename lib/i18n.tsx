@@ -489,8 +489,12 @@ const DICT = {
     es: 'Descargar SVG',
   },
   'workspace.downloadRaw': {
-    en: 'Downloads the SVG as-is. For a smaller production file, use Prepare for download in Optimize first.',
-    es: 'Descarga el SVG tal cual. Para un archivo de producción más liviano, usa Preparar para descargar en Optimizar primero.',
+    en: 'Downloads the SVG as-is. For a smaller production file, use Prepare for download first.',
+    es: 'Descarga el SVG tal cual. Para un archivo de producción más liviano, usa Preparar para descargar primero.',
+  },
+  'workspace.downloadNeedsPrepare': {
+    en: 'Prepare for download in Optimize first. Raw download is available there if you need it.',
+    es: 'Primero prepara para descargar en Optimizar. Ahí también puedes descargar sin preparar si lo necesitas.',
   },
   'workspace.downloadDisabled': {
     en: 'Download becomes available after you create an SVG.',
@@ -501,8 +505,8 @@ const DICT = {
   'workspace.paths': { en: 'shapes', es: 'formas' },
   'workspace.tools': { en: 'Tools', es: 'Herramientas' },
   'workspace.shortcutHint': {
-    en: 'Letter shortcuts: G Fill, I Pick, E Erase, and more — hover a tool to see its key.',
-    es: 'Atajos: G Rellenar, I Tomar, E Borrar y más — pasa el cursor por una herramienta para ver la tecla.',
+    en: 'Shortcuts: G Fill · A Points · E Erase — hover a tool for its key.',
+    es: 'Atajos: G Rellenar · A Puntos · E Borrar — pasa el cursor por una herramienta.',
   },
   'workspace.moreToolsAfterVectorize': {
     en: 'When you’re happy with the trace, prepare for download or edit colors.',

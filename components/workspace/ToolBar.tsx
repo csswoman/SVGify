@@ -15,6 +15,7 @@ import {
 import type { Icon } from '@phosphor-icons/react';
 import { ToolButton } from './ToolButton';
 import {
+  isShapeTool,
   isToolEnabled,
   WORKSPACE_TOOL_GROUPS,
 } from '@/lib/workspaceTools';
@@ -38,6 +39,10 @@ function isFillMode(tool: WorkspaceTool): boolean {
   return tool === 'fill' || tool === 'eyedropper';
 }
 
+function isEraseMode(tool: WorkspaceTool): boolean {
+  return tool === 'erase' || tool === 'erasePath';
+}
+
 interface ToolBarProps {
   activeTool: WorkspaceTool;
   document: WorkspaceDocument;
@@ -54,7 +59,10 @@ export function ToolBar({
 }: ToolBarProps) {
   const { t } = useI18n();
   const hasSvg = document.svgString !== null;
+  const hasImage = document.imageData !== null;
   const fillOpen = isFillMode(activeTool);
+  const shapeOpen = isShapeTool(activeTool);
+  const eraseOpen = isEraseMode(activeTool);
 
   const visibleGroups = WORKSPACE_TOOL_GROUPS.filter(
     (group) => !group.requiresSvg || hasSvg
@@ -99,6 +107,62 @@ export function ToolBar({
                   />
                 ) : null}
               </div>
+            ) : isShape ? (
+              <div
+                role="group"
+                aria-label={t('tool.group.shape')}
+                className="flex flex-col items-center gap-1"
+              >
+                <ToolButton
+                  icon={PenNib}
+                  label={t('tool.nodes')}
+                  shortcut="A"
+                  active={activeTool === 'nodes'}
+                  expanded={shapeOpen && activeTool !== 'nodes' ? true : undefined}
+                  badge={showRefineHint && !shapeOpen}
+                  disabled={!isToolEnabled('nodes', document)}
+                  onClick={() => onToolChange('nodes')}
+                />
+                {shapeOpen ? (
+                  <>
+                    <ToolButton
+                      icon={PaintBrush}
+                      label={t('tool.brush')}
+                      shortcut="B"
+                      active={activeTool === 'brush'}
+                      disabled={!isToolEnabled('brush', document)}
+                      onClick={() => onToolChange('brush')}
+                    />
+                    <ToolButton
+                      icon={Eraser}
+                      label={t('tool.erase')}
+                      shortcut="E"
+                      active={activeTool === 'erase'}
+                      expanded={activeTool === 'erasePath' ? true : undefined}
+                      disabled={!isToolEnabled('erase', document)}
+                      onClick={() => onToolChange('erase')}
+                    />
+                    {eraseOpen ? (
+                      <ToolButton
+                        icon={Trash}
+                        label={t('tool.erasePath')}
+                        shortcut="X"
+                        active={activeTool === 'erasePath'}
+                        disabled={!isToolEnabled('erasePath', document)}
+                        onClick={() => onToolChange('erasePath')}
+                      />
+                    ) : null}
+                    <ToolButton
+                      icon={Tag}
+                      label={t('tool.labels')}
+                      shortcut="L"
+                      active={activeTool === 'labels'}
+                      disabled={!isToolEnabled('labels', document)}
+                      onClick={() => onToolChange('labels')}
+                    />
+                  </>
+                ) : null}
+              </div>
             ) : (
               <div
                 role="group"
@@ -109,10 +173,13 @@ export function ToolBar({
                   <ToolButton
                     key={id}
                     icon={TOOL_ICONS[id]}
-                    label={t(`tool.${id}`)}
+                    label={
+                      id === 'import' && hasImage
+                        ? t('workspace.replaceImage')
+                        : t(`tool.${id}`)
+                    }
                     shortcut={shortcut}
                     active={activeTool === id}
-                    badge={isShape && id === 'nodes' && showRefineHint}
                     disabled={!isToolEnabled(id, document)}
                     onClick={() => onToolChange(id)}
                   />

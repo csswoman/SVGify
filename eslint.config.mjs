@@ -14,9 +14,12 @@ const eslintConfig = defineConfig([
     ".cursor/**",
     ".impeccable/**",
     ".superpowers/**",
+    ".worktrees/**",
     "next-env.d.ts",
     // One-off Node smoke-test script, not part of the app build.
     "smoke-test.js",
+    // Local experimental spikes — not part of the app build.
+    "scripts/spike-*.mjs",
   ]),
 ]);
 

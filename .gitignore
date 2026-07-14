@@ -26,6 +26,20 @@
 .superpowers/
 .cursor/
 .impeccable/
+.worktrees/
+
+# local AI agent instructions
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.github/copilot-instructions.md
+.github/instructions/
+
+# local spikes / experiment outputs
+scripts/spike-*.mjs
+detect-b-*
+*-stdout.txt
+*-stderr.txt
 
 # debug
 npm-debug.log*

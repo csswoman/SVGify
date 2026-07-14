@@ -46,7 +46,7 @@ export function FirstSvgTip({
         </p>
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <button type="button" onClick={onGoOptimize} className="btn-secondary-sm">
+        <button type="button" onClick={onGoOptimize} className="btn-tertiary !min-h-10 px-3 py-1.5 text-xs">
           {t('onboard.nextOptimize')}
         </button>
         <button

@@ -26,14 +26,18 @@ interface NodeEditorProps {
  * positioned over each anchor point; dragging rewrites the path's `d`.
  */
 export function NodeEditor({ pathEl, svgEl, onChange }: NodeEditorProps) {
-  const editableDRef = useRef(preparePathForNodeEditing(pathEl));
-  const [segs, setSegs] = useState<PathSegment[]>(() => parsePathD(editableDRef.current));
-  const [nodes, setNodes] = useState<EditableNode[]>(() => getEditableNodes(parsePathD(editableDRef.current)));
+  const [, setSegs] = useState<PathSegment[]>(() => {
+    const d = preparePathForNodeEditing(pathEl);
+    return parsePathD(d);
+  });
+  const [nodes, setNodes] = useState<EditableNode[]>(() => {
+    const d = preparePathForNodeEditing(pathEl);
+    return getEditableNodes(parsePathD(d));
+  });
   const dragging = useRef<{ node: EditableNode; lastX: number; lastY: number } | null>(null);
 
   useEffect(() => {
     const editableD = preparePathForNodeEditing(pathEl);
-    editableDRef.current = editableD;
     if (editableD !== (pathEl.getAttribute('d') ?? '')) {
       pathEl.setAttribute('d', editableD);
     }

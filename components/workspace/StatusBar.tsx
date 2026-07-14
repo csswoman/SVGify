@@ -79,7 +79,9 @@ export function StatusBar({
   const activeToolLabel =
     activeTool === 'eyedropper'
       ? `${t('tool.fill')} · ${t('tool.eyedropper')}`
-      : t(`tool.${activeTool}`);
+      : activeTool === 'import' && hasSvg
+        ? t('workspace.replaceImage')
+        : t(`tool.${activeTool}`);
 
   return (
     <div
@@ -148,8 +150,13 @@ export function StatusBar({
         <span className="hidden sm:block" aria-hidden />
       )}
 
-      <div className="flex flex-wrap items-center justify-self-start gap-3 sm:justify-self-end">
+      <div className="flex min-w-0 flex-wrap items-center justify-self-start gap-3 sm:justify-self-end">
         <span className="text-gray-500 dark:text-gray-400">{activeToolLabel}</span>
+        {hasSvg && !suppressGuidance ? (
+          <span className="hidden max-w-xs truncate text-gray-400 lg:inline dark:text-gray-500">
+            {t('workspace.shortcutHint')}
+          </span>
+        ) : null}
         {showPanHint && (
           <span className="max-lg:hidden text-gray-400 dark:text-gray-500">{t('zoom.panHint')}</span>
         )}

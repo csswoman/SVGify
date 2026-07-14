@@ -231,8 +231,8 @@ export function parsePathD(d: string): PathSegment[] {
       if (rx === null) break;
       const ry = readNumber();
       const rot = readNumber();
-      const large = readArcFlag();
-      const sweep = readArcFlag();
+      readArcFlag(); // large-arc-flag (arcs → lines; flag unused)
+      readArcFlag(); // sweep-flag
       let x = readNumber();
       let y = readNumber();
       if (ry === null || rot === null || x === null || y === null) break;

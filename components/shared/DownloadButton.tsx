@@ -14,6 +14,12 @@ interface DownloadButtonProps {
   highlight?: boolean;
   /** True after the user ran Prepare at least once this document. */
   prepared?: boolean;
+  /**
+   * When true (TopBar), download stays disabled until Prepare.
+   * When false (Optimize escape hatch), allows raw download.
+   */
+  gateUntilPrepared?: boolean;
+  className?: string;
   onDownloaded?: () => void;
 }
 
@@ -24,20 +30,29 @@ export function DownloadButton({
   label,
   highlight = false,
   prepared = false,
+  gateUntilPrepared = false,
+  className,
   onDownloaded,
 }: DownloadButtonProps) {
   const { t } = useI18n();
   const [busy, setBusy] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const hintId = useId();
+  const gated = gateUntilPrepared && !prepared;
   const buttonLabel =
     label ??
-    (prepared ? t('workspace.downloadPrepared') : t('workspace.downloadUnprepared'));
+    (prepared
+      ? t('workspace.downloadPrepared')
+      : gateUntilPrepared
+        ? t('workspace.download')
+        : t('workspace.downloadUnprepared'));
   const titleHint = !svgString
     ? t('workspace.downloadDisabled')
-    : prepared
-      ? undefined
-      : t('workspace.downloadRaw');
+    : gated
+      ? t('workspace.downloadNeedsPrepare')
+      : prepared
+        ? undefined
+        : t('workspace.downloadRaw');
 
   useEffect(() => {
     if (!highlight || !svgString || !prepared) return;
@@ -45,7 +60,7 @@ export function DownloadButton({
   }, [highlight, svgString, prepared]);
 
   const handleDownload = () => {
-    if (!svgString || busy) return;
+    if (!svgString || busy || gated) return;
     setBusy(true);
 
     try {
@@ -78,24 +93,25 @@ export function DownloadButton({
         ref={buttonRef}
         type="button"
         onClick={handleDownload}
-        disabled={!svgString || busy}
+        disabled={!svgString || busy || gated}
         aria-busy={busy}
         aria-label={buttonLabel}
-        aria-describedby={svgString && !prepared ? hintId : undefined}
+        aria-describedby={svgString && (gated || !prepared) ? hintId : undefined}
         title={titleHint}
         className={[
           toneClass,
           '!min-h-10 whitespace-nowrap px-3 py-2 text-xs sm:px-4 sm:text-sm',
           attentionClass,
+          className,
         ]
           .filter(Boolean)
           .join(' ')}
       >
         {buttonLabel}
       </button>
-      {svgString && !prepared ? (
+      {svgString && (gated || (!prepared && !gateUntilPrepared)) ? (
         <span id={hintId} className="sr-only">
-          {t('workspace.downloadRaw')}
+          {gated ? t('workspace.downloadNeedsPrepare') : t('workspace.downloadRaw')}
         </span>
       ) : null}
     </>

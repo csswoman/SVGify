@@ -22,7 +22,7 @@ describe('WORKSPACE_TOOL_GROUPS order', () => {
     ]);
   });
 
-  it('lists refine tools at first level in constructive order', () => {
+  it('lists refine tools in constructive order (UI collapses until Points opens)', () => {
     const shape = WORKSPACE_TOOL_GROUPS.find((g) => g.id === 'shape');
     expect(shape?.tools.map((t) => t.id)).toEqual([
       'nodes',

@@ -97,11 +97,12 @@ export function Canvas({
   const imageZoom = useImageZoom();
   const previewStyle = previewBackground === 'black' ? BLACK_BG : CHECKERBOARD_BG;
 
+  const { attach: attachVectorizeZoom } = vectorizeZoom;
   const handleVectorizeSvgMount = useCallback(
     (svg: SVGSVGElement | null) => {
-      if (svg) vectorizeZoom.attach(svg);
+      if (svg) attachVectorizeZoom(svg);
     },
-    [vectorizeZoom.attach]
+    [attachVectorizeZoom]
   );
 
   useEffect(() => {
@@ -122,6 +123,8 @@ export function Canvas({
       zoomOut: active.zoomOut,
       reset: active.reset,
     });
+    // Zoom hook return objects are not referentially stable — depend on fields only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- omit imageZoom/vectorizeZoom object identity
   }, [
     imageData,
     showEditorSurface,

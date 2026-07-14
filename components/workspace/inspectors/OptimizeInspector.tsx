@@ -14,6 +14,7 @@ import {
   removeSmallSvgPathsByBounds,
 } from '@/lib/iconVectorization';
 import { Tooltip } from '@/components/shared/Tooltip';
+import { DownloadButton } from '@/components/shared/DownloadButton';
 import { InspectorDisclosure } from '@/components/workspace/InspectorDisclosure';
 import { useI18n } from '@/lib/i18n';
 
@@ -55,6 +56,7 @@ export function OptimizeInspector({
   const [showOriginalPalette, setShowOriginalPalette] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [confirmMaxOptimize, setConfirmMaxOptimize] = useState(false);
+  const [confirmForSvg, setConfirmForSvg] = useState(svgString);
   const [byteDelta, setByteDelta] = useState<{ before: number; after: number } | null>(null);
 
   const pathCount = countPaths(svgString);
@@ -63,13 +65,14 @@ export function OptimizeInspector({
   const originalPalette = useMemo(() => extractPaletteFromSvgString(svgString), [svgString]);
   const showComplexWarn = pathCount >= COMPLEX_PATH_THRESHOLD;
 
+  if (svgString !== confirmForSvg) {
+    setConfirmForSvg(svgString);
+    setConfirmMaxOptimize(false);
+  }
+
   useEffect(() => {
     if (svgEl) extractColors();
   }, [svgEl, extractColors]);
-
-  useEffect(() => {
-    setConfirmMaxOptimize(false);
-  }, [svgString]);
 
   const commitMountedSvg = useCallback(() => {
     const nextSvg = serializeMountedSvg();
@@ -250,7 +253,7 @@ export function OptimizeInspector({
         <button
           type="button"
           onClick={handlePrepareDownload}
-          className={prepared ? 'btn-tertiary w-full' : 'btn-primary w-full'}
+          className="btn-tertiary w-full"
           disabled={pathCount === 0}
         >
           {t('optimize.prepare')}
@@ -258,6 +261,14 @@ export function OptimizeInspector({
         <p className="text-pretty text-[11px] text-gray-500 dark:text-gray-400">
           {t('optimize.prepare.help')}
         </p>
+        {!prepared ? (
+          <DownloadButton
+            svgString={svgString}
+            prepared={false}
+            gateUntilPrepared={false}
+            className="w-full !min-h-10 text-xs"
+          />
+        ) : null}
       </div>
 
       <InspectorDisclosure
