@@ -33,6 +33,9 @@ describe('icon-only product surface', () => {
     expect(settingsPanel).toContain('ICON_MODE_SETTINGS');
     expect(worker).toContain('getVectorizeEndpoint');
     expect(worker).toContain('/api/vectorize');
+    expect(worker).toContain("new CompressionStream('gzip')");
+    expect(worker).not.toContain('MAX_VECTORIZE_UPLOAD_DIMENSION');
+    expect(worker).not.toContain('fitUploadBudget');
     expect(worker).toContain('applyBilateralFilter');
     expect(worker).toContain('quantizeImageToPalette');
     expect(worker).toContain('smoothQuantizedPalette');
@@ -41,6 +44,7 @@ describe('icon-only product surface', () => {
     expect(route).toContain('Hierarchical.Stacked');
     expect(route).toContain('PathSimplifyMode.Spline');
     expect(route).toContain('vectorizeRaw');
+    expect(route).toContain('gunzipSync');
     expect(route).toContain('resolveTraceColorPrecision');
     expect(route).toContain('finalizeTracedSvg');
     expect(worker).not.toContain('applyAlphaMask');

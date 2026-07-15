@@ -5,18 +5,17 @@ import {
   applyBilateralFilter,
   upscaleImageData,
 } from '@/lib/imageFilters';
-import { downscaleForTrace } from '@/lib/iconLayerTrace';
 import { paletteForTrace, resolveRasterSpeckleArea } from '@/lib/iconModeSettings';
 import {
   absorbSmallPaletteComponents,
   quantizeImageToPalette,
   smoothQuantizedPalette,
 } from '@/lib/paletteExtraction';
+import { encodeVectorizePayload, VECTORIZE_PAYLOAD_CONTENT_TYPE } from '@/lib/vectorizePayload';
 
 self.postMessage({ type: 'ready' } satisfies WorkerResponse);
 
 let activeRequestId = 0;
-const MAX_VECTORIZE_UPLOAD_DIMENSION = 1024;
 
 function getVectorizeEndpoint(): string {
   const workerUrl = new URL(self.location.href);
@@ -128,14 +127,6 @@ function preprocessForVTracer(imageData: ImageData, settings: VectorizeSettings)
   return absorbSmallPaletteComponents(quantized, minComponentArea);
 }
 
-function fitUploadBudget(imageData: ImageData): ImageData {
-  if (Math.max(imageData.width, imageData.height) <= MAX_VECTORIZE_UPLOAD_DIMENSION) {
-    return imageData;
-  }
-
-  return downscaleForTrace(imageData, MAX_VECTORIZE_UPLOAD_DIMENSION);
-}
-
 function preprocessIconForVTracer(imageData: ImageData, settings: VectorizeSettings): ImageData {
   const palette = paletteForTrace(settings);
 
@@ -147,19 +138,24 @@ function preprocessIconForVTracer(imageData: ImageData, settings: VectorizeSetti
   return smoothQuantizedPalette(quantized, palette, settings.bilateralRadius);
 }
 
+async function gzipPayload(payload: Uint8Array): Promise<Blob> {
+  const buffer = new ArrayBuffer(payload.byteLength);
+  new Uint8Array(buffer).set(payload);
+  const input = new Blob([buffer]);
+  const compressed = input.stream().pipeThrough(new CompressionStream('gzip'));
+  return new Response(compressed).blob();
+}
+
 async function vectorizeImage(imageData: ImageData, settings: VectorizeSettings, requestId: number): Promise<void> {
   try {
     const options = normalizeSettings(settings);
-    const source = fitUploadBudget(preprocessForVTracer(imageData, options));
-    const body = new FormData();
-    body.set('width', String(source.width));
-    body.set('height', String(source.height));
-    body.set('settings', JSON.stringify(options));
-    body.set('pixels', new Blob([source.data], { type: 'application/octet-stream' }));
+    const source = preprocessForVTracer(imageData, options);
+    const body = await gzipPayload(encodeVectorizePayload(source, options));
 
     const response = await fetch(getVectorizeEndpoint(), {
       method: 'POST',
       body,
+      headers: { 'content-type': VECTORIZE_PAYLOAD_CONTENT_TYPE },
     });
 
     if (!response.ok) {

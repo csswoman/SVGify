@@ -5,9 +5,10 @@ import {
   vectorizeRaw,
   type Config as VTracerConfig,
 } from '@neplex/vectorizer';
-import { brotliCompressSync, gzipSync } from 'node:zlib';
+import { brotliCompressSync, gunzipSync, gzipSync } from 'node:zlib';
 import { finalizeTracedSvg } from '@/lib/finalizeTracedSvg';
 import { resolveTraceColorPrecision, resolveTraceSmallCircle } from '@/lib/iconModeSettings';
+import { decodeVectorizePayload, VECTORIZE_PAYLOAD_CONTENT_TYPE } from '@/lib/vectorizePayload';
 import { VectorizeSettings, VECTORIZE_DEFAULTS } from '@/types/svg.types';
 
 export const runtime = 'nodejs';
@@ -72,6 +73,25 @@ function jsonResponse(request: Request, payload: unknown, status = 200): Respons
 
 export async function POST(request: Request) {
   try {
+    if (request.headers.get('content-type') === VECTORIZE_PAYLOAD_CONTENT_TYPE) {
+      const compressed = Buffer.from(await request.arrayBuffer());
+      const decoded = decodeVectorizePayload(gunzipSync(compressed));
+      const source = Buffer.from(
+        decoded.pixels.buffer,
+        decoded.pixels.byteOffset,
+        decoded.pixels.byteLength
+      );
+      const rawSvg = await vectorizeRaw(
+        source,
+        { width: decoded.width, height: decoded.height },
+        toVTracerConfig(decoded.settings)
+      );
+      const svg = finalizeTracedSvg(rawSvg, decoded.settings);
+
+      return jsonResponse(request, { svg });
+    }
+
+    // Keep accepting the previous multipart transport during rolling deploys.
     const formData = await request.formData();
     const width = clampInt(formData.get('width'), 1, 16_384);
     const height = clampInt(formData.get('height'), 1, 16_384);
