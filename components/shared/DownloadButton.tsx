@@ -61,8 +61,8 @@ export function DownloadButton({
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
       onDownloaded?.();
     } finally {
       window.setTimeout(() => setBusy(false), 400);
