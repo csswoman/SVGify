@@ -25,15 +25,6 @@ import { useI18n } from '@/lib/i18n';
 import { CanvasOverlay } from '@/components/shared/CanvasOverlay';
 import { createSampleIconImageData } from '@/lib/sampleImage';
 
-const CHECKERBOARD_BG: React.CSSProperties = {
-  backgroundImage: 'repeating-conic-gradient(#f3f4f6 0% 25%, #ffffff 0% 50%)',
-  backgroundSize: '16px 16px',
-};
-
-const BLACK_BG: React.CSSProperties = {
-  backgroundColor: '#000000',
-};
-
 export interface CanvasViewControls {
   scale: number;
   zoomIn: () => void;
@@ -95,7 +86,8 @@ export function Canvas({
   const vectorizeContainerRef = useRef<HTMLDivElement>(null);
   const vectorizeZoom = useSvgZoom({ containerRef: vectorizeContainerRef });
   const imageZoom = useImageZoom();
-  const previewStyle = previewBackground === 'black' ? BLACK_BG : CHECKERBOARD_BG;
+  const previewBackgroundClass =
+    previewBackground === 'checkerboard' ? 'transparent-preview' : 'bg-black';
 
   const { attach: attachVectorizeZoom } = vectorizeZoom;
   const handleVectorizeSvgMount = useCallback(
@@ -261,8 +253,7 @@ export function Canvas({
             </p>
           </div>
           <div
-            className="relative min-h-0 flex-1 overflow-hidden border border-gray-200 dark:border-gray-700"
-            style={previewStyle}
+            className={`relative min-h-0 flex-1 overflow-hidden border border-gray-200 dark:border-gray-700 ${previewBackgroundClass}`}
           >
             <ImagePreview
               imageData={imageData}
@@ -328,8 +319,7 @@ export function Canvas({
               </div>
 
               <div
-                className="relative flex-1 overflow-hidden border border-gray-200 dark:border-gray-700"
-                style={previewStyle}
+                className={`relative flex-1 overflow-hidden border border-gray-200 dark:border-gray-700 ${previewBackgroundClass}`}
               >
                 <CanvasOverlay isVisible={isLoading} label={t('vec.vectorizing')} />
                 {isPreTrace && (
@@ -349,7 +339,7 @@ export function Canvas({
                   <SvgPreview
                     svgString={svg}
                     onSvgMount={handleVectorizeSvgMount}
-                    transparentBackground={previewBackground === 'checkerboard'}
+                    transparentBackground={false}
                   />
                 </div>
 
@@ -394,9 +384,8 @@ export function Canvas({
               )}
             </div>
             <div
-              className="relative min-h-0 flex-1 overflow-hidden border border-gray-200 dark:border-gray-700"
+              className={`relative min-h-0 flex-1 overflow-hidden border border-gray-200 dark:border-gray-700 ${previewBackgroundClass}`}
               style={{
-                ...previewStyle,
                 cursor: showEditorSurface && !showOriginalPreview ? cursor : undefined,
               }}
             >
