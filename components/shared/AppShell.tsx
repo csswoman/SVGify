@@ -16,6 +16,8 @@ function Footer() {
         <a
           href="https://github.com/csswoman/svg-tool"
           className="focus-ring rounded underline decoration-gray-300 underline-offset-2 hover:text-gray-700 dark:decoration-gray-600 dark:hover:text-gray-300"
+          title={t('app.source.hint')}
+          aria-label={t('app.source.hint')}
           rel="noopener noreferrer"
           target="_blank"
         >

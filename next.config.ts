@@ -24,6 +24,9 @@ const csp = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   compress: true,
+  experimental: {
+    proxyClientMaxBodySize: '20mb',
+  },
   serverExternalPackages: ["@neplex/vectorizer"],
   // Serve CSP as an HTTP header in production (meta tags can't cover all Next.js inline scripts)
   async headers() {

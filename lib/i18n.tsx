@@ -17,6 +17,10 @@ const DICT = {
   'app.tagline': { en: 'Vectorize on your device', es: 'Vectoriza en tu dispositivo' },
   'app.footer': { en: 'Your images never leave your device', es: 'Tus imágenes nunca salen de tu dispositivo' },
   'app.source': { en: 'Source on GitHub', es: 'Código en GitHub' },
+  'app.source.hint': {
+    en: 'SVG Tool lets you trace, refine, and download vector SVGs directly in your browser.',
+    es: 'SVG Tool te permite trazar, refinar y descargar SVG vectoriales directamente en tu navegador.',
+  },
   'lang.toggle': { en: 'EN', es: 'ES' },
   'lang.current': { en: 'English', es: 'Español' },
   'theme.switchToDark': { en: 'Switch to dark mode', es: 'Cambiar a modo oscuro' },

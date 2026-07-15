@@ -14,9 +14,27 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SVGify — Free SVG Vectorizer",
+  metadataBase: new URL("https://svg-ify.vercel.app/"),
+  title: {
+    default: "SVGify — Free SVG Vectorizer",
+    template: "%s — SVGify",
+  },
   description:
-    "Convert raster images to SVG, edit colors, and label paths. 100% client-side — your images never leave your device.",
+    "Trace raster images into SVG, refine colors and shapes, and download everything locally in your browser.",
+  openGraph: {
+    title: "SVGify — Free SVG Vectorizer",
+    description:
+      "Trace raster images into SVG, refine colors and shapes, and download everything locally in your browser.",
+    url: "https://svg-ify.vercel.app/",
+    siteName: "SVGify",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SVGify — Free SVG Vectorizer",
+    description:
+      "Trace raster images into SVG, refine colors and shapes, and download everything locally in your browser.",
+  },
 };
 
 export default function RootLayout({
