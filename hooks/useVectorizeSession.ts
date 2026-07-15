@@ -22,7 +22,7 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
   const [removeBg, setRemoveBg] = useState(false);
   const [bgTolerance, setBgTolerance] = useState(48);
   const [seeds, setSeeds] = useState<SeedPoint[]>([]);
-  const { svg, isLoading, error, vectorize } = useVectorizer();
+  const { svg, isLoading, error, vectorize, clear } = useVectorizer();
   const {
     colors: paletteColors,
     selectedColor: selectedPaletteColor,
@@ -116,6 +116,10 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
   const handlePick = useCallback((point: SeedPoint) => {
     setSeeds((prev) => [...prev, point]);
   }, []);
+
+  useEffect(() => {
+    clear();
+  }, [processedImageData, clear]);
 
   useEffect(() => {
     if (!enabled || !processedImageData) return;

@@ -16,6 +16,8 @@ import {
 import { Tooltip } from '@/components/shared/Tooltip';
 import { DownloadButton } from '@/components/shared/DownloadButton';
 import { InspectorDisclosure } from '@/components/workspace/InspectorDisclosure';
+import { buildDownloadPayload } from '@/lib/exportPayload';
+import type { LabelInfo } from '@/lib/labelUtils';
 import { useI18n } from '@/lib/i18n';
 
 interface OptimizeInspectorProps {
@@ -26,9 +28,13 @@ interface OptimizeInspectorProps {
   serializeMountedSvg: () => string | null;
   pathOmit: number;
   onSvgString: (svg: string) => void;
-  onPrepared?: () => void;
+  onPrepared?: (preparedPayload: string) => void;
   /** True after Prepare ran at least once for this document. */
   prepared?: boolean;
+  stale?: boolean;
+  exportPayload: string | null;
+  includeLabelLegend: boolean;
+  labels: LabelInfo[];
 }
 
 const secondaryBtn = 'btn-tertiary w-full';
@@ -45,6 +51,10 @@ export function OptimizeInspector({
   onSvgString,
   onPrepared,
   prepared = false,
+  stale = false,
+  exportPayload,
+  includeLabelLegend,
+  labels,
 }: OptimizeInspectorProps) {
   const { t } = useI18n();
   const { colors, extractColors, replaceColor, deleteColor, mergeSimilar, snapDarksToBlack, normalizePalette } =
@@ -152,9 +162,16 @@ export function OptimizeInspector({
       removeStroke: true,
       mergePaths: false,
     });
+    const doc = new DOMParser().parseFromString(next, 'image/svg+xml');
+    const nextSvgEl = doc.querySelector('svg');
+    if (!nextSvgEl) return;
+    const preparedPayload = buildDownloadPayload(nextSvgEl, {
+      includeLabelLegend,
+      labels,
+    });
     setByteDelta({ before, after: svgByteSize(next) });
     onSvgString(next);
-    onPrepared?.();
+    onPrepared?.(preparedPayload);
   }, [
     svgString,
     colors.length,
@@ -164,6 +181,8 @@ export function OptimizeInspector({
     shapeTarget,
     onSvgString,
     onPrepared,
+    includeLabelLegend,
+    labels,
   ]);
 
   const maxReduce = Math.max(2, Math.min(12, colors.length || 2));
@@ -253,7 +272,7 @@ export function OptimizeInspector({
         <button
           type="button"
           onClick={handlePrepareDownload}
-          className="btn-tertiary w-full"
+          className="btn-secondary w-full"
           disabled={pathCount === 0}
         >
           {t('optimize.prepare')}
@@ -261,9 +280,34 @@ export function OptimizeInspector({
         <p className="text-pretty text-[11px] text-gray-500 dark:text-gray-400">
           {t('optimize.prepare.help')}
         </p>
+        {prepared ? (
+          <div className="space-y-2 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-900 dark:bg-green-950/30">
+            <p className="text-sm font-semibold text-green-900 dark:text-green-100">
+              {t('workspace.preparedReady')}
+            </p>
+            <p className="text-xs text-green-800 dark:text-green-200">
+              {t('workspace.preparedReadyHint')}
+            </p>
+            <DownloadButton
+              payload={exportPayload}
+              prepared
+              gateUntilPrepared={false}
+              className="w-full !min-h-10 text-xs"
+            />
+          </div>
+        ) : stale ? (
+          <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
+            <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">
+              {t('workspace.preparedStale')}
+            </p>
+            <p className="text-xs text-amber-800 dark:text-amber-200">
+              {t('workspace.preparedStaleHint')}
+            </p>
+          </div>
+        ) : null}
         {!prepared ? (
           <DownloadButton
-            svgString={svgString}
+            payload={exportPayload}
             prepared={false}
             gateUntilPrepared={false}
             className="w-full !min-h-10 text-xs"

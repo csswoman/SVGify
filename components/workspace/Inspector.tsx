@@ -27,14 +27,17 @@ interface InspectorProps {
   labelTools: ReturnType<typeof useWorkspaceLabels>;
   selectedColor: RGBColor | null;
   fillColor: RGBColor;
+  includeLabelLegend: boolean;
   open: boolean;
   onClose: () => void;
   onSelectedColorChange: (color: RGBColor | null) => void;
   onFillColorChange: (color: RGBColor) => void;
+  onIncludeLabelLegendChange: (value: boolean) => void;
   onResetDocument: () => void;
   onSvgString: (svg: string) => void;
-  onOptimizePrepared?: () => void;
-  downloadPrepared?: boolean;
+  onOptimizePrepared?: (preparedPayload: string) => void;
+  exportPayload: string | null;
+  exportStatus: 'no_document' | 'not_prepared' | 'prepared_current' | 'prepared_stale';
 }
 
 export function Inspector({
@@ -47,14 +50,17 @@ export function Inspector({
   labelTools,
   selectedColor,
   fillColor,
+  includeLabelLegend,
   open,
   onClose,
   onSelectedColorChange,
   onFillColorChange,
+  onIncludeLabelLegendChange,
   onResetDocument,
   onSvgString,
   onOptimizePrepared,
-  downloadPrepared = false,
+  exportPayload,
+  exportStatus,
 }: InspectorProps) {
   const { t } = useI18n();
 
@@ -74,7 +80,7 @@ export function Inspector({
       <aside
         aria-label={t('workspace.inspector')}
         className={[
-          'fixed inset-y-0 right-0 z-40 w-[min(100%,18rem)] max-h-dvh shrink-0 overflow-y-auto border-l border-gray-200 bg-white px-3 py-3 transition-transform duration-200 ease-out lg:static lg:z-auto lg:max-h-none lg:w-72 lg:translate-x-0 dark:border-gray-700 dark:bg-gray-800',
+          'fixed inset-y-0 right-0 z-40 w-[min(100%,20rem)] max-h-dvh shrink-0 overflow-y-auto border-l border-gray-200 bg-white px-4 py-4 transition-transform duration-200 ease-out lg:static lg:z-auto lg:max-h-none lg:w-80 lg:translate-x-0 dark:border-gray-700 dark:bg-gray-800',
           open
             ? 'translate-x-0'
             : 'pointer-events-none translate-x-full lg:pointer-events-auto lg:translate-x-0',
@@ -132,12 +138,14 @@ export function Inspector({
             labels={labelTools.labels}
             editingPath={labelTools.editingPath}
             selectedLabel={labelTools.selectedLabel}
+            includeLabelLegend={includeLabelLegend}
             onLabelSave={labelTools.handleLabelSave}
             onLabelClick={labelTools.handleLabelClick}
             onCancelEdit={() => {
               labelTools.setEditingPath(null);
               labelTools.clearSelection();
             }}
+            onIncludeLabelLegendChange={onIncludeLabelLegendChange}
           />
         )}
 
@@ -151,7 +159,11 @@ export function Inspector({
             pathOmit={VECTORIZE_DEFAULTS.pathomit}
             onSvgString={onSvgString}
             onPrepared={onOptimizePrepared}
-            prepared={downloadPrepared}
+            prepared={exportStatus === 'prepared_current'}
+            stale={exportStatus === 'prepared_stale'}
+            exportPayload={exportPayload}
+            includeLabelLegend={includeLabelLegend}
+            labels={labelTools.labels}
           />
         )}
       </aside>

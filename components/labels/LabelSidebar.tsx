@@ -1,6 +1,7 @@
 'use client';
 
 import { LabelInfo } from '@/lib/labelUtils';
+import { useI18n } from '@/lib/i18n';
 
 interface LabelSidebarProps {
   labels: LabelInfo[];
@@ -9,8 +10,13 @@ interface LabelSidebarProps {
 }
 
 export function LabelSidebar({ labels, onLabelClick, selectedLabel }: LabelSidebarProps) {
+  const { t } = useI18n();
   const labelCounts = labels.reduce<Record<string, number>>((acc, item) => {
     acc[item.label] = (acc[item.label] ?? 0) + 1;
+    return acc;
+  }, {});
+  const labelClassNames = labels.reduce<Record<string, string>>((acc, item) => {
+    acc[item.label] = item.className;
     return acc;
   }, {});
   const uniqueLabels = Object.keys(labelCounts);
@@ -18,11 +24,11 @@ export function LabelSidebar({ labels, onLabelClick, selectedLabel }: LabelSideb
   return (
     <div className="space-y-2">
       <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-        Labels {uniqueLabels.length > 0 && `(${uniqueLabels.length})`}
+        {t('labels.listTitle')} {uniqueLabels.length > 0 && `(${uniqueLabels.length})`}
       </p>
       {uniqueLabels.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">
-          Enable Label Mode, then click a path to name it.
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          {t('labels.empty')}
         </p>
       ) : (
         <ul className="space-y-1 max-h-64 overflow-y-auto pr-1">
@@ -37,9 +43,14 @@ export function LabelSidebar({ labels, onLabelClick, selectedLabel }: LabelSideb
                 }`}
                 aria-pressed={selectedLabel === label}
               >
-                <span className="flex items-center justify-between gap-3">
-                  <span className="min-w-0 truncate">{label}</span>
-                  <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
+                <span className="flex min-w-0 items-start justify-between gap-3">
+                  <span className="min-w-0">
+                    <span className="block truncate">{label}</span>
+                    <code className="block truncate font-mono text-[11px] font-normal text-gray-500 dark:text-gray-400">
+                      .{labelClassNames[label]}
+                    </code>
+                  </span>
+                  <span className="mt-0.5 shrink-0 rounded border border-gray-200 bg-white px-1.5 py-0.5 text-xs text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400">
                     {labelCounts[label]}
                   </span>
                 </span>

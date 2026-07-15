@@ -16,6 +16,15 @@ self.postMessage({ type: 'ready' } satisfies WorkerResponse);
 
 let activeRequestId = 0;
 
+function getVectorizeEndpoint(): string {
+  const workerUrl = new URL(self.location.href);
+  const nextStaticIndex = workerUrl.pathname.indexOf('/_next/');
+  const appBase = nextStaticIndex >= 0 ? workerUrl.pathname.slice(0, nextStaticIndex) : '';
+  const normalizedBase = appBase.endsWith('/') ? appBase.slice(0, -1) : appBase;
+
+  return `${workerUrl.origin}${normalizedBase}/api/vectorize`;
+}
+
 self.onmessage = (event: MessageEvent<WorkerMessage>) => {
   const { type, imageData, settings, requestId } = event.data;
 
@@ -138,13 +147,18 @@ async function vectorizeImage(imageData: ImageData, settings: VectorizeSettings,
     body.set('settings', JSON.stringify(options));
     body.set('pixels', new Blob([source.data], { type: 'application/octet-stream' }));
 
-    const response = await fetch('/api/vectorize', {
+    const response = await fetch(getVectorizeEndpoint(), {
       method: 'POST',
       body,
     });
 
     if (!response.ok) {
       const error = await response.json().catch(() => null) as { error?: string } | null;
+      if (response.status === 404) {
+        throw new Error(
+          'No se encontró /api/vectorize. Ejecuta la app con Next.js (npm run dev o npm run start); la vectorización actual no funciona desde out/ ni hosting estático.'
+        );
+      }
       throw new Error(error?.error ?? `Vectorization failed with HTTP ${response.status}`);
     }
 

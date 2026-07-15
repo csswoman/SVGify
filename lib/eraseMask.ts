@@ -40,11 +40,17 @@ function setMaskBounds(mask: SVGMaskElement, svgEl: SVGSVGElement): void {
   }
 }
 
+function setMaskCoordinateMode(mask: SVGMaskElement): void {
+  mask.setAttribute('maskUnits', 'userSpaceOnUse');
+  mask.setAttribute('maskContentUnits', 'userSpaceOnUse');
+  mask.setAttribute('mask-type', 'luminance');
+}
+
 function createMask(svgEl: SVGSVGElement, id: string): SVGMaskElement {
   const defs = ensureEraseDefs(svgEl);
   const mask = document.createElementNS(SVG_NS, 'mask');
   mask.setAttribute('id', id);
-  mask.setAttribute('maskUnits', 'userSpaceOnUse');
+  setMaskCoordinateMode(mask);
 
   const keep = document.createElementNS(SVG_NS, 'rect');
   keep.setAttribute('data-svgcraft-erase-base', 'true');
@@ -64,6 +70,7 @@ export function ensureEraseMask(svgEl: SVGSVGElement): SVGMaskElement {
     mask = createMask(svgEl, MASK_ID);
   }
 
+  setMaskCoordinateMode(mask);
   setMaskBounds(mask, svgEl);
 
   let content = directChild(svgEl, (el): el is SVGGElement =>

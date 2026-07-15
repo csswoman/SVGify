@@ -31,7 +31,8 @@ describe('icon-only product surface', () => {
     const settingsPanel = readSource('components/vectorize/VectorizeSettings.tsx');
 
     expect(settingsPanel).toContain('ICON_MODE_SETTINGS');
-    expect(worker).toContain("fetch('/api/vectorize'");
+    expect(worker).toContain('getVectorizeEndpoint');
+    expect(worker).toContain('/api/vectorize');
     expect(worker).toContain('applyBilateralFilter');
     expect(worker).toContain('quantizeImageToPalette');
     expect(worker).toContain('smoothQuantizedPalette');

@@ -14,6 +14,7 @@ interface ToolButtonProps {
   /** Quiet discovery cue (visual only; no “New” marketing copy). */
   badge?: boolean;
   disabled?: boolean;
+  mode?: 'icon' | 'row';
   onClick: () => void;
 }
 
@@ -25,10 +26,12 @@ export function ToolButton({
   expanded,
   badge,
   disabled,
+  mode = 'icon',
   onClick,
 }: ToolButtonProps) {
   const accessibleName = shortcut ? `${label} (${shortcut})` : label;
   const filled = Boolean(active || expanded);
+  const isRow = mode === 'row';
 
   return (
     <ToolTooltip label={label} shortcut={shortcut}>
@@ -40,7 +43,10 @@ export function ToolButton({
         disabled={disabled ? true : undefined}
         onClick={onClick}
         className={[
-          'focus-ring relative flex h-10 w-10 items-center justify-center rounded-md border transition-colors duration-150 ease-out',
+          'focus-ring relative flex min-h-11 items-center rounded-md border transition-colors duration-150 ease-out',
+          isRow
+            ? 'w-full justify-start gap-3 px-3 py-2 text-left'
+            : 'h-10 w-10 justify-center',
           active
             ? 'border-action-blue bg-action-blue-surface text-action-blue dark:bg-blue-950/50 dark:text-blue-300'
             : expanded
@@ -54,6 +60,16 @@ export function ToolButton({
           weight={filled ? 'fill' : 'regular'}
           aria-hidden
         />
+        {isRow ? (
+          <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
+            <span className="truncate text-sm font-medium">{label}</span>
+            {shortcut ? (
+              <span className="font-mono text-[11px] uppercase text-gray-400 dark:text-gray-500">
+                {shortcut}
+              </span>
+            ) : null}
+          </span>
+        ) : null}
         {badge ? (
           <span
             className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-action-blue ring-2 ring-white dark:ring-gray-800"

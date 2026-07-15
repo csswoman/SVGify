@@ -24,6 +24,7 @@ import type { useWorkspaceLabels } from '@/hooks/useWorkspaceLabels';
 import { useI18n } from '@/lib/i18n';
 import { CanvasOverlay } from '@/components/shared/CanvasOverlay';
 import { createSampleIconImageData } from '@/lib/sampleImage';
+import { labelToClassName } from '@/lib/labelUtils';
 
 export interface CanvasViewControls {
   scale: number;
@@ -280,6 +281,8 @@ export function Canvas({
   const { selectedPath, brushColor, brushSize } = shapeTools;
   const svgForPortals = svgEl as SVGSVGElement | null;
   const compareOriginalImage = processedImageData ?? imageData;
+  const editingLabel = labelTools.editingPath?.getAttribute('data-label') ?? null;
+  const editingLabelClass = editingLabel ? labelToClassName(editingLabel) : null;
 
   return (
     <section
@@ -390,6 +393,16 @@ export function Canvas({
               }}
             >
               <CanvasOverlay isVisible={editor?.isBusy ?? false} label={t('workspace.working')} />
+              {activeTool === 'labels' && labelTools.editingPath ? (
+                <div className="pointer-events-none absolute left-3 top-3 z-10 max-w-[min(22rem,calc(100%-1.5rem))] rounded-md border border-blue-200 bg-white px-3 py-2 text-xs text-gray-700 dark:border-blue-800 dark:bg-gray-900 dark:text-gray-200">
+                  <span className="block font-semibold text-blue-700 dark:text-blue-300">
+                    {t('labels.editingCanvas')}
+                  </span>
+                  <span className="mt-0.5 block truncate font-mono text-[11px] text-gray-600 dark:text-gray-400">
+                    {editingLabelClass ? `.${editingLabelClass}` : t('labels.newLabelTarget')}
+                  </span>
+                </div>
+              ) : null}
               <div
                 className="h-full w-full"
                 style={{ visibility: showOriginalPreview ? 'hidden' : 'visible' }}

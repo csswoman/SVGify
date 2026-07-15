@@ -15,6 +15,12 @@ export interface WorkspaceDocument {
   svgString: string | null;
 }
 
+export type WorkspaceExportStatus =
+  | 'no_document'
+  | 'not_prepared'
+  | 'prepared_current'
+  | 'prepared_stale';
+
 export interface ToolDefinition {
   id: WorkspaceTool;
   icon: string;

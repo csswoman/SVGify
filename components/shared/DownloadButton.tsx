@@ -1,13 +1,10 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
-import { prependLabelLegend } from '@/lib/labelUtils';
-import { LabelInfo } from '@/lib/labelUtils';
+import { useId, useState } from 'react';
 import { useI18n } from '@/lib/i18n';
 
 interface DownloadButtonProps {
-  svgString: string | null;
-  labels?: LabelInfo[];
+  payload: string | null;
   fileName?: string;
   label?: string;
   /** Brief attention after Prepare for download. */
@@ -24,8 +21,7 @@ interface DownloadButtonProps {
 }
 
 export function DownloadButton({
-  svgString,
-  labels = [],
+  payload,
   fileName = 'vectorized.svg',
   label,
   highlight = false,
@@ -36,7 +32,6 @@ export function DownloadButton({
 }: DownloadButtonProps) {
   const { t } = useI18n();
   const [busy, setBusy] = useState(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
   const hintId = useId();
   const gated = gateUntilPrepared && !prepared;
   const buttonLabel =
@@ -44,9 +39,9 @@ export function DownloadButton({
     (prepared
       ? t('workspace.downloadPrepared')
       : gateUntilPrepared
-        ? t('workspace.download')
+      ? t('workspace.download')
         : t('workspace.downloadUnprepared'));
-  const titleHint = !svgString
+  const titleHint = !payload
     ? t('workspace.downloadDisabled')
     : gated
       ? t('workspace.downloadNeedsPrepare')
@@ -54,22 +49,12 @@ export function DownloadButton({
         ? undefined
         : t('workspace.downloadRaw');
 
-  useEffect(() => {
-    if (!highlight || !svgString || !prepared) return;
-    buttonRef.current?.focus({ preventScroll: true });
-  }, [highlight, svgString, prepared]);
-
   const handleDownload = () => {
-    if (!svgString || busy || gated) return;
+    if (!payload || busy || gated) return;
     setBusy(true);
 
     try {
-      let content = svgString;
-      if (labels.length > 0) {
-        content = prependLabelLegend(svgString, labels);
-      }
-
-      const blob = new Blob([content], { type: 'image/svg+xml' });
+      const blob = new Blob([payload], { type: 'image/svg+xml' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -90,18 +75,17 @@ export function DownloadButton({
   return (
     <>
       <button
-        ref={buttonRef}
         type="button"
         onClick={handleDownload}
-        disabled={!svgString || busy || gated}
+        disabled={!payload || busy || gated}
         aria-busy={busy}
         aria-label={buttonLabel}
-        aria-describedby={svgString && (gated || !prepared) ? hintId : undefined}
+        aria-describedby={payload && (gated || !prepared) ? hintId : undefined}
         title={titleHint}
         className={[
           toneClass,
           '!min-h-10 whitespace-nowrap px-3 py-2 text-xs sm:px-4 sm:text-sm',
-          attentionClass,
+          highlight ? attentionClass : '',
           className,
         ]
           .filter(Boolean)
@@ -109,7 +93,7 @@ export function DownloadButton({
       >
         {buttonLabel}
       </button>
-      {svgString && (gated || (!prepared && !gateUntilPrepared)) ? (
+      {payload && (gated || (!prepared && !gateUntilPrepared)) ? (
         <span id={hintId} className="sr-only">
           {gated ? t('workspace.downloadNeedsPrepare') : t('workspace.downloadRaw')}
         </span>

@@ -105,6 +105,7 @@ export function useVectorizer() {
 
       setState((prev) => ({
         ...prev,
+        svg: null,
         isLoading: true,
         progress: 0,
         error: null,
@@ -139,9 +140,21 @@ export function useVectorizer() {
     }
   }, [clearVectorizeTimeout]);
 
+  const clear = useCallback(() => {
+    clearVectorizeTimeout();
+    requestIdRef.current += 1;
+    setState({
+      svg: null,
+      isLoading: false,
+      progress: 0,
+      error: null,
+    });
+  }, [clearVectorizeTimeout]);
+
   return {
     ...state,
     vectorize,
     cancel,
+    clear,
   };
 }

@@ -1,11 +1,14 @@
 import type { SvgBaseViewBox } from './svgViewBox';
 
 const EDITOR_SELECTOR = '[data-svgcraft-editor]';
+const TRANSIENT_LABEL_EDIT_SELECTOR = 'path[data-svgcraft-label-editing]';
 
 /** Strip transient editor overlays and hover styles before exporting SVG text. */
 export function serializeSvgElement(svg: SVGSVGElement, baseViewBox?: SvgBaseViewBox): string {
   const hasEditorArtifacts =
-    svg.querySelector(EDITOR_SELECTOR) !== null || svg.querySelector('path[data-hl]') !== null;
+    svg.querySelector(EDITOR_SELECTOR) !== null ||
+    svg.querySelector('path[data-hl]') !== null ||
+    svg.querySelector(TRANSIENT_LABEL_EDIT_SELECTOR) !== null;
 
   if (!hasEditorArtifacts) {
     const previousViewBox = svg.getAttribute('viewBox');
@@ -34,6 +37,13 @@ export function serializeSvgElement(svg: SVGSVGElement, baseViewBox?: SvgBaseVie
     path.removeAttribute('data-hl');
     (path as SVGPathElement).style.opacity = '';
     (path as SVGPathElement).style.outline = '';
+  });
+
+  clone.querySelectorAll(TRANSIENT_LABEL_EDIT_SELECTOR).forEach((path) => {
+    path.removeAttribute('data-svgcraft-label-editing');
+    (path as SVGPathElement).style.stroke = '';
+    (path as SVGPathElement).style.strokeWidth = '';
+    (path as SVGPathElement).style.vectorEffect = '';
   });
 
   if (baseViewBox) {

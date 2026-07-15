@@ -11,6 +11,7 @@ import { useVectorizeSession } from '@/hooks/useVectorizeSession';
 import { useWorkspaceSvg } from '@/hooks/useWorkspaceSvg';
 import { useWorkspaceShapeTools } from '@/hooks/useWorkspaceShapeTools';
 import { useWorkspaceLabels } from '@/hooks/useWorkspaceLabels';
+import { useWorkspaceExportState } from '@/hooks/useWorkspaceExportState';
 import { useWorkspaceShortcuts } from '@/hooks/useWorkspaceShortcuts';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { ToolBar } from './ToolBar';
@@ -37,24 +38,12 @@ export function Workspace() {
   const [nextStepsDismissed, setNextStepsDismissed] = useState(false);
   const [hasOpenedRefine, setHasOpenedRefine] = useState(false);
   const [downloadHighlight, setDownloadHighlight] = useState(false);
-  const [hasPrepared, setHasPrepared] = useState(false);
 
   const vectorizeSession = useVectorizeSession({
     imageData,
     enabled: activeTool === 'vectorize',
   });
   const workspaceSvgString = svgString ?? vectorizeSession.svg;
-
-  const handleResetDocument = useCallback(() => {
-    setImageData(null);
-    setSvgString(null);
-    setSelectedColor(null);
-    setZoomViewport(DEFAULT_ZOOM_VIEWPORT);
-    setActiveTool('import');
-    setNextStepsDismissed(false);
-    setHasOpenedRefine(false);
-    setHasPrepared(false);
-  }, []);
 
   const editor = useWorkspaceSvg({
     svgString: workspaceSvgString,
@@ -65,6 +54,12 @@ export function Workspace() {
 
   const shapeTools = useWorkspaceShapeTools(editor);
   const labelTools = useWorkspaceLabels(editor, activeTool);
+  const exportState = useWorkspaceExportState({
+    svgString: workspaceSvgString,
+    svgEl: editor.svgEl,
+    labels: labelTools.labels,
+    staleHint: t('workspace.preparedStaleHint'),
+  });
   const document = { imageData, svgString: workspaceSvgString };
 
   const handleToolChange = useCallback(
@@ -79,12 +74,37 @@ export function Workspace() {
     [activeTool, vectorizeSession.svg]
   );
 
-  const handleOptimizePrepared = useCallback(() => {
+  const handleOptimizePrepared = useCallback((preparedPayload: string) => {
     setStatusMessage(t('optimize.preparedStatus'));
     setDownloadHighlight(true);
-    setHasPrepared(true);
+    exportState.markPrepared(preparedPayload);
     setNextStepsDismissed(true);
-  }, [t]);
+  }, [exportState, t]);
+
+  const handleResetDocument = useCallback(() => {
+    setImageData(null);
+    setSvgString(null);
+    setSelectedColor(null);
+    setZoomViewport(DEFAULT_ZOOM_VIEWPORT);
+    setActiveTool('import');
+    setNextStepsDismissed(false);
+    setHasOpenedRefine(false);
+    exportState.resetExportState();
+  }, [exportState]);
+
+  const handleImageData = useCallback((data: ImageData) => {
+    setUploadError(null);
+    setImageData(data);
+    setSvgString(null);
+    setSelectedColor(null);
+    setZoomViewport(DEFAULT_ZOOM_VIEWPORT);
+    setStatusMessage(null);
+    setNextStepsDismissed(false);
+    setHasOpenedRefine(false);
+    setDownloadHighlight(false);
+    exportState.resetExportState();
+    setInspectorOpen(true);
+  }, [exportState]);
 
   useEffect(() => {
     if (!downloadHighlight) return;
@@ -148,8 +168,7 @@ export function Workspace() {
     <ErrorBoundary>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gray-100 dark:bg-gray-900">
         <TopBar
-          svgString={workspaceSvgString}
-          labels={labelTools.labels}
+          payload={exportState.currentPayload}
           canUndo={editor.canUndo}
           canRedo={editor.canRedo}
           onUndo={() => editor.undo()}
@@ -158,102 +177,107 @@ export function Workspace() {
           onInspectorToggle={() => setInspectorOpen((open) => !open)}
           showInspectorToggle={imageData !== null}
           downloadHighlight={downloadHighlight}
-          downloadPrepared={hasPrepared}
+          downloadPrepared={exportState.exportStatus === 'prepared_current'}
           onDownloadComplete={() => setDownloadHighlight(false)}
         />
-        <div className="relative flex min-h-0 flex-1">
-          <ToolBar
-            activeTool={activeTool}
-            document={document}
-            onToolChange={handleToolChange}
-            showRefineHint={
-              !hasOpenedRefine &&
-              workspaceSvgString !== null &&
-              !guidanceTipActive &&
-              !hasPrepared
-            }
-          />
-          <Canvas
-            activeTool={activeTool}
-            imageData={imageData}
-            svgString={workspaceSvgString}
-            vectorizeSession={vectorizeSession}
-            editor={workspaceSvgString ? editor : null}
-            shapeTools={shapeTools}
-            labelTools={labelTools}
-            previewBackground={previewBackground}
-            selectedColor={selectedColor}
-            fillColor={fillColor}
-            uploadError={uploadError}
-            onSelectedColorChange={setSelectedColor}
-            onFillColorChange={setFillColor}
-            onImageData={(data) => {
-              setUploadError(null);
-              setImageData(data);
-              setInspectorOpen(true);
-            }}
-            onUploadError={setUploadError}
-            onToolChange={handleToolChange}
-            onStatusMessage={setStatusMessage}
-            onViewControlsChange={setCanvasViewControls}
-          />
-          <Inspector
-            activeTool={activeTool}
-            imageData={imageData}
-            svgString={workspaceSvgString}
-            vectorizeSession={vectorizeSession}
-            editor={workspaceSvgString ? editor : null}
-            shapeTools={shapeTools}
-            labelTools={labelTools}
-            selectedColor={selectedColor}
-            fillColor={fillColor}
-            open={inspectorOpen}
-            onClose={() => setInspectorOpen(false)}
-            onSelectedColorChange={setSelectedColor}
-            onFillColorChange={setFillColor}
-            onResetDocument={handleResetDocument}
-            onSvgString={setSvgString}
-            onOptimizePrepared={handleOptimizePrepared}
-            downloadPrepared={hasPrepared}
-          />
+        <div className="flex min-h-0 flex-1 flex-col p-3 lg:p-4">
+          <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <ToolBar
+              activeTool={activeTool}
+              document={document}
+              onToolChange={handleToolChange}
+              showRefineHint={
+                !hasOpenedRefine &&
+                workspaceSvgString !== null &&
+                !guidanceTipActive &&
+                exportState.exportStatus !== 'prepared_current'
+              }
+            />
+            <div className="relative flex min-h-0 flex-1 flex-col bg-gray-50/70 dark:bg-gray-900/40">
+              <div className="relative flex min-h-0 flex-1">
+                <Canvas
+                  activeTool={activeTool}
+                  imageData={imageData}
+                  svgString={workspaceSvgString}
+                  vectorizeSession={vectorizeSession}
+                  editor={workspaceSvgString ? editor : null}
+                  shapeTools={shapeTools}
+                  labelTools={labelTools}
+                  previewBackground={previewBackground}
+                  selectedColor={selectedColor}
+                  fillColor={fillColor}
+                  uploadError={uploadError}
+                  onSelectedColorChange={setSelectedColor}
+                  onFillColorChange={setFillColor}
+                  onImageData={handleImageData}
+                  onUploadError={setUploadError}
+                  onToolChange={handleToolChange}
+                  onStatusMessage={setStatusMessage}
+                  onViewControlsChange={setCanvasViewControls}
+                />
+                <Inspector
+                  activeTool={activeTool}
+                  imageData={imageData}
+                  svgString={workspaceSvgString}
+                  vectorizeSession={vectorizeSession}
+                  editor={workspaceSvgString ? editor : null}
+                  shapeTools={shapeTools}
+                  labelTools={labelTools}
+                  selectedColor={selectedColor}
+                  fillColor={fillColor}
+                  includeLabelLegend={exportState.includeLabelLegend}
+                  open={inspectorOpen}
+                  onClose={() => setInspectorOpen(false)}
+                  onSelectedColorChange={setSelectedColor}
+                  onFillColorChange={setFillColor}
+                  onIncludeLabelLegendChange={exportState.setIncludeLabelLegend}
+                  onResetDocument={handleResetDocument}
+                  onSvgString={setSvgString}
+                  onOptimizePrepared={handleOptimizePrepared}
+                  exportPayload={exportState.currentPayload}
+                  exportStatus={exportState.exportStatus}
+                />
+              </div>
+              <FirstSvgTip
+                visible={
+                  workspaceSvgString !== null &&
+                  activeTool === 'vectorize' &&
+                  !vectorizeSession.isLoading &&
+                  !nextStepsDismissed &&
+                  !hasOpenedRefine &&
+                  exportState.exportStatus !== 'prepared_current'
+                }
+                onGoFill={() => {
+                  if (vectorizeSession.svg) setSvgString(vectorizeSession.svg);
+                  handleToolChange('fill');
+                  setNextStepsDismissed(true);
+                }}
+                onGoOptimize={() => {
+                  if (vectorizeSession.svg) setSvgString(vectorizeSession.svg);
+                  handleToolChange('optimize');
+                  setNextStepsDismissed(true);
+                }}
+                onDismiss={() => setNextStepsDismissed(true)}
+                onActiveChange={setGuidanceTipActive}
+              />
+              <StatusBar
+                pathCount={pathCount}
+                byteSize={byteSize}
+                activeTool={activeTool}
+                statusMessage={exportState.effectiveStatusMessage ?? statusMessage}
+                suppressGuidance={guidanceTipActive}
+                hasSvg={workspaceSvgString !== null}
+                isPreTrace={isPreTrace}
+                zoomScale={statusZoom?.scale}
+                onZoomIn={statusZoom?.zoomIn}
+                onZoomOut={statusZoom?.zoomOut}
+                onZoomReset={statusZoom?.reset}
+                previewBackground={showPreviewBg ? previewBackground : undefined}
+                onPreviewBackgroundChange={showPreviewBg ? setPreviewBackground : undefined}
+              />
+            </div>
+          </div>
         </div>
-        <FirstSvgTip
-          visible={
-            workspaceSvgString !== null &&
-            activeTool === 'vectorize' &&
-            !vectorizeSession.isLoading &&
-            !nextStepsDismissed &&
-            !hasOpenedRefine &&
-            !hasPrepared
-          }
-          onGoFill={() => {
-            if (vectorizeSession.svg) setSvgString(vectorizeSession.svg);
-            handleToolChange('fill');
-            setNextStepsDismissed(true);
-          }}
-          onGoOptimize={() => {
-            if (vectorizeSession.svg) setSvgString(vectorizeSession.svg);
-            handleToolChange('optimize');
-            setNextStepsDismissed(true);
-          }}
-          onDismiss={() => setNextStepsDismissed(true)}
-          onActiveChange={setGuidanceTipActive}
-        />
-        <StatusBar
-          pathCount={pathCount}
-          byteSize={byteSize}
-          activeTool={activeTool}
-          statusMessage={statusMessage}
-          suppressGuidance={guidanceTipActive}
-          hasSvg={workspaceSvgString !== null}
-          isPreTrace={isPreTrace}
-          zoomScale={statusZoom?.scale}
-          onZoomIn={statusZoom?.zoomIn}
-          onZoomOut={statusZoom?.zoomOut}
-          onZoomReset={statusZoom?.reset}
-          previewBackground={showPreviewBg ? previewBackground : undefined}
-          onPreviewBackgroundChange={showPreviewBg ? setPreviewBackground : undefined}
-        />
       </div>
     </ErrorBoundary>
   );

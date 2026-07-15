@@ -297,9 +297,25 @@ const DICT = {
     es: 'Introduce un color hex como #ff0000.',
   },
   'labels.title': { en: 'Label this shape', es: 'Etiqueta esta forma' },
+  'labels.editingHint': {
+    en: 'The blue outline shows the shape you are naming.',
+    es: 'El contorno azul muestra la forma que estás nombrando.',
+  },
   'labels.placeholder': { en: 'e.g. wing, beak, body', es: 'p. ej. ala, pico, cuerpo' },
   'labels.save': { en: 'Save label', es: 'Guardar etiqueta' },
   'labels.cancel': { en: 'Keep editing', es: 'Seguir editando' },
+  'labels.exportedAs': { en: 'Exports as', es: 'Se exporta como' },
+  'labels.exportHelp': {
+    en: 'Each label writes data-label, a CSS class, and a matching SVG <g> wrapper for animation.',
+    es: 'Cada etiqueta escribe data-label, una clase CSS y un contenedor SVG <g> para animación.',
+  },
+  'labels.listTitle': { en: 'Named parts', es: 'Partes nombradas' },
+  'labels.empty': {
+    en: 'Click a shape in the canvas to name it for CSS or animation.',
+    es: 'Haz clic en una forma del lienzo para nombrarla y usarla en CSS o animaciones.',
+  },
+  'labels.editingCanvas': { en: 'Editing label', es: 'Editando etiqueta' },
+  'labels.newLabelTarget': { en: 'New labeled part', es: 'Nueva parte etiquetada' },
   'vec.previewPlaceholder': {
     en: 'Preview will appear here after vectorization',
     es: 'La vista previa aparecerá aquí tras vectorizar',
@@ -480,6 +496,12 @@ const DICT = {
 
   // Workspace chrome
   'workspace.download': { en: 'Download SVG', es: 'Descargar SVG' },
+  'workspace.localOnly': { en: 'All local', es: 'Todo local' },
+  'workspace.localOnlyHint': {
+    en: 'Your image stays on this device',
+    es: 'Tu imagen se queda en este dispositivo',
+  },
+  'workspace.readyToDownload': { en: 'Ready', es: 'Listo' },
   'workspace.downloadUnprepared': {
     en: 'Download without preparing',
     es: 'Descargar sin preparar',
@@ -536,6 +558,30 @@ const DICT = {
   'workspace.labelsHint': {
     en: 'Click a shape to name it. Names become data-label and CSS classes for animation.',
     es: 'Haz clic en una forma para nombrarla. Los nombres se guardan como data-label y clases CSS.',
+  },
+  'workspace.labelLegend': {
+    en: 'Include label legend in download',
+    es: 'Incluir leyenda de etiquetas en la descarga',
+  },
+  'workspace.labelLegendHint': {
+    en: 'Adds a comment with the exported labels at the top of the SVG file.',
+    es: 'Añade un comentario con las etiquetas exportadas al inicio del archivo SVG.',
+  },
+  'workspace.preparedReady': {
+    en: 'Ready to export',
+    es: 'Listo para exportar',
+  },
+  'workspace.preparedReadyHint': {
+    en: 'Prepared snapshot matches the current export file.',
+    es: 'El snapshot preparado coincide con el archivo actual de exportación.',
+  },
+  'workspace.preparedStale': {
+    en: 'Edited after prepare',
+    es: 'Editado después de preparar',
+  },
+  'workspace.preparedStaleHint': {
+    en: 'Prepare again to export the latest changes.',
+    es: 'Prepara otra vez para exportar los cambios más recientes.',
   },
   'workspace.fillCurrentColor': { en: 'Fill color', es: 'Color de relleno' },
   'workspace.fillSampledColor': { en: 'Sampled from canvas:', es: 'Recogido del lienzo:' },

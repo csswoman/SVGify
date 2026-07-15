@@ -1,24 +1,11 @@
 'use client';
 
 import { ZoomControls } from '@/components/shared/ZoomControls';
-import { useI18n, type TKey } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { DEFAULT_ZOOM_SCALE } from '@/types/svg.types';
 import type { WorkspaceTool } from '@/types/workspace.types';
 
 type PreviewBackground = 'checkerboard' | 'black';
-
-const TOOL_HINT_KEYS: Partial<Record<WorkspaceTool, TKey>> = {
-  import: 'tool.import.hint',
-  vectorize: 'tool.vectorize.hint',
-  fill: 'tool.fill.hint',
-  eyedropper: 'tool.eyedropper.hint',
-  erase: 'tool.erase.hint',
-  erasePath: 'tool.erasePath.hint',
-  brush: 'tool.brush.hint',
-  nodes: 'tool.nodes.hint',
-  labels: 'tool.labels.hint',
-  optimize: 'tool.optimize.hint',
-};
 
 interface StatusBarProps {
   pathCount: number | null;
@@ -64,17 +51,7 @@ export function StatusBar({
   const showViewControls = showZoom || showPreviewBg;
   const showPanHint =
     showZoom && zoomScale !== undefined && Math.abs(zoomScale - DEFAULT_ZOOM_SCALE) > 0.01;
-
-  const toolHintKey = TOOL_HINT_KEYS[activeTool];
-  const ambientHint =
-    suppressGuidance
-      ? null
-      : hasSvg && activeTool === 'vectorize'
-        ? t('workspace.moreToolsAfterVectorize')
-        : toolHintKey
-          ? t(toolHintKey)
-          : null;
-  const hint = statusMessage || ambientHint;
+  const hint = statusMessage;
 
   const activeToolLabel =
     activeTool === 'eyedropper'
