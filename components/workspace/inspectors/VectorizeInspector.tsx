@@ -76,24 +76,6 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
         hasTranslucentEdges={hasTranslucentEdges}
       />
 
-      <InspectorDisclosure
-        title={t('vec.palette')}
-        summary={paletteSummary}
-        open={paletteOpen}
-        onOpenChange={setPaletteOpen}
-      >
-        <EditablePalette
-          colors={paletteColors}
-          selectedColor={selectedPaletteColor}
-          onSelectColor={selectPaletteColor}
-          onAddColor={addPaletteColor}
-          onChangeSelectedColor={updateSelectedPaletteColor}
-          onDeleteColor={deletePaletteColor}
-          onMergeSimilar={mergeSimilarPaletteColors}
-          onReset={resetPalette}
-        />
-      </InspectorDisclosure>
-
       <div className="space-y-3 border-t border-gray-100 pt-3 dark:border-gray-700">
         <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
           <input
@@ -139,6 +121,24 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
           </>
         )}
       </div>
+
+      <InspectorDisclosure
+        title={t('vec.palette')}
+        summary={paletteSummary}
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+      >
+        <EditablePalette
+          colors={paletteColors}
+          selectedColor={selectedPaletteColor}
+          onSelectColor={selectPaletteColor}
+          onAddColor={addPaletteColor}
+          onChangeSelectedColor={updateSelectedPaletteColor}
+          onDeleteColor={deletePaletteColor}
+          onMergeSimilar={mergeSimilarPaletteColors}
+          onReset={resetPalette}
+        />
+      </InspectorDisclosure>
 
       {isLoading && (
         <p className="text-xs text-gray-500 dark:text-gray-400" aria-live="polite">
