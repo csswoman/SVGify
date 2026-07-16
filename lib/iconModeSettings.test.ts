@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   ICON_MODE_SETTINGS,
+  resolveIconPaletteSmoothing,
+  resolveIconPreprocessingScale,
   resolveTraceColorPrecision,
   resolveTraceSmallCircle,
   paletteForTrace,
@@ -34,6 +36,18 @@ describe('icon mode settings', () => {
   it('rounds small icon clusters without changing standard tracing', () => {
     expect(resolveTraceSmallCircle('icon')).toBe(16);
     expect(resolveTraceSmallCircle('standard')).toBeUndefined();
+  });
+
+  it('automatically resamples small icons while leaving large rasters at their requested scale', () => {
+    expect(resolveIconPreprocessingScale(1, 210, 190)).toBe(2);
+    expect(resolveIconPreprocessingScale(1, 1200, 900)).toBe(1);
+    expect(resolveIconPreprocessingScale(2, 1200, 900)).toBe(2);
+  });
+
+  it('cleans compression notches in small icons even when visual smoothing is zero', () => {
+    expect(resolveIconPaletteSmoothing(0, 420, 380)).toBe(2);
+    expect(resolveIconPaletteSmoothing(3, 420, 380)).toBe(3);
+    expect(resolveIconPaletteSmoothing(0, 1600, 1200)).toBe(0);
   });
 
   it('forces full VTracer precision when an icon palette is already posterized', () => {

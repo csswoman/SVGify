@@ -31,6 +31,31 @@ export function resolveTraceSmallCircle(traceMode: VectorizeSettings['traceMode'
   return traceMode === 'icon' ? 16 : undefined;
 }
 
+/** Low-resolution icons need one true resampling pass before polygon tracing. */
+export function resolveIconPreprocessingScale(
+  requestedScale: number,
+  width: number,
+  height: number
+): number {
+  const requested = Math.max(1, Math.min(2, Math.round(requestedScale)));
+  if (requested >= 2) return 2;
+  return Math.max(width, height) <= 512 ? 2 : 1;
+}
+
+/**
+ * Low-resolution flat icons need a small topology cleanup even when the user
+ * does not request visual blur. This removes compression notches without
+ * changing the user-selected palette.
+ */
+export function resolveIconPaletteSmoothing(
+  requestedRadius: number,
+  width: number,
+  height: number
+): number {
+  const requested = Math.max(0, Math.min(3, Math.round(requestedRadius)));
+  return Math.max(width, height) <= 1024 ? Math.max(2, requested) : requested;
+}
+
 /** Keep higher color-count settings from immediately merging their extra shades. */
 export function resolvePaletteMergeCeiling(colorCount: number): number {
   if (colorCount >= 128) return 4;

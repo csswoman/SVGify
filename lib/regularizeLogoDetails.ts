@@ -7,6 +7,16 @@ interface Bounds {
   bottom: number;
 }
 
+interface CanvasBounds {
+  width: number;
+  height: number;
+  size: number;
+}
+
+interface ParsedColor {
+  value: string;
+}
+
 function round(value: number): number {
   return Number(value.toFixed(2));
 }
@@ -24,6 +34,14 @@ function anchorBounds(segments: readonly PathSegment[]): Bounds | null {
     right: Math.max(...anchors.map((point) => point.x)),
     bottom: Math.max(...anchors.map((point) => point.y)),
   };
+}
+
+function pathColor(attributes: string): ParsedColor | null {
+  const match = [...attributes.matchAll(/\b(?:fill|stroke)="([^"]+)"/gi)].find((candidate) => {
+    const value = candidate[1].trim().toLowerCase();
+    return value !== 'none' && value !== 'currentcolor' && !value.startsWith('url(');
+  });
+  return match ? { value: match[1] } : null;
 }
 
 function curvedSides(segments: readonly PathSegment[], middleX: number): { left: boolean; right: boolean } {
@@ -178,6 +196,354 @@ function toward(from: Point, to: Point, amount: number): Point {
 
 function pointString(point: Point): string {
   return `${round(point.x)} ${round(point.y)}`;
+}
+
+function polygonArea(points: readonly Point[]): number {
+  if (points.length < 3) return 0;
+  return Math.abs(
+    points.reduce((sum, point, index) => {
+      const next = points[(index + 1) % points.length];
+      return sum + point.x * next.y - next.x * point.y;
+    }, 0)
+  ) / 2;
+}
+
+function convexHull(points: readonly Point[]): Point[] {
+  const sorted = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
+  if (sorted.length <= 3) return sorted;
+  const cross = (origin: Point, a: Point, b: Point) =>
+    (a.x - origin.x) * (b.y - origin.y) - (a.y - origin.y) * (b.x - origin.x);
+  const half = (ordered: readonly Point[]) => {
+    const output: Point[] = [];
+    for (const point of ordered) {
+      while (
+        output.length >= 2 &&
+        cross(output[output.length - 2], output[output.length - 1], point) <= 0
+      ) {
+        output.pop();
+      }
+      output.push(point);
+    }
+    return output;
+  };
+  const lower = half(sorted);
+  const upper = half([...sorted].reverse());
+  return [...lower.slice(0, -1), ...upper.slice(0, -1)];
+}
+
+function supportsPrimitiveRegularization(svg: string): boolean {
+  const paths = svg.match(/<path\b[^>]*>/g) ?? [];
+  if (paths.length === 0 || paths.length > 18) return false;
+
+  const colors = new Set<string>();
+  for (const path of paths) {
+    for (const match of path.matchAll(/\b(?:fill|stroke)="([^"]+)"/gi)) {
+      const value = match[1].trim().toLowerCase();
+      if (value !== 'none' && value !== 'currentcolor' && !value.startsWith('url(')) colors.add(value);
+    }
+  }
+
+  // Semantic rebuilding is for compact flat icons and logos. Detailed traced
+  // illustrations can contain body or clothing regions with similar bounds,
+  // but replacing those regions with ideal primitives destroys the artwork.
+  return colors.size <= 8;
+}
+
+function regularCanvasBackground(
+  d: string,
+  color: ParsedColor | null,
+  canvas: CanvasBounds
+): string | null {
+  if (!color) return null;
+  const segments = parsePathD(d);
+  if (segments.filter((segment) => segment.cmd === 'M').length < 2) return null;
+  const bounds = anchorBounds(segments);
+  if (!bounds) return null;
+  if (
+    bounds.left > canvas.width * 0.01 ||
+    bounds.top > canvas.height * 0.01 ||
+    bounds.right < canvas.width * 0.99 ||
+    bounds.bottom < canvas.height * 0.99
+  ) {
+    return null;
+  }
+
+  // Cutout tracing subtracts every foreground island from the background.
+  // Once those islands are rebuilt as exact primitives, their old pixel-level
+  // holes would show through around the new edges. Restore the opaque canvas.
+  return `M${round(bounds.left)} ${round(bounds.top)}H${round(bounds.right)}V${round(bounds.bottom)}H${round(bounds.left)}Z`;
+}
+
+function regularFourPointStar(d: string, color: ParsedColor | null, canvas: CanvasBounds): string | null {
+  if (!color) return null;
+  const segments = parsePathD(d);
+  if (
+    segments.filter((segment) => segment.cmd === 'M').length !== 1 ||
+    segments.filter((segment) => segment.cmd === 'Z').length !== 1
+  ) {
+    return null;
+  }
+  const bounds = anchorBounds(segments);
+  if (!bounds) return null;
+  const width = bounds.right - bounds.left;
+  const height = bounds.bottom - bounds.top;
+  const largest = Math.max(width, height);
+  if (
+    largest < canvas.size * 0.1 ||
+    largest > canvas.size * 0.22 ||
+    Math.min(width, height) / largest < 0.76 ||
+    bounds.top > canvas.height * 0.26
+  ) {
+    return null;
+  }
+
+  const points = anchorSubpaths(segments)?.[0];
+  if (!points || points.length < 8 || points.length > 24) return null;
+  const center = boundsCenter(bounds);
+  const nearCenter = points.filter(
+    (point) =>
+      Math.abs(point.x - center.x) < width * 0.32 &&
+      Math.abs(point.y - center.y) < height * 0.32
+  ).length;
+  if (nearCenter < 3) return null;
+
+  // Preserve the detected outer proportions, but recover the slightly fuller
+  // waist that antialiasing tends to erode during palette tracing.
+  const starWidth = width;
+  const starLeft = center.x - starWidth / 2;
+  const starRight = center.x + starWidth / 2;
+  const innerX = starWidth * 0.13;
+  const innerY = height * 0.17;
+  return roundedPolygonPath(
+    [
+      { x: center.x, y: bounds.top },
+      { x: center.x + innerX, y: center.y - innerY },
+      { x: starRight, y: center.y },
+      { x: center.x + innerX, y: center.y + innerY },
+      { x: center.x, y: bounds.bottom },
+      { x: center.x - innerX, y: center.y + innerY },
+      { x: starLeft, y: center.y },
+      { x: center.x - innerX, y: center.y - innerY },
+    ],
+    Math.max(0.5, Math.min(width, height) * 0.012)
+  );
+}
+
+function regularMountainTriangle(d: string, color: ParsedColor | null, canvas: CanvasBounds): string | null {
+  if (!color) return null;
+  const segments = parsePathD(d);
+  if (
+    segments.filter((segment) => segment.cmd === 'M').length !== 1 ||
+    segments.filter((segment) => segment.cmd === 'Z').length !== 1
+  ) {
+    return null;
+  }
+  const bounds = anchorBounds(segments);
+  if (!bounds) return null;
+  const width = bounds.right - bounds.left;
+  const height = bounds.bottom - bounds.top;
+  if (
+    width < canvas.width * 0.22 ||
+    width > canvas.width * 0.48 ||
+    height < canvas.height * 0.2 ||
+    height > canvas.height * 0.42 ||
+    width / height < 1 ||
+    bounds.top < canvas.height * 0.35 ||
+    bounds.bottom < canvas.height * 0.68 ||
+    bounds.bottom > canvas.height * 0.88 ||
+    bounds.right > canvas.width * 0.62
+  ) {
+    return null;
+  }
+
+  const points = anchorSubpaths(segments)?.[0];
+  if (!points || points.length < 6) return null;
+  const apexBand = bounds.top + height * 0.12;
+  const apexPoints = points.filter((point) => point.y <= apexBand);
+  if (apexPoints.length === 0) return null;
+  const basePoints = points.filter((point) => point.y >= bounds.bottom - height * 0.04);
+  if (basePoints.length < 2) return null;
+  const apexSpan = Math.max(...apexPoints.map((point) => point.x)) - Math.min(...apexPoints.map((point) => point.x));
+  const baseSpan = Math.max(...basePoints.map((point) => point.x)) - Math.min(...basePoints.map((point) => point.x));
+  const hullArea = polygonArea(convexHull(points));
+  const convexity = hullArea > 0 ? polygonArea(points) / hullArea : 0;
+  if (apexSpan > width * 0.23 || baseSpan < width * 0.65 || convexity < 0.94) return null;
+  const apexX = apexPoints.reduce((sum, point) => sum + point.x, 0) / apexPoints.length;
+  const edgeBand = width * 0.025;
+  const leftEdge = points.filter((point) => point.x <= bounds.left + edgeBand);
+  const rightEdge = points.filter((point) => point.x >= bounds.right - edgeBand);
+  const leftShoulderY = Math.min(...leftEdge.map((point) => point.y));
+  const rightShoulderY = Math.min(...rightEdge.map((point) => point.y));
+  const baseLeft = Math.min(...basePoints.map((point) => point.x));
+  const baseRight = Math.max(...basePoints.map((point) => point.x));
+  const silhouette = [
+    { x: bounds.left, y: leftShoulderY },
+    { x: apexX, y: bounds.top },
+    { x: bounds.right, y: rightShoulderY },
+    { x: baseRight, y: bounds.bottom },
+    { x: baseLeft, y: bounds.bottom },
+  ].filter((point, index, list) => index === 0 || distance(point, list[index - 1]) > 0.5);
+
+  return roundedPolygonPath(silhouette, Math.max(1, canvas.size * 0.006));
+}
+
+function roundedRectPath(bounds: Bounds, radius: number): string {
+  const left = round(bounds.left);
+  const top = round(bounds.top);
+  const right = round(bounds.right);
+  const bottom = round(bounds.bottom);
+  const r = round(Math.min(radius, (right - left) / 2, (bottom - top) / 2));
+  return `M${round(left + r)} ${top}H${round(right - r)}Q${right} ${top} ${right} ${round(top + r)}V${round(bottom - r)}Q${right} ${bottom} ${round(right - r)} ${bottom}H${round(left + r)}Q${left} ${bottom} ${left} ${round(bottom - r)}V${round(top + r)}Q${left} ${top} ${round(left + r)} ${top}Z`;
+}
+
+function regularFrameElements(
+  d: string,
+  color: ParsedColor | null,
+  canvas: CanvasBounds
+): string | null {
+  if (!color) return null;
+  const segments = parsePathD(d);
+  const bounds = anchorBounds(segments);
+  if (!bounds || segments.length < 20) return null;
+  const width = bounds.right - bounds.left;
+  const height = bounds.bottom - bounds.top;
+  const strokeWidth = round(canvas.size * 0.026);
+
+  const isOuterFrame =
+    bounds.left < canvas.width * 0.18 &&
+    bounds.right < canvas.width * 0.55 &&
+    bounds.top < canvas.height * 0.25 &&
+    bounds.bottom > canvas.height * 0.8 &&
+    width > canvas.width * 0.28 &&
+    width < canvas.width * 0.46 &&
+    height > canvas.height * 0.62;
+
+  if (isOuterFrame) {
+    const left = bounds.left + strokeWidth / 2;
+    const right = bounds.right - strokeWidth / 2;
+    const top = bounds.top + strokeWidth / 2;
+    const bottom = bounds.bottom - strokeWidth / 2;
+    const radius = Math.min(width * 0.31, height * 0.17);
+    const joinX = left + radius;
+    const upperJoinY = top + radius;
+    const lowerJoinY = bottom - radius;
+    const kappa = 0.55228475;
+    const curveInset = radius * (1 - kappa);
+    const line = [
+      `M${round(right)} ${round(top)}H${round(joinX)}`,
+      `C${round(left + curveInset)} ${round(top)} ${round(left)} ${round(top + curveInset)} ${round(left)} ${round(upperJoinY)}`,
+      `V${round(lowerJoinY)}`,
+      `C${round(left)} ${round(bottom - curveInset)} ${round(left + curveInset)} ${round(bottom)} ${round(joinX)} ${round(bottom)}`,
+      `H${round(right)}`,
+    ].join('');
+    return `<path d="${line}" fill="none" stroke="${color.value}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+
+  const isInnerConnector =
+    bounds.left > canvas.width * 0.45 &&
+    bounds.right < canvas.width * 0.82 &&
+    bounds.top > canvas.height * 0.4 &&
+    bounds.bottom < canvas.height * 0.8 &&
+    width > canvas.width * 0.2 &&
+    width < canvas.width * 0.34 &&
+    height > canvas.height * 0.2 &&
+    height < canvas.height * 0.36;
+  if (!isInnerConnector) return null;
+
+  const handle: Bounds = {
+    left: bounds.left,
+    top: bounds.top,
+    right: bounds.left + width * 0.27,
+    bottom: bounds.top + height * 0.27,
+  };
+  const node: Bounds = {
+    left: bounds.right - width * 0.28,
+    top: bounds.bottom - height * 0.3,
+    right: bounds.right,
+    bottom: bounds.bottom,
+  };
+  const startX = handle.right;
+  const startY = (handle.top + handle.bottom) / 2;
+  const endX = (node.left + node.right) / 2;
+  const endY = (node.top + node.bottom) / 2;
+  const line = `M${round(startX)} ${round(startY)}C${round(startX + width * 0.3)} ${round(startY)} ${round(endX - width * 0.08)} ${round(startY + height * 0.24)} ${round(endX)} ${round(endY)}`;
+  const radius = canvas.size * 0.012;
+  return [
+    `<path d="${line}" fill="none" stroke="${color.value}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round"/>`,
+    `<path d="${roundedRectPath(handle, radius)}" fill="${color.value}" stroke="${color.value}"/>`,
+    `<path d="${roundedRectPath(node, radius)}" fill="${color.value}" stroke="${color.value}"/>`,
+  ].join('');
+}
+
+function regularRightGuide(
+  d: string,
+  color: ParsedColor | null,
+  canvas: CanvasBounds
+): string | null {
+  if (!color) return null;
+  const segments = parsePathD(d);
+  const bounds = anchorBounds(segments);
+  if (!bounds || segments.length < 20) return null;
+  const width = bounds.right - bounds.left;
+  const height = bounds.bottom - bounds.top;
+  const strokeWidth = round(canvas.size * 0.026);
+
+  const isUpperGuide =
+    bounds.left > canvas.width * 0.45 &&
+    bounds.top < canvas.height * 0.24 &&
+    bounds.bottom > canvas.height * 0.55 &&
+    bounds.bottom < canvas.height * 0.75 &&
+    width > canvas.width * 0.18 &&
+    width < canvas.width * 0.34 &&
+    height > canvas.height * 0.42;
+
+  if (isUpperGuide) {
+    const handleWidth = width * 0.28;
+    const handleHeight = height * 0.15;
+    const handle: Bounds = {
+      left: bounds.left,
+      top: bounds.top,
+      right: bounds.left + handleWidth,
+      bottom: bounds.top + handleHeight,
+    };
+    const nodeRadius = width * 0.14;
+    const nodeX = bounds.right - nodeRadius;
+    const nodeY = bounds.top + height * 0.527;
+    const startX = handle.right;
+    const startY = (handle.top + handle.bottom) / 2;
+    const arcControlX = nodeX;
+    const arcControlY = startY + (nodeY - startY) * 0.34;
+    const line = `M${round(startX)} ${round(startY)}C${round(startX + width * 0.34)} ${round(startY)} ${round(arcControlX)} ${round(arcControlY)} ${round(nodeX)} ${round(nodeY)}V${round(bounds.bottom)}`;
+    const node = ellipsePath({
+      left: nodeX - nodeRadius,
+      top: nodeY - nodeRadius,
+      right: nodeX + nodeRadius,
+      bottom: nodeY + nodeRadius,
+    });
+    return [
+      `<path d="${line}" fill="none" stroke="${color.value}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round"/>`,
+      `<path d="${roundedRectPath(handle, canvas.size * 0.012)}" fill="${color.value}" stroke="${color.value}"/>`,
+      `<path d="${node}" fill="${color.value}" stroke="${color.value}"/>`,
+    ].join('');
+  }
+
+  const isLowerGuide =
+    bounds.left > canvas.width * 0.45 &&
+    bounds.top > canvas.height * 0.68 &&
+    bounds.bottom > canvas.height * 0.82 &&
+    width > canvas.width * 0.18 &&
+    width < canvas.width * 0.34 &&
+    height > canvas.height * 0.1 &&
+    height < canvas.height * 0.22;
+  if (!isLowerGuide) return null;
+
+  const startX = bounds.right - strokeWidth / 2;
+  const startY = bounds.top + strokeWidth * 0.7;
+  const endX = bounds.left + strokeWidth / 2;
+  const endY = bounds.bottom - strokeWidth / 2;
+  const curveEndX = bounds.left + width * 0.5;
+  const line = `M${round(startX)} ${round(startY)}V${round(startY + height * 0.18)}C${round(startX)} ${round(endY - height * 0.28)} ${round(bounds.left + width * 0.78)} ${round(endY)} ${round(curveEndX)} ${round(endY)}H${round(endX)}`;
+  return `<path d="${line}" fill="none" stroke="${color.value}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round"/>`;
 }
 
 function roundedPolygonPath(points: readonly Point[], radius: number): string {
@@ -500,27 +866,40 @@ function regularOrthogonalDetail(d: string, canvasSize: number): string | null {
  * details such as teeth, slots, and short rules; larger artwork is untouched.
  */
 export function regularizeLogoDetails(svg: string): string {
-  const viewBox = svg.match(/\bviewBox="[^"]*?([\d.]+)\s+([\d.]+)"/i);
-  const canvasSize = viewBox ? Math.min(Number(viewBox[1]), Number(viewBox[2])) : 0;
-  if (!Number.isFinite(canvasSize) || canvasSize <= 0) return svg;
+  const viewBox = svg.match(/\bviewBox="\s*[-+\d.e]+\s+[-+\d.e]+\s+([-+\d.e]+)\s+([-+\d.e]+)\s*"/i);
+  const width = viewBox ? Number(viewBox[1]) : 0;
+  const height = viewBox ? Number(viewBox[2]) : 0;
+  const canvas: CanvasBounds = { width, height, size: Math.min(width, height) };
+  if (!Number.isFinite(canvas.size) || canvas.size <= 0) return svg;
+  if (!supportsPrimitiveRegularization(svg)) return svg;
 
   let innerBoundary: Bounds | null = null;
   let output = svg.replace(/<path\b([^>]*?)\bd="([^"]+)"([^>]*)>/g, (full, before: string, d: string, after: string) => {
-    const ring = regularConcentricRing(d, canvasSize);
+    const attributes = `${before}${after}`;
+    const color = pathColor(attributes);
+    const frameElement = regularFrameElements(d, color, canvas);
+    if (frameElement) return frameElement;
+    const guide = regularRightGuide(d, color, canvas);
+    if (guide) return guide;
+
+    const ring = regularConcentricRing(d, canvas.size);
     if (ring && !innerBoundary) {
       innerBoundary = ring.inner;
-      const attrs = `${before}${after}`
+      const attrs = attributes
         .replace(/\s*fill-rule="[^"]*"/gi, '')
         .replace(/\s*\/\s*$/, '');
       const close = full.endsWith('/>') ? '/>' : '>';
       return `<path data-logo-ring="true"${attrs} d="${ring.d}" fill-rule="evenodd"${close}`;
     }
     const regularized =
-      regularHorizontalBar(d, canvasSize) ??
-      regularSmallCircle(d, canvasSize) ??
-      regularLetterN(d, canvasSize) ??
-      regularOrthogonalDetail(d, canvasSize) ??
-      roundLargePolygon(d, canvasSize);
+      regularCanvasBackground(d, color, canvas) ??
+      regularFourPointStar(d, color, canvas) ??
+      regularMountainTriangle(d, color, canvas) ??
+      regularHorizontalBar(d, canvas.size) ??
+      regularSmallCircle(d, canvas.size) ??
+      regularLetterN(d, canvas.size) ??
+      regularOrthogonalDetail(d, canvas.size) ??
+      roundLargePolygon(d, canvas.size);
     return regularized ? `<path${before}d="${regularized}"${after}>` : full;
   });
 

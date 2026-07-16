@@ -92,6 +92,72 @@ export function upscaleImageData(imageData: ImageData, scale: number): ImageData
   return new ImageData(out, outWidth, outHeight);
 }
 
+/**
+ * Upscale a low-resolution raster with alpha-aware bilinear sampling.
+ *
+ * Nearest-neighbor expansion only duplicates the source stair steps, which a
+ * polygon tracer then preserves as visible notches. Premultiplied-alpha
+ * interpolation gives the tracer a smoother boundary without introducing dark
+ * RGB halos around transparent artwork.
+ */
+export function upscaleImageDataSmooth(imageData: ImageData, scale: number): ImageData {
+  const factor = Math.max(1, Math.min(2, Math.round(scale)));
+  if (factor === 1) {
+    return new ImageData(
+      new Uint8ClampedArray(imageData.data),
+      imageData.width,
+      imageData.height
+    );
+  }
+
+  const { width, height, data } = imageData;
+  const outWidth = width * factor;
+  const outHeight = height * factor;
+  const out = new Uint8ClampedArray(outWidth * outHeight * 4);
+
+  for (let y = 0; y < outHeight; y++) {
+    const sourceY = (y + 0.5) / factor - 0.5;
+    const y0 = Math.max(0, Math.min(height - 1, Math.floor(sourceY)));
+    const y1 = Math.min(height - 1, y0 + 1);
+    const fy = Math.max(0, sourceY - y0);
+
+    for (let x = 0; x < outWidth; x++) {
+      const sourceX = (x + 0.5) / factor - 0.5;
+      const x0 = Math.max(0, Math.min(width - 1, Math.floor(sourceX)));
+      const x1 = Math.min(width - 1, x0 + 1);
+      const fx = Math.max(0, sourceX - x0);
+      const samples = [
+        { index: (y0 * width + x0) * 4, weight: (1 - fx) * (1 - fy) },
+        { index: (y0 * width + x1) * 4, weight: fx * (1 - fy) },
+        { index: (y1 * width + x0) * 4, weight: (1 - fx) * fy },
+        { index: (y1 * width + x1) * 4, weight: fx * fy },
+      ];
+
+      let alpha = 0;
+      let premultipliedR = 0;
+      let premultipliedG = 0;
+      let premultipliedB = 0;
+      for (const sample of samples) {
+        const normalizedAlpha = data[sample.index + 3] / 255;
+        const alphaWeight = normalizedAlpha * sample.weight;
+        alpha += alphaWeight;
+        premultipliedR += data[sample.index] * alphaWeight;
+        premultipliedG += data[sample.index + 1] * alphaWeight;
+        premultipliedB += data[sample.index + 2] * alphaWeight;
+      }
+
+      const target = (y * outWidth + x) * 4;
+      if (alpha <= 0) continue;
+      out[target] = premultipliedR / alpha;
+      out[target + 1] = premultipliedG / alpha;
+      out[target + 2] = premultipliedB / alpha;
+      out[target + 3] = alpha * 255;
+    }
+  }
+
+  return new ImageData(out, outWidth, outHeight);
+}
+
 /** Small bilateral filter for RGBA rasters; smooths noise while preserving hard color edges. */
 export function applyBilateralFilter(imageData: ImageData, radius: number, colorSigma: number): ImageData {
   const r = Math.max(0, Math.min(3, Math.round(radius)));

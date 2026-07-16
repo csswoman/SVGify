@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { anchorAntialiasedEdgeColors, applyAlphaThreshold } from './imageFilters';
+import {
+  anchorAntialiasedEdgeColors,
+  applyAlphaThreshold,
+  upscaleImageDataSmooth,
+} from './imageFilters';
 
 class TestImageData {
   readonly colorSpace: PredefinedColorSpace = 'srgb';
@@ -63,5 +67,47 @@ describe('anchorAntialiasedEdgeColors', () => {
     const input = new ImageData(new Uint8ClampedArray(beige), 1, 1);
 
     expect([...anchorAntialiasedEdgeColors(input, 180).data]).toEqual(beige);
+  });
+});
+
+describe('upscaleImageDataSmooth', () => {
+  it('interpolates opaque icon pixels instead of duplicating stair steps', () => {
+    const input = new ImageData(
+      new Uint8ClampedArray([
+        0, 0, 0, 255,
+        255, 255, 255, 255,
+      ]),
+      2,
+      1
+    );
+
+    const output = upscaleImageDataSmooth(input, 2);
+
+    expect(output.width).toBe(4);
+    expect(output.height).toBe(2);
+    expect(output.data[4]).toBeGreaterThan(0);
+    expect(output.data[4]).toBeLessThan(128);
+    expect(output.data[8]).toBeGreaterThan(128);
+    expect(output.data[8]).toBeLessThan(255);
+  });
+
+  it('does not mix hidden transparent RGB into visible edge colors', () => {
+    const input = new ImageData(
+      new Uint8ClampedArray([
+        0, 0, 0, 0,
+        246, 197, 38, 255,
+      ]),
+      2,
+      1
+    );
+
+    const output = upscaleImageDataSmooth(input, 2);
+    const softEdge = 4;
+
+    expect(output.data[softEdge]).toBe(246);
+    expect(output.data[softEdge + 1]).toBe(197);
+    expect(output.data[softEdge + 2]).toBe(38);
+    expect(output.data[softEdge + 3]).toBeGreaterThan(0);
+    expect(output.data[softEdge + 3]).toBeLessThan(255);
   });
 });

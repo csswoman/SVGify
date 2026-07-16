@@ -170,6 +170,101 @@ function paletteColorIndex(color: RGBColor, palette: readonly RGBColor[]): numbe
   return bestIndex;
 }
 
+function isNeutralMidtone(color: RGBColor): boolean {
+  const light = luminance(color);
+  return saturationRange(color) <= 18 && light >= 32 && light < 210;
+}
+
+/**
+ * Remove a neutral palette color only when it forms a thin transition between
+ * two other colors. Broad neutral regions (such as a gray mountain) and their
+ * outer boundary remain untouched because they have local area or meet only
+ * one neighboring color.
+ */
+function cleanThinNeutralTransitions(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+  palette: readonly RGBColor[]
+): Uint8ClampedArray {
+  const neutralIndexes = new Set(
+    palette
+      .map((color, index) => ({ color, index }))
+      .filter(({ color }) => isNeutralMidtone(color))
+      .map(({ index }) => index)
+  );
+  if (neutralIndexes.size === 0) return pixels;
+
+  const out = new Uint8ClampedArray(pixels);
+  const radius = 2;
+  const classes = new Int16Array(width * height);
+  classes.fill(-1);
+
+  for (let pixel = 0; pixel < classes.length; pixel++) {
+    const index = pixel * 4;
+    if (pixels[index + 3] < 16) continue;
+    classes[pixel] = paletteColorIndex(
+      { r: pixels[index], g: pixels[index + 1], b: pixels[index + 2] },
+      palette
+    );
+  }
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const pixel = y * width + x;
+      const pixelIndex = pixel * 4;
+      const currentIndex = classes[pixel];
+      if (!neutralIndexes.has(currentIndex)) continue;
+
+      let visibleCount = 0;
+      let sameColorCount = 0;
+      const replacementCounts = new Map<number, number>();
+
+      for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+          const neighborIndex = classes[ny * width + nx];
+          if (neighborIndex < 0) continue;
+          visibleCount++;
+          if (neighborIndex === currentIndex) {
+            sameColorCount++;
+          } else if (!neutralIndexes.has(neighborIndex)) {
+            replacementCounts.set(
+              neighborIndex,
+              (replacementCounts.get(neighborIndex) ?? 0) + 1
+            );
+          }
+        }
+      }
+
+      if (
+        replacementCounts.size < 2 ||
+        sameColorCount / Math.max(1, visibleCount) >= 0.5
+      ) {
+        continue;
+      }
+
+      let replacementIndex = -1;
+      let replacementCount = 0;
+      for (const [candidateIndex, count] of replacementCounts) {
+        if (count > replacementCount) {
+          replacementIndex = candidateIndex;
+          replacementCount = count;
+        }
+      }
+      const replacement = palette[replacementIndex];
+      if (!replacement) continue;
+      out[pixelIndex] = replacement.r;
+      out[pixelIndex + 1] = replacement.g;
+      out[pixelIndex + 2] = replacement.b;
+    }
+  }
+
+  return out;
+}
+
 /**
  * Majority-filter a posterized icon so anti-aliased boundary pixels stop
  * flipping between neighbors and creating jagged traced edges.
@@ -242,7 +337,13 @@ export function smoothQuantizedPalette(
     current = next;
   }
 
-  return new ImageData(current, width, height);
+  return new ImageData(
+    new Uint8ClampedArray(
+      cleanThinNeutralTransitions(current, width, height, palette)
+    ),
+    width,
+    height
+  );
 }
 
 export function hardenIconAlpha(imageData: ImageData, threshold = 160): ImageData {
@@ -735,6 +836,7 @@ export function suggestFlatIconPaletteFromImage(
   const candidates = collectVisibleColorBuckets(imageData);
   const selected: RGBColor[] = [];
   const fixedColors: RGBColor[] = [];
+  const stableColorIndexes = new Set<number>();
   const totalOpaque = totalOpaquePixels(imageData);
   const minProminentCount = Math.max(2, Math.ceil(totalOpaque * 0.004));
   const minAccentCount = Math.max(1, Math.ceil(totalOpaque * 0.001));
@@ -774,7 +876,9 @@ export function suggestFlatIconPaletteFromImage(
     .sort((a, b) => accentScore(b) - accentScore(a));
 
   for (const color of accents) {
+    const nextIndex = selected.length;
     addColor(candidateRgb(color), 42);
+    if (selected.length > nextIndex) stableColorIndexes.add(nextIndex);
   }
 
   const blackCandidates = source
@@ -817,7 +921,10 @@ export function suggestFlatIconPaletteFromImage(
   if (selected.length === 0) addColor(ICON_BASE_PALETTE[0].color);
 
   const refined = refinePaletteFromImage(imageData, selected, colorQuantCycles, fixedColors);
-  return refined.map((color) => ({ ...color, a: 255 }));
+  return refined.map((color, index) => ({
+    ...(stableColorIndexes.has(index) ? selected[index] : color),
+    a: 255,
+  }));
 }
 
 function suggestPaletteAtLimit(imageData: ImageData, maxColors: number, colorQuantCycles = 6): TracePaletteColor[] {

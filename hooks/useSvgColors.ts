@@ -25,8 +25,10 @@ function getColorStats(svgElement: SVGElement): ColorStat[] {
   svgElement.querySelectorAll('path').forEach((path) => {
     if (path.closest('defs') || path.closest('[data-svgcraft-editor]')) return;
     const fill = path.getAttribute('fill');
-    if (!fill || fill === 'none') return;
-    const color = parseRgbString(fill);
+    const stroke = path.getAttribute('stroke');
+    const visibleColor = fill && fill !== 'none' ? fill : stroke;
+    if (!visibleColor || visibleColor === 'none') return;
+    const color = parseRgbString(visibleColor);
     if (!color) return;
 
     const hex = rgbToHex(color);
@@ -215,10 +217,14 @@ export function useSvgColors(svgElement: SVGElement | null) {
   const replacePathColor = useCallback(
     (pathEl: SVGPathElement, newColor: RGBColor, previousColor?: RGBColor) => {
       const rgbStr = `rgb(${newColor.r},${newColor.g},${newColor.b})`;
-      pathEl.setAttribute('fill', rgbStr);
+      const fill = pathEl.getAttribute('fill');
+      if (fill && fill !== 'none') pathEl.setAttribute('fill', rgbStr);
       const stroke = pathEl.getAttribute('stroke');
       const strokeColor = stroke ? parseRgbString(stroke) : null;
-      if (previousColor && strokeColor && rgbToHex(strokeColor) === rgbToHex(previousColor)) {
+      if (
+        strokeColor &&
+        (fill === 'none' || (previousColor && rgbToHex(strokeColor) === rgbToHex(previousColor)))
+      ) {
         pathEl.setAttribute('stroke', rgbStr);
       }
       refreshColors();

@@ -33,7 +33,12 @@ function parseSettings(raw: FormDataEntryValue | null): VectorizeSettings {
 function toVTracerConfig(settings: VectorizeSettings): VTracerConfig {
   return {
     colorMode: ColorMode.Color,
-    hierarchical: Hierarchical.Stacked,
+    // Flat icons are already posterized to exact palette regions. Cutouts keep
+    // the background from being emitted again as small stacked fragments over
+    // foreground shapes; Standard artwork still benefits from stacked layers.
+    hierarchical: settings.traceMode === 'icon'
+      ? Hierarchical.Cutout
+      : Hierarchical.Stacked,
     // Flat logos need boundary-faithful polygons; post-processing rounds only
     // the appropriate large shapes. Standard artwork keeps spline fitting,
     // while its selected palette is enforced during raster preprocessing.

@@ -46,7 +46,10 @@ export function useWorkspaceShapeTools(editor: ReturnType<typeof useWorkspaceSvg
       items.push({
         el,
         id: i,
-        fill: el.getAttribute('fill') || '#000000',
+        fill:
+          el.getAttribute('fill') && el.getAttribute('fill') !== 'none'
+            ? el.getAttribute('fill')!
+            : el.getAttribute('stroke') || '#000000',
         ...pathStats(el),
       });
     });

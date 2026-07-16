@@ -4,8 +4,14 @@ import {
   applyAlphaThreshold,
   applyBilateralFilter,
   upscaleImageData,
+  upscaleImageDataSmooth,
 } from '@/lib/imageFilters';
-import { paletteForTrace, resolveRasterSpeckleArea } from '@/lib/iconModeSettings';
+import {
+  paletteForTrace,
+  resolveIconPaletteSmoothing,
+  resolveIconPreprocessingScale,
+  resolveRasterSpeckleArea,
+} from '@/lib/iconModeSettings';
 import {
   absorbSmallPaletteComponents,
   quantizeImageToPalette,
@@ -98,7 +104,16 @@ function normalizeSettings(settings: VectorizeSettings): VectorizeSettings {
 }
 
 function preprocessForVTracer(imageData: ImageData, settings: VectorizeSettings): ImageData {
-  const upscaled = upscaleImageData(imageData, settings.preprocessingScale);
+  const preprocessingScale = settings.traceMode === 'icon'
+    ? resolveIconPreprocessingScale(
+        settings.preprocessingScale,
+        imageData.width,
+        imageData.height
+      )
+    : settings.preprocessingScale;
+  const upscaled = settings.traceMode === 'icon'
+    ? upscaleImageDataSmooth(imageData, preprocessingScale)
+    : upscaleImageData(imageData, preprocessingScale);
   const edgeAnchored = anchorAntialiasedEdgeColors(upscaled, settings.alphaThreshold);
   const alphaCleaned = applyAlphaThreshold(edgeAnchored, settings.alphaThreshold);
   if (settings.traceMode === 'icon') {
@@ -135,7 +150,12 @@ function preprocessIconForVTracer(imageData: ImageData, settings: VectorizeSetti
   }
 
   const quantized = quantizeImageToPalette(imageData, palette);
-  return smoothQuantizedPalette(quantized, palette, settings.bilateralRadius);
+  const smoothingRadius = resolveIconPaletteSmoothing(
+    settings.bilateralRadius,
+    imageData.width,
+    imageData.height
+  );
+  return smoothQuantizedPalette(quantized, palette, smoothingRadius);
 }
 
 async function gzipPayload(payload: Uint8Array): Promise<Blob> {

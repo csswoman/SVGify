@@ -457,6 +457,36 @@ describe('palette extraction', () => {
     expect(output.data[18]).toBe(214);
   });
 
+  it('removes a thin gray antialias ring without erasing solid gray artwork', () => {
+    const background = [10, 17, 28, 255];
+    const gray = [43, 48, 55, 255];
+    const yellow = [243, 188, 36, 255];
+    const palette = [
+      { r: 10, g: 17, b: 28 },
+      { r: 43, g: 48, b: 55 },
+      { r: 243, g: 188, b: 36 },
+    ];
+    const ringPixels: number[] = [];
+    for (let y = 0; y < 9; y++) {
+      const color = y <= 2 ? background : y <= 4 ? gray : yellow;
+      for (let x = 0; x < 9; x++) ringPixels.push(...color);
+    }
+    const ring = new ImageData(new Uint8ClampedArray(ringPixels), 9, 9);
+    const solid = new ImageData(
+      new Uint8ClampedArray(Array.from({ length: 81 }, () => gray).flat()),
+      9,
+      9
+    );
+
+    const cleanedRing = smoothQuantizedPalette(ring, palette, 1);
+    const cleanedSolid = smoothQuantizedPalette(solid, palette, 1);
+
+    const transitionPixel = (3 * 9 + 4) * 4;
+    const solidCenter = (4 * 9 + 4) * 4;
+    expect([...cleanedRing.data.slice(transitionPixel, transitionPixel + 4)]).not.toEqual(gray);
+    expect([...cleanedSolid.data.slice(solidCenter, solidCenter + 4)]).toEqual(gray);
+  });
+
   it('prioritizes distinct flat icon colors over duplicate dark variants', () => {
     const navy = [5, 24, 72, 255];
     const darkAa = [4, 8, 18, 255];
@@ -498,6 +528,27 @@ describe('palette extraction', () => {
     expect(palette).toContainEqual({ r: 5, g: 24, b: 72, a: 255 });
     expect(palette).toContainEqual({ r: 255, g: 255, b: 255, a: 255 });
     expect(palette).toContainEqual({ r: 246, g: 197, b: 38, a: 255 });
+  });
+
+  it('does not dull a saturated icon accent with darker edge pixels', () => {
+    const background = [10, 17, 28, 255];
+    const yellow = [243, 188, 36, 255];
+    const yellowEdge = [165, 132, 55, 255];
+    const gray = [43, 48, 55, 255];
+    const pixels: number[] = [];
+
+    for (let i = 0; i < 160; i++) pixels.push(...background);
+    for (let i = 0; i < 40; i++) pixels.push(...yellow);
+    for (let i = 0; i < 20; i++) pixels.push(...yellowEdge);
+    for (let i = 0; i < 35; i++) pixels.push(...gray);
+
+    const palette = suggestFlatIconPaletteFromImage(
+      new ImageData(new Uint8ClampedArray(pixels), pixels.length / 4, 1),
+      8,
+      6
+    );
+
+    expect(palette).toContainEqual({ r: 243, g: 188, b: 36, a: 255 });
   });
 
   it('normalizes an off-white icon letter to white instead of a gray shadow', () => {
