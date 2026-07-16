@@ -44,45 +44,54 @@ export const DEFAULT_COLOR_COUNT = 2 ** DEFAULT_COLOR_PRECISION;
 /** Human-readable trade-off applied to the tracer's internal parameters. */
 export type VectorizeDetailLevel = 'clean' | 'balanced' | 'detailed';
 
-export interface VectorizeSettings {
+/** Choices that the product deliberately exposes to a person. */
+export interface VectorizeProductSettings {
   traceMode: 'standard' | 'icon';
   detailLevel: VectorizeDetailLevel;
-  numberofcolors: number;      // UI alias for vtracer colorPrecision estimate
-  customPalette?: RGBColor[];  // User-approved palette used by both trace modes
-  colorPrecision: number;      // 1-8 significant RGB bits per channel
+  numberofcolors: number;
+  customPalette?: RGBColor[];
+  colorPrecision: number;
+  cornerThreshold: number;
+  bilateralRadius: number;
+  alphaThreshold: number;
+  colorQuantCycles: number;
+}
+
+/** Internal VTracer configuration; never edited directly by the UI. */
+export interface VectorizeSettings extends VectorizeProductSettings {
   filterSpeckle: number;       // discard small patches
-  cornerThreshold: number;     // degrees; higher = fewer corners
   pathPrecision: number;       // SVG coordinate decimals
   layerDifference: number;     // color difference between gradient layers
   lengthThreshold: number;     // spline subdivision segment length
   maxIterations: number;       // spline smoothing iterations
   spliceThreshold: number;     // spline splice angle
   preprocessingScale: number;  // raster upscale before vectorize
-  bilateralRadius: number;     // edge-preserving prefilter radius
   bilateralColorSigma: number; // edge preservation threshold
-  alphaThreshold: number;      // semi-transparent pixels below this become transparent
   paletteMergeThreshold: number; // merge near-duplicate output colors
-  colorQuantCycles: number;    // palette suggestion passes
 }
 
-export const VECTORIZE_DEFAULTS: VectorizeSettings = {
+export const VECTORIZE_PRODUCT_DEFAULTS: VectorizeProductSettings = {
   traceMode: 'standard',
   detailLevel: 'balanced',
   numberofcolors: DEFAULT_COLOR_COUNT,
   colorPrecision: DEFAULT_COLOR_PRECISION,
-  filterSpeckle: 6,
   cornerThreshold: 60,
+  bilateralRadius: 1,
+  alphaThreshold: 180,
+  colorQuantCycles: 6,
+};
+
+export const VECTORIZE_DEFAULTS: VectorizeSettings = {
+  ...VECTORIZE_PRODUCT_DEFAULTS,
+  filterSpeckle: 6,
   pathPrecision: 2,
   layerDifference: 10,
   lengthThreshold: 6,
   maxIterations: 2,
   spliceThreshold: 45,
   preprocessingScale: 1,
-  bilateralRadius: 1,
   bilateralColorSigma: 32,
-  alphaThreshold: 180,
   paletteMergeThreshold: 44,
-  colorQuantCycles: 6,
 };
 
 export interface WorkerMessage {

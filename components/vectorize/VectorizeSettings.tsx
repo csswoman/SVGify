@@ -1,11 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { type VectorizeDetailLevel, VectorizeSettings } from '@/types/svg.types';
+import { type VectorizeDetailLevel, type VectorizeProductSettings } from '@/types/svg.types';
 import { Tooltip } from '@/components/shared/Tooltip';
 import { InspectorDisclosure } from '@/components/workspace/InspectorDisclosure';
-import { applyVectorizeProfile } from '@/lib/vectorizeProfiles';
-import { resolvePaletteMergeCeiling } from '@/lib/iconModeSettings';
+import { applyVectorizeProductChoice } from '@/lib/vectorizeProfiles';
 import { useI18n } from '@/lib/i18n';
 
 /** Discrete color-count steps (2^precision). Slider uses precision 2–7. */
@@ -14,8 +13,8 @@ const COLOR_PRECISION_MAX = 7;
 const COLOR_COUNT_TICKS = [4, 8, 16, 32, 64, 128] as const;
 
 interface VectorizeSettingsProps {
-  settings: VectorizeSettings;
-  onSettingsChange: (settings: VectorizeSettings) => void;
+  settings: VectorizeProductSettings;
+  onSettingsChange: (settings: VectorizeProductSettings) => void;
 }
 
 export function VectorizeSettingsPanel({
@@ -35,27 +34,21 @@ export function VectorizeSettingsPanel({
     const clamped = Math.max(COLOR_PRECISION_MIN, Math.min(COLOR_PRECISION_MAX, Math.round(next)));
     if (clamped === settings.colorPrecision) return;
     const colorCount = 2 ** clamped;
-    const mergeCeiling = resolvePaletteMergeCeiling(colorCount);
     onSettingsChange({
       ...settings,
       colorPrecision: clamped,
       numberofcolors: colorCount,
-      // More requested colors need a finer palette. Never raise a merge value
-      // the user has already tuned down manually.
-      paletteMergeThreshold: settings.traceMode === 'standard'
-        ? Math.min(settings.paletteMergeThreshold, mergeCeiling)
-        : settings.paletteMergeThreshold,
     });
   };
 
-  const setTraceMode = (traceMode: VectorizeSettings['traceMode']) => {
+  const setTraceMode = (traceMode: VectorizeProductSettings['traceMode']) => {
     if (traceMode === settings.traceMode) return;
-    onSettingsChange(applyVectorizeProfile(settings, { traceMode }));
+    onSettingsChange(applyVectorizeProductChoice(settings, { traceMode }));
   };
 
   const setDetailLevel = (detailLevel: VectorizeDetailLevel) => {
     if (detailLevel === settings.detailLevel) return;
-    onSettingsChange(applyVectorizeProfile(settings, { detailLevel }));
+    onSettingsChange(applyVectorizeProductChoice(settings, { detailLevel }));
   };
 
   const hasContextualRefinement = settings.traceMode === 'standard';

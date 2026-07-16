@@ -1,8 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { VECTORIZE_DEFAULTS } from '../types/svg.types';
+import { VECTORIZE_DEFAULTS, VECTORIZE_PRODUCT_DEFAULTS } from '../types/svg.types';
 import { applyVectorizeProfile, getVectorizeProfile } from './vectorizeProfiles';
 
 describe('vectorize profiles', () => {
+  it('keeps engine-only controls out of the persisted product settings', () => {
+    expect(VECTORIZE_PRODUCT_DEFAULTS).not.toHaveProperty('filterSpeckle');
+    expect(VECTORIZE_PRODUCT_DEFAULTS).not.toHaveProperty('pathPrecision');
+
+    const resolved = applyVectorizeProfile(VECTORIZE_PRODUCT_DEFAULTS);
+
+    expect(resolved.filterSpeckle).toBe(VECTORIZE_DEFAULTS.filterSpeckle);
+    expect(resolved.pathPrecision).toBe(VECTORIZE_DEFAULTS.pathPrecision);
+  });
+
   it('makes clean illustration output less noisy than the balanced profile', () => {
     const clean = getVectorizeProfile('standard', 'clean');
     const balanced = getVectorizeProfile('standard', 'balanced');
@@ -20,10 +30,7 @@ describe('vectorize profiles', () => {
   });
 
   it('always produces a valid positive curve-iteration count', () => {
-    const settings = applyVectorizeProfile(
-      { ...VECTORIZE_DEFAULTS, maxIterations: 0 },
-      { detailLevel: 'clean' }
-    );
+    const settings = applyVectorizeProfile(VECTORIZE_DEFAULTS, { detailLevel: 'clean' });
 
     expect(settings.maxIterations).toBeGreaterThanOrEqual(1);
   });
@@ -50,7 +57,7 @@ describe('vectorize profiles', () => {
 
   it('turns the color choice into a matching trace count and automatic merge ceiling', () => {
     const settings = applyVectorizeProfile(
-      { ...VECTORIZE_DEFAULTS, colorPrecision: 6, numberofcolors: 64, paletteMergeThreshold: 128 },
+      { ...VECTORIZE_DEFAULTS, colorPrecision: 6, numberofcolors: 64 },
       { detailLevel: 'balanced' }
     );
 

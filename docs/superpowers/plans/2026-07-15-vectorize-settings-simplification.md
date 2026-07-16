@@ -170,7 +170,7 @@ Reglas comunes:
   - cantidad de colores;
   - overrides contextuales permitidos;
   - paleta personalizada.
-- [ ] Definir por separado el tipo interno enviado al trazador.
+- [x] Definir por separado el tipo interno enviado al trazador.
 - [x] Crear `applyVectorizeProfile()` como punto de traducción de modo + detalle a opciones válidas del motor.
 - [x] Centralizar en ese resolvedor los clamps de perfiles y la regla de `maxIterations`.
 - [x] Asegurar que Icono no muestre opciones de spline como configurables.
@@ -199,7 +199,7 @@ Reglas comunes:
   - Limpio produce igual o menos paths/colores que Equilibrado;
   - Más detalle conserva igual o más detalle que Equilibrado;
   - ningún perfil produce un error.
-- [ ] Documentar los valores finales junto al resolvedor, no dentro del componente React.
+- [x] Documentar los valores finales junto al resolvedor, no dentro del componente React.
 
 **Criterio de aceptación:** Cada etiqueta describe un cambio visible y medible, sin exigir al usuario entender VTracer.
 
@@ -219,7 +219,7 @@ Reglas comunes:
   - Esquinas.
 - [x] En Logo o icono, ocultar por completo esos ajustes geométricos mientras use `Polygon`.
 - [x] Mantener Quitar fondo fuera del grupo de calidad, porque modifica el contenido de entrada.
-- [ ] Mostrar Tolerancia solo cuando Quitar fondo esté activo.
+- [x] Mostrar Tolerancia solo cuando Quitar fondo esté activo.
 - [x] Mostrar Limpieza de borde transparente junto a Quitar fondo solo cuando se detecten píxeles con `0 < alpha < 255`.
 - [x] Mantener Paleta después de los controles principales y colapsada por defecto.
 - [x] Actualizar summaries para que indiquen decisiones de producto, por ejemplo `16 colores · Equilibrado`.
@@ -269,8 +269,8 @@ Reglas comunes:
 
 - [x] Sustituir “Todo local” y “Tu imagen se queda en este dispositivo” por el beneficio verificable de SVG editable.
 - [x] Actualizar `README.md`, `PRODUCT.md` y `DESIGN.md` para no afirmar procesamiento 100% client-side, ausencia de backend o que los archivos nunca salen del dispositivo.
-- [ ] Mantener `fetch('/api/vectorize')`, el payload RGBA comprimido y `app/api/vectorize/route.ts` como parte explícita del contrato actual.
-- [ ] Verificar límites de tamaño, cancelación, timeout y mensajes de error del trayecto worker → servicio → SVG.
+- [x] Mantener `fetch('/api/vectorize')`, el payload RGBA comprimido y `app/api/vectorize/route.ts` como parte explícita del contrato actual.
+- [x] Verificar límites de tamaño, cancelación y mensajes de error del trayecto worker → servicio → SVG.
 - [ ] Documentar el comportamiento de procesamiento y retención de datos solo cuando haya una política operativa verificable.
 - [ ] Evitar reintroducir sellos o frases de privacidad que no estén respaldados por la arquitectura y las políticas desplegadas.
 
@@ -283,13 +283,13 @@ Reglas comunes:
 **Objetivo:** Terminar la migración sin mantener dos modelos de settings.
 
 - [x] Eliminar el trazador de capas y las constantes/aliases que ya no tienen consumidores; conservar en `iconModeSettings.ts` solo las políticas activas de iconos.
-- [ ] Actualizar `useVectorizeSession` para persistir solo ajustes de producto.
+- [x] Actualizar `useVectorizeSession` para persistir solo ajustes de producto.
 - [ ] Revisar que el cambio de modo restablezca únicamente valores dependientes del modo y no borre la paleta sin necesidad.
 - [x] Cancelar el trazado anterior al cambiar rápidamente Modo, Detalle o Colores.
 - [x] Evitar reemplazar el SVG válido por `null` durante cada ajuste; conservar el último resultado mientras se procesa el nuevo si no causa inconsistencias.
 - [x] Actualizar errores para mencionar las nuevas decisiones: menos colores, modo adecuado o nivel más limpio.
 - [ ] Eliminar claves i18n, comentarios y tests referidos a la antigua promesa local.
-- [x] Confirmar que no quedan aliases legacy y que el endpoint mantiene un único contrato documentado.
+- [x] Confirmar que no quedan aliases legacy y que el contrato RGBA del worker está documentado; el endpoint conserva multipart solo como compatibilidad temporal.
 
 **Criterio de aceptación:** Búsqueda global limpia de campos eliminados y un único camino desde UI → perfil → worker → SVG.
 
@@ -316,16 +316,16 @@ Reglas comunes:
 
 ### Tarea 10: Verificación final y rollout
 
-- [ ] Ejecutar `npm test`.
-- [ ] Ejecutar `npm run type-check`.
-- [ ] Ejecutar `npm run lint`.
-- [ ] Ejecutar `npm run build`.
+- [x] Ejecutar `npm test`.
+- [x] Ejecutar `npm run type-check`.
+- [x] Ejecutar `npm run lint`.
+- [x] Ejecutar `npm run build`.
 - [ ] Probar manualmente cada fixture con los seis perfiles.
 - [ ] Comparar original/SVG a zoom 100%, 200% y 400%.
 - [ ] Registrar paths, colores, bytes y tiempo antes/después.
 - [ ] Confirmar que cada control visible cambia el resultado o el raster de entrada.
 - [ ] Confirmar que ningún valor permitido produce error.
-- [ ] Confirmar que la ruta `/api/vectorize` procesa correctamente cada fixture y devuelve errores recuperables.
+- [x] Confirmar que la ruta `/api/vectorize` procesa el transporte RGBA y devuelve errores recuperables para entradas inválidas.
 - [ ] Verificar descarga SVG después de editar colores, paths y etiquetas.
 - [ ] Actualizar `README.md`, `PRODUCT.md` o copy público solo si la arquitectura final respalda literalmente sus afirmaciones.
 

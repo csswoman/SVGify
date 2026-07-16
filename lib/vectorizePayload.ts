@@ -2,6 +2,9 @@ import type { VectorizeSettings } from '@/types/svg.types';
 
 const MAGIC = new Uint8Array([0x53, 0x56, 0x47, 0x49, 0x46, 0x59, 0x30, 0x31]); // SVGIFY01
 const HEADER_BYTES = MAGIC.length + 12;
+/** Caps an RGBA request at roughly 64 MB before gzip. */
+export const MAX_VECTORIZE_PIXELS = 16_000_000;
+export const MAX_VECTORIZE_DIMENSION = 8_192;
 
 export const VECTORIZE_PAYLOAD_CONTENT_TYPE = 'application/vnd.svgify.rgba+gzip';
 
@@ -13,8 +16,14 @@ export interface DecodedVectorizePayload {
 }
 
 function assertDimension(value: number, name: string): void {
-  if (!Number.isInteger(value) || value < 1 || value > 16_384) {
+  if (!Number.isInteger(value) || value < 1 || value > MAX_VECTORIZE_DIMENSION) {
     throw new Error(`Invalid vectorize ${name}`);
+  }
+}
+
+function assertPixelCount(width: number, height: number): void {
+  if (width * height > MAX_VECTORIZE_PIXELS) {
+    throw new Error('Vectorize image exceeds the supported pixel limit');
   }
 }
 
@@ -24,6 +33,7 @@ export function encodeVectorizePayload(
 ): Uint8Array {
   assertDimension(imageData.width, 'width');
   assertDimension(imageData.height, 'height');
+  assertPixelCount(imageData.width, imageData.height);
 
   const expectedPixelBytes = imageData.width * imageData.height * 4;
   if (imageData.data.byteLength !== expectedPixelBytes) {
@@ -61,6 +71,7 @@ export function decodeVectorizePayload(payload: Uint8Array): DecodedVectorizePay
   const settingsLength = header.getUint32(MAGIC.length + 8, true);
   assertDimension(width, 'width');
   assertDimension(height, 'height');
+  assertPixelCount(width, height);
 
   const pixelOffset = HEADER_BYTES + settingsLength;
   const expectedPixelBytes = width * height * 4;

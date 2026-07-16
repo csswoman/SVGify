@@ -1,6 +1,7 @@
 import {
   VECTORIZE_DEFAULTS,
   type VectorizeDetailLevel,
+  type VectorizeProductSettings,
   type VectorizeSettings,
 } from '../types/svg.types';
 import { ICON_MODE_SETTINGS, resolvePaletteMergeCeiling } from './iconModeSettings';
@@ -21,6 +22,8 @@ type ProfileOptions = Pick<
 >;
 
 const STANDARD_PROFILES: Record<VectorizeDetailLevel, ProfileOptions> = {
+  // Keep these engine values here, beside the resolver and fixture tests;
+  // product components should only refer to the three detail labels.
   clean: {
     filterSpeckle: 12,
     cornerThreshold: 80,
@@ -107,31 +110,44 @@ export function getVectorizeProfile(
  * VTracer's knobs to ordinary users.
  */
 export function applyVectorizeProfile(
-  settings: VectorizeSettings,
-  changes: Partial<Pick<VectorizeSettings, 'traceMode' | 'detailLevel'>> = {}
+  settings: VectorizeProductSettings,
+  changes: Partial<Pick<VectorizeProductSettings, 'traceMode' | 'detailLevel'>> = {}
 ): VectorizeSettings {
-  const modeChanged = changes.traceMode !== undefined && changes.traceMode !== settings.traceMode;
-  const next = {
-    ...settings,
-    ...changes,
-    ...(modeChanged
-      ? {
-          colorPrecision: changes.traceMode === 'icon' ? 3 : VECTORIZE_DEFAULTS.colorPrecision,
-        }
-      : {}),
-  };
+  const next = applyVectorizeProductChoice(settings, changes);
   const profile = getVectorizeProfile(next.traceMode, next.detailLevel);
-  const colorPrecision = Math.max(2, Math.min(7, Math.round(next.colorPrecision)));
-  const numberofcolors = 2 ** colorPrecision;
+  const numberofcolors = 2 ** next.colorPrecision;
 
   return {
+    ...VECTORIZE_DEFAULTS,
+    ...settings,
     ...next,
     ...profile,
-    colorPrecision,
     numberofcolors,
     maxIterations: Math.max(1, profile.maxIterations),
     paletteMergeThreshold: next.traceMode === 'standard'
-      ? Math.min(next.paletteMergeThreshold, resolvePaletteMergeCeiling(numberofcolors))
-      : next.paletteMergeThreshold,
+      ? resolvePaletteMergeCeiling(numberofcolors)
+      : VECTORIZE_DEFAULTS.paletteMergeThreshold,
+  };
+}
+
+/** Applies a visible UI choice without leaking engine-only parameters into state. */
+export function applyVectorizeProductChoice(
+  settings: VectorizeProductSettings,
+  changes: Partial<Pick<VectorizeProductSettings, 'traceMode' | 'detailLevel'>> = {}
+): VectorizeProductSettings {
+  const modeChanged = changes.traceMode !== undefined && changes.traceMode !== settings.traceMode;
+  const colorPrecision = Math.max(
+    2,
+    Math.min(
+      7,
+      Math.round(modeChanged ? (changes.traceMode === 'icon' ? 3 : VECTORIZE_DEFAULTS.colorPrecision) : settings.colorPrecision)
+    )
+  );
+
+  return {
+    ...settings,
+    ...changes,
+    colorPrecision,
+    numberofcolors: 2 ** colorPrecision,
   };
 }

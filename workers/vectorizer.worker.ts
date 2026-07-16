@@ -22,6 +22,7 @@ import { encodeVectorizePayload, VECTORIZE_PAYLOAD_CONTENT_TYPE } from '@/lib/ve
 self.postMessage({ type: 'ready' } satisfies WorkerResponse);
 
 let activeRequestId = 0;
+let activeRequestController: AbortController | null = null;
 
 function getVectorizeEndpoint(): string {
   const workerUrl = new URL(self.location.href);
@@ -37,6 +38,8 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
 
   if (type === 'cancel') {
     activeRequestId += 1;
+    activeRequestController?.abort();
+    activeRequestController = null;
     return;
   }
 
@@ -151,11 +154,16 @@ async function vectorizeImage(imageData: ImageData, settings: VectorizeSettings,
     const options = normalizeSettings(settings);
     const source = preprocessForVTracer(imageData, options);
     const body = await gzipPayload(encodeVectorizePayload(source, options));
+    if (requestId !== activeRequestId) return;
 
+    const controller = new AbortController();
+    activeRequestController?.abort();
+    activeRequestController = controller;
     const response = await fetch(getVectorizeEndpoint(), {
       method: 'POST',
       body,
       headers: { 'content-type': VECTORIZE_PAYLOAD_CONTENT_TYPE },
+      signal: controller.signal,
     });
 
     if (!response.ok) {
@@ -177,5 +185,7 @@ async function vectorizeImage(imageData: ImageData, settings: VectorizeSettings,
     if (requestId !== activeRequestId) return;
     const message = err instanceof Error ? err.message : 'Vectorization failed';
     self.postMessage({ type: 'error', message, requestId } satisfies WorkerResponse);
+  } finally {
+    if (requestId === activeRequestId) activeRequestController = null;
   }
 }

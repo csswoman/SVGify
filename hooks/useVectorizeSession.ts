@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useVectorizer } from '@/hooks/useVectorizer';
-import { VectorizeSettings, VECTORIZE_DEFAULTS } from '@/types/svg.types';
+import { VectorizeProductSettings, VECTORIZE_PRODUCT_DEFAULTS } from '@/types/svg.types';
+import { applyVectorizeProfile } from '@/lib/vectorizeProfiles';
 import { removeBackground, type SeedPoint } from '@/lib/backgroundRemoval';
 import {
   mergeSimilarPaletteColors as mergeSuggestedPaletteColors,
@@ -18,7 +19,7 @@ interface UseVectorizeSessionOptions {
 }
 
 export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeSessionOptions) {
-  const [settings, setSettings] = useState<VectorizeSettings>(VECTORIZE_DEFAULTS);
+  const [settings, setSettings] = useState<VectorizeProductSettings>(VECTORIZE_PRODUCT_DEFAULTS);
   const [removeBg, setRemoveBg] = useState(false);
   const [bgTolerance, setBgTolerance] = useState(48);
   const [seeds, setSeeds] = useState<SeedPoint[]>([]);
@@ -34,24 +35,15 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
     mergeSimilar: mergeSimilarPaletteColors,
   } = useEditablePalette();
 
-  const updateSettings = useCallback((next: VectorizeSettings) => {
+  const updateSettings = useCallback((next: VectorizeProductSettings) => {
     setSettings({
       ...next,
       traceMode: next.traceMode === 'icon' ? 'icon' : 'standard',
-      colorPrecision: Math.max(1, Math.min(8, Math.round(next.colorPrecision))),
-      numberofcolors: 2 ** Math.max(1, Math.min(8, Math.round(next.colorPrecision))),
-      filterSpeckle: Math.max(0, Math.min(40, Math.round(next.filterSpeckle))),
+      colorPrecision: Math.max(2, Math.min(7, Math.round(next.colorPrecision))),
+      numberofcolors: 2 ** Math.max(2, Math.min(7, Math.round(next.colorPrecision))),
       cornerThreshold: Math.max(0, Math.min(180, Math.round(next.cornerThreshold))),
-      pathPrecision: Math.max(0, Math.min(8, Math.round(next.pathPrecision))),
-      layerDifference: Math.max(0, Math.min(64, Math.round(next.layerDifference))),
-      lengthThreshold: Math.max(1, Math.min(32, Math.round(next.lengthThreshold))),
-      maxIterations: Math.max(1, Math.min(10, Math.round(next.maxIterations))),
-      spliceThreshold: Math.max(0, Math.min(180, Math.round(next.spliceThreshold))),
-      preprocessingScale: Math.max(1, Math.min(2, Math.round(next.preprocessingScale))),
       bilateralRadius: Math.max(0, Math.min(3, Math.round(next.bilateralRadius))),
-      bilateralColorSigma: Math.max(1, Math.min(96, Math.round(next.bilateralColorSigma))),
       alphaThreshold: Math.max(0, Math.min(255, Math.round(next.alphaThreshold))),
-      paletteMergeThreshold: Math.max(0, Math.min(128, Math.round(next.paletteMergeThreshold))),
       colorQuantCycles: Math.max(1, Math.min(8, next.colorQuantCycles)),
     });
   }, []);
@@ -78,6 +70,8 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
     return false;
   }, [imageData]);
 
+  const resolvedSettings = useMemo(() => applyVectorizeProfile(settings), [settings]);
+
   const suggestedPalette = useMemo(() => {
     if (!processedImageData) return [];
     const suggestPalette = settings.traceMode === 'icon'
@@ -90,14 +84,14 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
     }));
 
     return settings.traceMode === 'standard'
-      ? mergeSuggestedPaletteColors(palette, settings.paletteMergeThreshold)
+      ? mergeSuggestedPaletteColors(palette, resolvedSettings.paletteMergeThreshold)
       : palette;
   }, [
     processedImageData,
     settings.traceMode,
     settings.numberofcolors,
     settings.colorQuantCycles,
-    settings.paletteMergeThreshold,
+    resolvedSettings.paletteMergeThreshold,
   ]);
 
   useEffect(() => {
@@ -105,7 +99,7 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
   }, [replacePalette, suggestedPalette]);
 
   const settingsWithPalette = useMemo(
-    () => ({
+    () => applyVectorizeProfile({
       ...settings,
       customPalette: paletteColors.map((color) => ({ ...color })),
     }),

@@ -31,4 +31,11 @@ describe('vectorize payload', () => {
       'Raw RGBA buffer size does not match dimensions'
     );
   });
+
+  it('rejects images that exceed the service pixel limit before allocating the payload', () => {
+    expect(() => encodeVectorizePayload(
+      { width: 8_000, height: 4_000, data: new Uint8ClampedArray(4) },
+      VECTORIZE_DEFAULTS
+    )).toThrow('Vectorize image exceeds the supported pixel limit');
+  });
 });

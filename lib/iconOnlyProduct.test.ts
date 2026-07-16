@@ -34,7 +34,8 @@ describe('icon-only product surface', () => {
     const packageJson = readSource('package.json');
     const settingsPanel = readSource('components/vectorize/VectorizeSettings.tsx');
 
-    expect(settingsPanel).toContain('applyVectorizeProfile');
+    expect(settingsPanel).toContain('applyVectorizeProductChoice');
+    expect(settingsPanel).toContain('VectorizeProductSettings');
     expect(settingsPanel).not.toContain("t('set.maxIterations')");
     expect(settingsPanel).not.toContain("t('set.spliceThreshold')");
     expect(worker).toContain('getVectorizeEndpoint');
@@ -46,6 +47,8 @@ describe('icon-only product surface', () => {
     expect(worker).toContain('quantizeImageToPalette');
     expect(worker).toContain('smoothQuantizedPalette');
     expect(worker).toContain('paletteForTrace');
+    expect(worker).toContain('AbortController');
+    expect(worker).toContain('activeRequestController?.abort()');
     expect(worker).toContain('maxIterations: clampInt(merged.maxIterations, 1, 10)');
     expect(route).toContain("from '@neplex/vectorizer'");
     expect(route).toContain('Hierarchical.Cutout');
