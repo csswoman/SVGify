@@ -36,6 +36,15 @@ describe('vectorize profiles', () => {
 
     expect(settings.traceMode).toBe('icon');
     expect(settings.filterSpeckle).toBe(1);
+    expect(settings.numberofcolors).toBe(8);
+  });
+
+  it('restores the illustration color default when switching back from an icon', () => {
+    const settings = applyVectorizeProfile(
+      { ...VECTORIZE_DEFAULTS, traceMode: 'icon', colorPrecision: 3, numberofcolors: 8 },
+      { traceMode: 'standard' }
+    );
+
     expect(settings.numberofcolors).toBe(16);
   });
 });

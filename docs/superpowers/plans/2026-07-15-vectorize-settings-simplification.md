@@ -232,9 +232,9 @@ Reglas comunes:
 
 **Objetivo:** Ubicar el redondeo de coordenadas donde el usuario decide peso y preparación de exportación.
 
-- [ ] Retirar Precisión del inspector de Vectorizar.
-- [ ] Mantener precisión interna estable durante el trazado para no alterar geometría de manera accidental.
-- [ ] Hacer que los presets actuales de Optimizar controlen `coordDecimals`:
+- [x] Retirar Precisión del inspector de Vectorizar.
+- [x] Mantener precisión interna estable durante el trazado para no alterar geometría de manera accidental.
+- [x] Hacer que los presets actuales de Optimizar controlen `coordDecimals`:
   - Más liviano: comenzar con 0;
   - Equilibrado: comenzar con 1;
   - Más detalle: comenzar con 2.

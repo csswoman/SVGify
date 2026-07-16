@@ -17,6 +17,10 @@ import { Tooltip } from '@/components/shared/Tooltip';
 import { DownloadButton } from '@/components/shared/DownloadButton';
 import { InspectorDisclosure } from '@/components/workspace/InspectorDisclosure';
 import { buildDownloadPayload } from '@/lib/exportPayload';
+import {
+  getDownloadPreparationTargets,
+  type DownloadPreparationPreset,
+} from '@/lib/downloadPreparation';
 import type { LabelInfo } from '@/lib/labelUtils';
 import { useI18n } from '@/lib/i18n';
 
@@ -62,7 +66,7 @@ export function OptimizeInspector({
   const [targetCount, setTargetCount] = useState(6);
   const [mergeThreshold, setMergeThreshold] = useState(56);
   const [shapeTarget, setShapeTarget] = useState(50);
-  const [preparePreset, setPreparePreset] = useState<'smaller' | 'balanced' | 'detail'>('balanced');
+  const [preparePreset, setPreparePreset] = useState<DownloadPreparationPreset>('balanced');
   const [showOriginalPalette, setShowOriginalPalette] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [confirmMaxOptimize, setConfirmMaxOptimize] = useState(false);
@@ -74,6 +78,7 @@ export function OptimizeInspector({
   const byteSizeLabel = formatBytes(byteSize);
   const originalPalette = useMemo(() => extractPaletteFromSvgString(svgString), [svgString]);
   const showComplexWarn = pathCount >= COMPLEX_PATH_THRESHOLD;
+  const maxReduce = Math.max(2, Math.min(12, colors.length || 2));
 
   if (svgString !== confirmForSvg) {
     setConfirmForSvg(svgString);
@@ -157,10 +162,12 @@ export function OptimizeInspector({
     }
     const afterNorm = serializeMountedSvg() ?? svgString;
     const compacted = compactSvgPaths(afterNorm, shapeTarget);
+    const { coordDecimals } = getDownloadPreparationTargets(preparePreset, maxReduce);
     const next = optimizeSvg(compacted, {
       dropDefaultOpacity: true,
       removeStroke: true,
       mergePaths: false,
+      coordDecimals,
     });
     const doc = new DOMParser().parseFromString(next, 'image/svg+xml');
     const nextSvgEl = doc.querySelector('svg');
@@ -183,29 +190,21 @@ export function OptimizeInspector({
     onPrepared,
     includeLabelLegend,
     labels,
+    preparePreset,
+    maxReduce,
   ]);
 
-  const maxReduce = Math.max(2, Math.min(12, colors.length || 2));
   const savedBytes =
     byteDelta && byteDelta.after < byteDelta.before
       ? byteDelta.before - byteDelta.after
       : null;
 
   const applyPreparePreset = useCallback(
-    (preset: 'smaller' | 'balanced' | 'detail') => {
+    (preset: DownloadPreparationPreset) => {
       setPreparePreset(preset);
-      if (preset === 'smaller') {
-        setTargetCount(Math.min(4, maxReduce));
-        setShapeTarget(30);
-        return;
-      }
-      if (preset === 'detail') {
-        setTargetCount(Math.min(10, maxReduce));
-        setShapeTarget(90);
-        return;
-      }
-      setTargetCount(Math.min(6, maxReduce));
-      setShapeTarget(50);
+      const targets = getDownloadPreparationTargets(preset, maxReduce);
+      setTargetCount(targets.maxColors);
+      setShapeTarget(targets.shapeTarget);
     },
     [maxReduce]
   );

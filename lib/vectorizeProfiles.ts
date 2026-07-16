@@ -110,7 +110,16 @@ export function applyVectorizeProfile(
   settings: VectorizeSettings,
   changes: Partial<Pick<VectorizeSettings, 'traceMode' | 'detailLevel'>> = {}
 ): VectorizeSettings {
-  const next = { ...settings, ...changes };
+  const modeChanged = changes.traceMode !== undefined && changes.traceMode !== settings.traceMode;
+  const next = {
+    ...settings,
+    ...changes,
+    ...(modeChanged
+      ? {
+          colorPrecision: changes.traceMode === 'icon' ? 3 : VECTORIZE_DEFAULTS.colorPrecision,
+        }
+      : {}),
+  };
   const profile = getVectorizeProfile(next.traceMode, next.detailLevel);
   const colorPrecision = Math.max(2, Math.min(7, Math.round(next.colorPrecision)));
   const numberofcolors = 2 ** colorPrecision;
