@@ -88,7 +88,7 @@ function normalizeSettings(settings: VectorizeSettings): VectorizeSettings {
     cornerThreshold: clampInt(merged.cornerThreshold, 0, 180),
     layerDifference: clampInt(merged.layerDifference, 0, 64),
     lengthThreshold: clampInt(merged.lengthThreshold, 1, 32),
-    maxIterations: clampInt(merged.maxIterations, 0, 10),
+    maxIterations: clampInt(merged.maxIterations, 1, 10),
     spliceThreshold: clampInt(merged.spliceThreshold, 0, 180),
     pathomit: filterSpeckle,
     roundcoords: pathPrecision,

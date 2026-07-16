@@ -152,7 +152,7 @@ Reglas comunes:
   - tiempo de trazado;
   - error o timeout.
 - [ ] Guardar métricas base para los defaults actuales de Ilustración e Icono.
-- [x] Añadir una prueba que demuestre que `maxIterations = 0` se normaliza a un valor válido antes del trazado.
+- [x] Añadir una prueba que demuestre que `maxIterations = 0` se normaliza a un valor válido antes del trazado, tanto en el perfil como en el worker.
 - [ ] Añadir una prueba de comportamiento, no un snapshot frágil, para cada control que se conservará.
 
 **Criterio de aceptación:** Existe una matriz repetible que permite comparar antes/después sin inspección manual como única evidencia.

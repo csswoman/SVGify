@@ -42,6 +42,7 @@ describe('icon-only product surface', () => {
     expect(worker).toContain('quantizeImageToPalette');
     expect(worker).toContain('smoothQuantizedPalette');
     expect(worker).toContain('paletteForTrace');
+    expect(worker).toContain('maxIterations: clampInt(merged.maxIterations, 1, 10)');
     expect(route).toContain("from '@neplex/vectorizer'");
     expect(route).toContain('Hierarchical.Cutout');
     expect(route).toContain('Hierarchical.Stacked');
