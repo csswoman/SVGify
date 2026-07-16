@@ -71,5 +71,6 @@ describe('icon-only product surface', () => {
 
     expect(vectorizer).toContain('svg: prev.svg');
     expect(session).toContain('cancel();');
+    expect(vectorizer).not.toContain('Pre-blur');
   });
 });

@@ -54,7 +54,7 @@ export function useVectorizer() {
           svg: prev.svg,
           isLoading: false,
           progress: 0,
-          error: 'La vectorización no produjo un SVG válido. Prueba bajar Colors o Pre-blur.',
+          error: 'La vectorización no produjo un SVG válido. Prueba con menos colores o un nivel más limpio.',
         }));
       } else if (type === 'error' && message) {
         clearVectorizeTimeout();
