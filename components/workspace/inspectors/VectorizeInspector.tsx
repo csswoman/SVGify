@@ -41,10 +41,11 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const hasSvg = svg !== null;
 
-  const paletteSummary =
+  const paletteCountSummary =
     paletteColors.length === 1
       ? `1 ${t('vec.color')}`
       : `${paletteColors.length} ${t('vec.colors')}`;
+  const paletteSummary = `${paletteCountSummary} · ${t(`set.detailLevel.${settings.detailLevel}`)}`;
 
   return (
     <div className="space-y-5">

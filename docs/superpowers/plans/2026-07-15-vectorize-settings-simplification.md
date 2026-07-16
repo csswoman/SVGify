@@ -221,7 +221,7 @@ Reglas comunes:
 - [ ] Mostrar Tolerancia solo cuando Quitar fondo esté activo.
 - [x] Mostrar Limpieza de borde transparente solo cuando se detecten píxeles con `0 < alpha < 255`.
 - [x] Mantener Paleta después de los controles principales y colapsada por defecto.
-- [ ] Actualizar summaries para que indiquen decisiones de producto, por ejemplo `16 colores · Equilibrado`.
+- [x] Actualizar summaries para que indiquen decisiones de producto, por ejemplo `16 colores · Equilibrado`.
 - [x] Eliminar claves i18n sin consumidores tras verificar EN/ES.
 
 **Criterio de aceptación:** Al abrir Vectorizar se ven como máximo Modo, Detalle, Colores, Quitar fondo y Paleta. No aparece ningún control sin efecto.
