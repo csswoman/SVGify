@@ -7,6 +7,7 @@ import { useI18n, type TKey } from '@/lib/i18n';
 interface ImageDropzoneProps {
   onImageData: (imageData: ImageData) => void;
   onError: (error: string) => void;
+  compact?: boolean;
 }
 
 const UPLOAD_ERROR_KEYS: Record<string, TKey> = {
@@ -26,7 +27,7 @@ function messageForCode(code: string | undefined, t: (key: TKey) => string): str
   return t('upload.error.UNKNOWN');
 }
 
-export function ImageDropzone({ onImageData, onError }: ImageDropzoneProps) {
+export function ImageDropzone({ onImageData, onError, compact = false }: ImageDropzoneProps) {
   const { t } = useI18n();
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -88,7 +89,8 @@ export function ImageDropzone({ onImageData, onError }: ImageDropzoneProps) {
       aria-busy={isLoading}
       className={[
         'focus-within:ring-2 focus-within:ring-blue-600 focus-within:ring-offset-2 dark:focus-within:ring-offset-gray-800',
-        'flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition-colors',
+        'flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed text-center transition-colors',
+        compact ? 'min-h-32 gap-1.5 p-5' : 'min-h-44 p-10',
         isLoading ? 'pointer-events-none opacity-70' : '',
         isDragging
           ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10'
@@ -104,10 +106,10 @@ export function ImageDropzone({ onImageData, onError }: ImageDropzoneProps) {
         disabled={isLoading}
         className="sr-only"
       />
-      <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
-        {isLoading ? t('upload.busy') : t('upload.drop')}
+      <p className={compact ? 'text-xs font-semibold text-gray-800 dark:text-gray-100' : 'text-sm font-medium text-gray-800 dark:text-gray-100'}>
+        {isLoading ? t('upload.busy') : compact ? t('upload.replaceDrop') : t('upload.drop')}
       </p>
-      <p className="mt-2 max-w-sm text-xs text-gray-500 dark:text-gray-400">{t('upload.formats')}</p>
+      <p className={compact ? 'max-w-sm text-[11px] text-gray-500 dark:text-gray-400' : 'mt-2 max-w-sm text-xs text-gray-500 dark:text-gray-400'}>{t('upload.formats')}</p>
     </label>
   );
 }

@@ -33,7 +33,9 @@ interface InspectorProps {
   onSelectedColorChange: (color: RGBColor | null) => void;
   onFillColorChange: (color: RGBColor) => void;
   onIncludeLabelLegendChange: (value: boolean) => void;
-  onResetDocument: () => void;
+  onReplaceImage: (imageData: ImageData) => void;
+  onUploadError: (error: string) => void;
+  uploadError: string | null;
   onSvgString: (svg: string) => void;
   onOptimizePrepared?: (preparedPayload: string) => void;
   exportPayload: string | null;
@@ -56,7 +58,9 @@ export function Inspector({
   onSelectedColorChange,
   onFillColorChange,
   onIncludeLabelLegendChange,
-  onResetDocument,
+  onReplaceImage,
+  onUploadError,
+  uploadError,
   onSvgString,
   onOptimizePrepared,
   exportPayload,
@@ -87,7 +91,11 @@ export function Inspector({
         ].join(' ')}
       >
         {activeTool === 'import' && (
-          <ImportInspector onReplace={onResetDocument} />
+          <ImportInspector
+            onReplace={onReplaceImage}
+            onError={onUploadError}
+            uploadError={uploadError}
+          />
         )}
 
         {activeTool === 'vectorize' && (

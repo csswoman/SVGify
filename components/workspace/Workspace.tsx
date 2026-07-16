@@ -81,17 +81,6 @@ export function Workspace() {
     setNextStepsDismissed(true);
   }, [exportState, t]);
 
-  const handleResetDocument = useCallback(() => {
-    setImageData(null);
-    setSvgString(null);
-    setSelectedColor(null);
-    setZoomViewport(DEFAULT_ZOOM_VIEWPORT);
-    setActiveTool('import');
-    setNextStepsDismissed(false);
-    setHasOpenedRefine(false);
-    exportState.resetExportState();
-  }, [exportState]);
-
   const handleImageData = useCallback((data: ImageData) => {
     setUploadError(null);
     setImageData(data);
@@ -105,6 +94,11 @@ export function Workspace() {
     exportState.resetExportState();
     setInspectorOpen(true);
   }, [exportState]);
+
+  const handleReplaceImage = useCallback((data: ImageData) => {
+    handleImageData(data);
+    setActiveTool('vectorize');
+  }, [handleImageData]);
 
   useEffect(() => {
     if (!downloadHighlight) return;
@@ -231,7 +225,9 @@ export function Workspace() {
                   onSelectedColorChange={setSelectedColor}
                   onFillColorChange={setFillColor}
                   onIncludeLabelLegendChange={exportState.setIncludeLabelLegend}
-                  onResetDocument={handleResetDocument}
+                  onReplaceImage={handleReplaceImage}
+                  onUploadError={setUploadError}
+                  uploadError={uploadError}
                   onSvgString={setSvgString}
                   onOptimizePrepared={handleOptimizePrepared}
                   exportPayload={exportState.currentPayload}
