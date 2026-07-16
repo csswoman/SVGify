@@ -18,6 +18,8 @@ interface UseVectorizeSessionOptions {
   enabled?: boolean;
 }
 
+const RECONSTRUCTED_MATTE_PIPELINE_ENABLED = true;
+
 export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeSessionOptions) {
   const [settings, setSettings] = useState<VectorizeProductSettings>(VECTORIZE_PRODUCT_DEFAULTS);
   const [removeBg, setRemoveBg] = useState(false);
@@ -58,6 +60,11 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
       // to match the canvas background).
       contiguous: true,
       seeds: seeds.length > 0 ? seeds : undefined,
+      // Opaque logo mattes need a strict nucleus and a wider color-safe edge
+      // reconstruction. The public tolerance still controls halo cleanup.
+      matteCoreToleranceCap: 12,
+      matteFringeDepth: 6,
+      matteHueGuard: true,
     });
   }, [removeBg, imageData, bgTolerance, seeds]);
 
@@ -98,13 +105,18 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
     replacePalette(suggestedPalette);
   }, [replacePalette, suggestedPalette]);
 
-  const settingsWithPalette = useMemo(
-    () => applyVectorizeProfile({
+  const settingsWithPalette = useMemo(() => {
+    const profiled = applyVectorizeProfile({
       ...settings,
       customPalette: paletteColors.map((color) => ({ ...color })),
-    }),
-    [settings, paletteColors]
-  );
+    });
+
+    return {
+      ...profiled,
+      matteReconstructed:
+        RECONSTRUCTED_MATTE_PIPELINE_ENABLED && removeBg && !hasTranslucentEdges,
+    };
+  }, [settings, paletteColors, removeBg, hasTranslucentEdges]);
 
   const handlePick = useCallback((point: SeedPoint) => {
     setSeeds((prev) => [...prev, point]);

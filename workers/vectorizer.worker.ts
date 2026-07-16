@@ -3,6 +3,7 @@ import {
   anchorAntialiasedEdgeColors,
   applyAlphaThreshold,
   applyBilateralFilter,
+  morphCloseAlpha,
   upscaleImageData,
   upscaleImageDataSmooth,
 } from '@/lib/imageFilters';
@@ -10,11 +11,14 @@ import {
   paletteForTrace,
   resolveIconPaletteSmoothing,
   resolveIconPreprocessingScale,
+  resolveMatteFilterSpeckle,
+  resolveMatteRasterSpeckleArea,
   resolveRasterSpeckleArea,
 } from '@/lib/iconModeSettings';
 import {
   absorbSmallPaletteComponents,
   quantizeImageToPalette,
+  recoverOpaqueMattePaletteFringes,
   smoothQuantizedPalette,
 } from '@/lib/paletteExtraction';
 import { encodeVectorizePayload, VECTORIZE_PAYLOAD_CONTENT_TYPE } from '@/lib/vectorizePayload';
@@ -61,7 +65,13 @@ function normalizeSettings(settings: VectorizeSettings): VectorizeSettings {
     1,
     8
   );
-  const filterSpeckle = clampInt(merged.filterSpeckle, 0, 40);
+  const filterSpeckle = clampInt(
+    merged.traceMode === 'icon' && merged.matteReconstructed
+      ? resolveMatteFilterSpeckle(merged.filterSpeckle)
+      : merged.filterSpeckle,
+    0,
+    40
+  );
   const pathPrecision = clampInt(merged.pathPrecision, 0, 8);
   const preprocessingScale = clampInt(merged.preprocessingScale, 1, 2);
   const bilateralRadius = clampInt(merged.bilateralRadius, 0, 3);
@@ -87,6 +97,10 @@ function normalizeSettings(settings: VectorizeSettings): VectorizeSettings {
 }
 
 function preprocessForVTracer(imageData: ImageData, settings: VectorizeSettings): ImageData {
+  // Icons always keep the icon raster profile — including after opaque-matte
+  // background removal. Diverting to the standard (no smooth upscale / no
+  // palette morphology) path left hard binary edges that traced as jagged
+  // teeth. Matte cleanup is an extra pass on top of the icon profile.
   const preprocessingScale = settings.traceMode === 'icon'
     ? resolveIconPreprocessingScale(
         settings.preprocessingScale,
@@ -138,7 +152,23 @@ function preprocessIconForVTracer(imageData: ImageData, settings: VectorizeSetti
     imageData.width,
     imageData.height
   );
-  return smoothQuantizedPalette(quantized, palette, smoothingRadius);
+  const smoothed = smoothQuantizedPalette(quantized, palette, smoothingRadius);
+  // After removing an opaque black/navy matte, dark anti-aliased remnants can
+  // still land as their own palette color. Fold those edge-only shades back
+  // into the bright accent they came from — without leaving the icon profile.
+  if (!settings.matteReconstructed) return smoothed;
+
+  const fringeFixed = recoverOpaqueMattePaletteFringes(smoothed, palette);
+  // JPEG/WebP mattes leave single-pixel holes inside flat fills (sun, star).
+  // Closing alpha before absorb keeps those regions as solid shapes VTracer
+  // can regularize into circles/stars instead of noisy compound paths.
+  const closed = morphCloseAlpha(fringeFixed, 1);
+  const minComponentArea = resolveMatteRasterSpeckleArea(
+    settings.filterSpeckle,
+    closed.width,
+    closed.height
+  );
+  return absorbSmallPaletteComponents(closed, minComponentArea);
 }
 
 async function gzipPayload(payload: Uint8Array): Promise<Blob> {

@@ -1,10 +1,24 @@
 import { gzipSync } from 'node:zlib';
+import { PathSimplifyMode } from '@neplex/vectorizer';
 import { describe, expect, it } from 'vitest';
 import { encodeVectorizePayload, VECTORIZE_PAYLOAD_CONTENT_TYPE } from '@/lib/vectorizePayload';
 import { VECTORIZE_DEFAULTS } from '@/types/svg.types';
-import { POST } from './route';
+import { POST, toVTracerConfig } from './route';
 
 describe('POST /api/vectorize', () => {
+  it('keeps icon mode on polygon tracing even after opaque matte removal', () => {
+    expect(toVTracerConfig({
+      ...VECTORIZE_DEFAULTS,
+      traceMode: 'icon',
+      matteReconstructed: true,
+    }).mode).toBe(PathSimplifyMode.Polygon);
+
+    expect(toVTracerConfig({
+      ...VECTORIZE_DEFAULTS,
+      traceMode: 'standard',
+    }).mode).toBe(PathSimplifyMode.Spline);
+  });
+
   it('traces the packed RGBA transport used by the worker', async () => {
     const payload = encodeVectorizePayload(
       {

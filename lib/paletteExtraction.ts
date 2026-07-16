@@ -433,6 +433,171 @@ export function quantizeImageToPalette(
   return out;
 }
 
+function scaledColorDirectionSimilarity(a: RGBColor, b: RGBColor): number {
+  const dot = a.r * b.r + a.g * b.g + a.b * b.b;
+  const aStrength = a.r * a.r + a.g * a.g + a.b * a.b;
+  const bStrength = b.r * b.r + b.g * b.g + b.b * b.b;
+  if (aStrength < 1 || bStrength < 1) return 0;
+  return (dot * dot) / (aStrength * bStrength);
+}
+
+function accentPreference(color: RGBColor): number {
+  const sat = saturationRange(color);
+  const light = luminance(color);
+  const midLightBonus = 1 - Math.min(1, Math.abs(light - 150) / 150);
+  return sat * (0.65 + midLightBonus * 0.35);
+}
+
+/**
+ * JPEG/WebP antialiasing of a flat accent over a dark matte invents a second,
+ * lighter shade of the same hue. Keeping both splits solid shapes (sun, star)
+ * into half-and-half fills so only one side can regularize as a full primitive.
+ * Collapse accents that share nearly the same RGB direction into the stronger
+ * logo color.
+ */
+export function collapseNearDuplicateAccents(palette: readonly RGBColor[]): RGBColor[] {
+  const result: RGBColor[] = [];
+  for (const color of palette) {
+    const sat = saturationRange(color);
+    const light = luminance(color);
+    if (sat < 40 || light < 80) {
+      result.push({ ...color });
+      continue;
+    }
+
+    let absorbed = false;
+    for (let index = 0; index < result.length; index++) {
+      const existing = result[index];
+      if (saturationRange(existing) < 40 || luminance(existing) < 80) continue;
+      if (scaledColorDirectionSimilarity(color, existing) < 0.97) continue;
+      if (accentPreference(color) > accentPreference(existing)) {
+        result[index] = { ...color };
+      }
+      absorbed = true;
+      break;
+    }
+    if (!absorbed) result.push({ ...color });
+  }
+  return result;
+}
+
+/**
+ * Repaint palette colors created by an opaque black matte. A remnant is dark,
+ * mostly touches transparency, occupies only a small part of the artwork, and
+ * points in nearly the same RGB direction as a much brighter accent. Broad
+ * dark artwork (for example a navy mountain) fails the edge-dominance test.
+ */
+export function recoverOpaqueMattePaletteFringes(
+  imageData: ImageData,
+  palette: readonly RGBColor[]
+): ImageData {
+  if (palette.length < 2) return imageData;
+
+  const { width, height, data } = imageData;
+  const pixelCount = width * height;
+  const classes = new Int16Array(pixelCount);
+  classes.fill(-1);
+  const counts = new Uint32Array(palette.length);
+  const edgeCounts = new Uint32Array(palette.length);
+  let visibleCount = 0;
+
+  for (let pixel = 0; pixel < pixelCount; pixel++) {
+    const index = pixel * 4;
+    if (data[index + 3] < 16) continue;
+    const paletteIndex = paletteColorIndex(
+      { r: data[index], g: data[index + 1], b: data[index + 2] },
+      palette
+    );
+    classes[pixel] = paletteIndex;
+    counts[paletteIndex]++;
+    visibleCount++;
+  }
+
+  for (let pixel = 0; pixel < pixelCount; pixel++) {
+    const paletteIndex = classes[pixel];
+    if (paletteIndex < 0) continue;
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+    if (
+      x === 0 ||
+      x === width - 1 ||
+      y === 0 ||
+      y === height - 1 ||
+      classes[pixel - 1] < 0 ||
+      classes[pixel + 1] < 0 ||
+      classes[pixel - width] < 0 ||
+      classes[pixel + width] < 0
+    ) {
+      edgeCounts[paletteIndex]++;
+    }
+  }
+
+  const replacements = new Int16Array(palette.length);
+  replacements.fill(-1);
+
+  for (let darkIndex = 0; darkIndex < palette.length; darkIndex++) {
+    const dark = palette[darkIndex];
+    const count = counts[darkIndex];
+    if (count === 0) continue;
+    const darkLightness = luminance(dark);
+    // A yellow/accent edge composited over a black matte collapses into a dark,
+    // hue-aligned shade. On heavily compressed or low-resolution uploads that
+    // fringe widens into a thick band, so its share of edge pixels drops and its
+    // total footprint grows. The tight hue-direction gate below (0.985 vs a
+    // bright, saturated accent) is the real safeguard, so keep only loose
+    // pre-filters here: reject clearly interior fills (little transparency
+    // contact) and colors that dominate the artwork.
+    if (
+      darkLightness > 55 ||
+      edgeCounts[darkIndex] / count < 0.28 ||
+      count / Math.max(1, visibleCount) > 0.24
+    ) continue;
+
+    // A dark accent fringe (e.g. yellow over black → olive) points ~within 8°
+    // of its bright source in raw RGB, but the source's blue channel keeps the
+    // squared-cosine below the old 0.985 cut. Neutral dark artwork (navy ≈ 0.69
+    // vs yellow) stays far below this bar.
+    let bestTarget = -1;
+    let bestSimilarity = 0.975;
+    for (let targetIndex = 0; targetIndex < palette.length; targetIndex++) {
+      if (targetIndex === darkIndex) continue;
+      const target = palette[targetIndex];
+      if (
+        luminance(target) < Math.max(100, darkLightness * 3) ||
+        saturationRange(target) < 40
+      ) continue;
+
+      const similarity = scaledColorDirectionSimilarity(dark, target);
+      if (similarity > bestSimilarity) {
+        bestSimilarity = similarity;
+        bestTarget = targetIndex;
+      }
+    }
+    replacements[darkIndex] = bestTarget;
+  }
+
+  let hasReplacement = false;
+  for (const replacement of replacements) {
+    if (replacement >= 0) {
+      hasReplacement = true;
+      break;
+    }
+  }
+  if (!hasReplacement) return imageData;
+
+  const out = new ImageData(new Uint8ClampedArray(data), width, height);
+  for (let pixel = 0; pixel < pixelCount; pixel++) {
+    const replacement = classes[pixel] >= 0 ? replacements[classes[pixel]] : -1;
+    if (replacement < 0) continue;
+    const color = palette[replacement];
+    const index = pixel * 4;
+    out.data[index] = color.r;
+    out.data[index + 1] = color.g;
+    out.data[index + 2] = color.b;
+  }
+  return out;
+}
+
 /**
  * Remove small islands created by palette quantization without inventing a
  * replacement color. A tiny component is repainted only when it touches an
@@ -921,10 +1086,13 @@ export function suggestFlatIconPaletteFromImage(
   if (selected.length === 0) addColor(ICON_BASE_PALETTE[0].color);
 
   const refined = refinePaletteFromImage(imageData, selected, colorQuantCycles, fixedColors);
-  return refined.map((color, index) => ({
+  const mapped = refined.map((color, index) => ({
     ...(stableColorIndexes.has(index) ? selected[index] : color),
     a: 255,
   }));
+  // Drop JPEG-invented lighter twins of the same accent before tracing so solid
+  // shapes stay one fill and can regularize as full primitives.
+  return collapseNearDuplicateAccents(mapped).map((color) => ({ ...color, a: 255 }));
 }
 
 function suggestPaletteAtLimit(imageData: ImageData, maxColors: number, colorQuantCycles = 6): TracePaletteColor[] {

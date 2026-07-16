@@ -124,7 +124,10 @@ function regularSmallCircle(d: string, canvasSize: number): string | null {
   if (
     segments.length < 7 ||
     size < canvasSize * 0.04 ||
-    size > canvasSize * 0.15 ||
+    // Matte-fringe recovery folds the dark accent halo back into the disc, which
+    // nudges a traced sun slightly past the old 0.15 cap; 0.17 keeps it eligible
+    // while the strict per-anchor radius gate below still rejects non-discs.
+    size > canvasSize * 0.17 ||
     Math.min(width, height) / size < 0.78
   ) {
     return null;
@@ -231,9 +234,9 @@ function convexHull(points: readonly Point[]): Point[] {
   return [...lower.slice(0, -1), ...upper.slice(0, -1)];
 }
 
-function supportsPrimitiveRegularization(svg: string): boolean {
+function supportsPrimitiveRegularization(svg: string, pathBudget = 18): boolean {
   const paths = svg.match(/<path\b[^>]*>/g) ?? [];
-  if (paths.length === 0 || paths.length > 18) return false;
+  if (paths.length === 0 || paths.length > pathBudget) return false;
 
   const colors = new Set<string>();
   for (const path of paths) {
@@ -298,14 +301,48 @@ function regularFourPointStar(d: string, color: ParsedColor | null, canvas: Canv
   }
 
   const points = anchorSubpaths(segments)?.[0];
-  if (!points || points.length < 8 || points.length > 24) return null;
+  // Noisy matte traces produce many more anchors than a clean logo export;
+  // rely on fill ratio, cardinal tips and radial variation instead of a tight
+  // vertex budget (which previously blocked the star while still allowing a
+  // false positive on the yellow cable when raised blindly).
+  if (!points || points.length < 8 || points.length > 96) return null;
   const center = boundsCenter(bounds);
+  const area = polygonArea(points);
+  const fillRatio = area / Math.max(1, width * height);
+  // Circles fill ~0.78 of their bbox; four-point stars sit around 0.35–0.55.
+  if (fillRatio < 0.28 || fillRatio > 0.62) return null;
+
+  const tipBand = largest * 0.14;
+  const axisBandX = width * 0.28;
+  const axisBandY = height * 0.28;
+  const hasTop = points.some(
+    (point) => Math.abs(point.y - bounds.top) <= tipBand && Math.abs(point.x - center.x) <= axisBandX
+  );
+  const hasBottom = points.some(
+    (point) => Math.abs(point.y - bounds.bottom) <= tipBand && Math.abs(point.x - center.x) <= axisBandX
+  );
+  const hasLeft = points.some(
+    (point) => Math.abs(point.x - bounds.left) <= tipBand && Math.abs(point.y - center.y) <= axisBandY
+  );
+  const hasRight = points.some(
+    (point) => Math.abs(point.x - bounds.right) <= tipBand && Math.abs(point.y - center.y) <= axisBandY
+  );
+  if (!hasTop || !hasBottom || !hasLeft || !hasRight) return null;
+
   const nearCenter = points.filter(
     (point) =>
       Math.abs(point.x - center.x) < width * 0.32 &&
       Math.abs(point.y - center.y) < height * 0.32
   ).length;
   if (nearCenter < 3) return null;
+
+  const radii = points.map((point) => Math.hypot(point.x - center.x, point.y - center.y));
+  const meanRadius = radii.reduce((sum, radius) => sum + radius, 0) / radii.length;
+  if (meanRadius < 1) return null;
+  const radialVariance =
+    radii.reduce((sum, radius) => sum + (radius - meanRadius) ** 2, 0) / radii.length;
+  // Reject near-circular blobs (low radial CV); stars have clear tip/waist contrast.
+  if (Math.sqrt(radialVariance) / meanRadius < 0.12) return null;
 
   // Preserve the detected outer proportions, but recover the slightly fuller
   // waist that antialiasing tends to erode during palette tracing.
@@ -865,13 +902,16 @@ function regularOrthogonalDetail(d: string, canvasSize: number): string | null {
  * whichever end the tracer identified as rounded. This targets generic logo
  * details such as teeth, slots, and short rules; larger artwork is untouched.
  */
-export function regularizeLogoDetails(svg: string): string {
+export function regularizeLogoDetails(
+  svg: string,
+  options: { pathBudget?: number } = {}
+): string {
   const viewBox = svg.match(/\bviewBox="\s*[-+\d.e]+\s+[-+\d.e]+\s+([-+\d.e]+)\s+([-+\d.e]+)\s*"/i);
   const width = viewBox ? Number(viewBox[1]) : 0;
   const height = viewBox ? Number(viewBox[2]) : 0;
   const canvas: CanvasBounds = { width, height, size: Math.min(width, height) };
   if (!Number.isFinite(canvas.size) || canvas.size <= 0) return svg;
-  if (!supportsPrimitiveRegularization(svg)) return svg;
+  if (!supportsPrimitiveRegularization(svg, options.pathBudget ?? 18)) return svg;
 
   let innerBoundary: Bounds | null = null;
   let output = svg.replace(/<path\b([^>]*?)\bd="([^"]+)"([^>]*)>/g, (full, before: string, d: string, after: string) => {

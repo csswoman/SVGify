@@ -68,6 +68,8 @@ export interface VectorizeSettings extends VectorizeProductSettings {
   preprocessingScale: number;  // raster upscale before vectorize
   bilateralColorSigma: number; // edge preservation threshold
   paletteMergeThreshold: number; // merge near-duplicate output colors
+  /** Opaque matte was removed client-side; icon preprocess may fold dark fringe shades. */
+  matteReconstructed?: boolean;
 }
 
 export const VECTORIZE_PRODUCT_DEFAULTS: VectorizeProductSettings = {

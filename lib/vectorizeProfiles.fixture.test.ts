@@ -30,14 +30,18 @@ function profileConfig(settings: VectorizeSettings): VTracerConfig {
   };
 }
 
+async function loadFixtureRgba(fixturePath: string) {
+  const fixture = await readFile(fixturePath);
+  return sharp(fixture).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+}
+
 async function traceFixture(
   fixturePath: string,
   traceMode: VectorizeSettings['traceMode'],
   detailLevel: VectorizeSettings['detailLevel']
 ) {
   const startedAt = performance.now();
-  const fixture = await readFile(fixturePath);
-  const decoded = await sharp(fixture).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const decoded = await loadFixtureRgba(fixturePath);
   const settings = applyVectorizeProfile(VECTORIZE_DEFAULTS, {
     traceMode,
     detailLevel,
@@ -64,11 +68,12 @@ function reportFixtureMetrics(name: string, result: Awaited<ReturnType<typeof tr
 }
 
 describe('vectorize profile fixture', () => {
-  it('traces the validation icon successfully at every detail level', async () => {
+  it('traces the svgify icon successfully at every detail level', async () => {
+    const fixturePath = join(process.cwd(), 'public', 'svgify.svg');
     const [clean, balanced, detailed] = await Promise.all([
-      traceFixture(join(process.cwd(), 'public', 'validation-icon.png'), 'icon', 'clean'),
-      traceFixture(join(process.cwd(), 'public', 'validation-icon.png'), 'icon', 'balanced'),
-      traceFixture(join(process.cwd(), 'public', 'validation-icon.png'), 'icon', 'detailed'),
+      traceFixture(fixturePath, 'icon', 'clean'),
+      traceFixture(fixturePath, 'icon', 'balanced'),
+      traceFixture(fixturePath, 'icon', 'detailed'),
     ]);
 
     for (const result of [clean, balanced, detailed]) {
@@ -77,9 +82,9 @@ describe('vectorize profile fixture', () => {
     }
 
     expect(clean.pathCount).toBeLessThanOrEqual(detailed.pathCount);
-    reportFixtureMetrics('validation-icon-clean', clean);
-    reportFixtureMetrics('validation-icon-balanced', balanced);
-    reportFixtureMetrics('validation-icon-detailed', detailed);
+    reportFixtureMetrics('svgify-clean', clean);
+    reportFixtureMetrics('svgify-balanced', balanced);
+    reportFixtureMetrics('svgify-detailed', detailed);
   }, 30_000);
 
   it('traces illustration, noisy-photo-like, and transparent fixtures in illustration mode', async () => {

@@ -35,7 +35,7 @@ function parseSettings(raw: FormDataEntryValue | null): VectorizeSettings {
   }
 }
 
-function toVTracerConfig(settings: VectorizeSettings): VTracerConfig {
+export function toVTracerConfig(settings: VectorizeSettings): VTracerConfig {
   return {
     colorMode: ColorMode.Color,
     // Flat icons are already posterized to exact palette regions. Cutouts keep
@@ -47,6 +47,8 @@ function toVTracerConfig(settings: VectorizeSettings): VTracerConfig {
     // Flat logos need boundary-faithful polygons; post-processing rounds only
     // the appropriate large shapes. Standard artwork keeps spline fitting,
     // while its selected palette is enforced during raster preprocessing.
+    // Icons keep Polygon even after opaque-matte background removal — switching
+    // those rasters to Spline followed hard binary edges as soft wobble.
     mode: settings.traceMode === 'icon' ? PathSimplifyMode.Polygon : PathSimplifyMode.Spline,
     colorPrecision: resolveTraceColorPrecision(settings),
     filterSpeckle: clampInt(settings.filterSpeckle, 0, 40),

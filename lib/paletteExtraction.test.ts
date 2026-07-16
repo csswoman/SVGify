@@ -2,11 +2,13 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import {
   absorbSmallPaletteComponents,
   applyAlphaMask,
+  collapseNearDuplicateAccents,
   hardenIconAlpha,
   mergeSimilarPaletteColors,
   nearestPaletteColor,
   pickDarkOutlineColorFromImage,
   quantizeImageToPalette,
+  recoverOpaqueMattePaletteFringes,
   removeNearWhitePixels,
   smoothQuantizedPalette,
   suggestFlatIconPaletteFromImage,
@@ -34,6 +36,62 @@ beforeAll(() => {
 });
 
 describe('palette extraction', () => {
+  it('recovers an edge-dominated dark matte shade into its bright accent', () => {
+    const transparent = [0, 0, 0, 0];
+    const navy = [35, 44, 59, 255];
+    const brown = [32, 24, 7, 255];
+    const yellow = [243, 188, 29, 255];
+    const pixels = Array.from({ length: 20 * 12 }, () => transparent.slice());
+    for (let y = 1; y <= 10; y++) {
+      for (let x = 1; x <= 10; x++) pixels[y * 20 + x] = navy;
+    }
+    for (let y = 2; y <= 6; y++) {
+      for (let x = 14; x <= 18; x++) {
+        pixels[y * 20 + x] = x === 14 || x === 18 || y === 2 || y === 6
+          ? brown
+          : yellow;
+      }
+    }
+    const input = new ImageData(new Uint8ClampedArray(pixels.flat()), 20, 12);
+
+    const recovered = recoverOpaqueMattePaletteFringes(input, [
+      { r: 35, g: 44, b: 59 },
+      { r: 243, g: 188, b: 29 },
+      { r: 32, g: 24, b: 7 },
+    ]);
+
+    expect([...recovered.data.slice((2 * 20 + 16) * 4, (2 * 20 + 16) * 4 + 4)])
+      .toEqual(yellow);
+  });
+
+  it('preserves broad dark artwork that is not dominated by its outer edge', () => {
+    const navy = [35, 44, 59, 255];
+    const yellow = [243, 188, 29, 255];
+    const pixels = Array.from({ length: 49 }, () => navy.slice());
+    pixels[24] = yellow;
+    const input = new ImageData(new Uint8ClampedArray(pixels.flat()), 7, 7);
+
+    const recovered = recoverOpaqueMattePaletteFringes(input, [
+      { r: 35, g: 44, b: 59 },
+      { r: 243, g: 188, b: 29 },
+    ]);
+
+    expect([...recovered.data.slice(0, 4)]).toEqual(navy);
+  });
+
+  it('collapses a lighter JPEG twin of the same accent into one logo color', () => {
+    const collapsed = collapseNearDuplicateAccents([
+      { r: 44, g: 48, b: 55 },
+      { r: 243, g: 188, b: 36 },
+      { r: 254, g: 209, b: 76 },
+      { r: 255, g: 255, b: 255 },
+    ]);
+
+    expect(collapsed).toHaveLength(3);
+    expect(collapsed.some((c) => c.r === 254 && c.g === 209)).toBe(false);
+    expect(collapsed.some((c) => c.r === 243 && c.g === 188)).toBe(true);
+  });
+
   it('absorbs tiny palette islands into an existing neighboring color', () => {
     const teal = [37, 185, 181, 255];
     const beige = [224, 205, 164, 255];

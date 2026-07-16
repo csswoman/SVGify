@@ -4,6 +4,7 @@ import { shouldPreserveTracePalette } from './iconModeSettings';
 import { snapSvgToPalette } from './paletteExtraction';
 import { optimizeSvg } from './optimizeSvg';
 import { regularizeLogoDetails } from './regularizeLogoDetails';
+import { removeSmallSvgPathsByBounds } from './iconVectorization';
 
 /**
  * Post-process a raw VTracer SVG: merge near-duplicates, optionally snap to the
@@ -27,7 +28,7 @@ export function finalizeTracedSvg(rawSvg: string, settings: VectorizeSettings): 
     svg = reduceSvgStringColorsToCount(svg, colorCap);
   }
 
-  const optimized = optimizeSvg(svg, {
+  let optimized = optimizeSvg(svg, {
     removeStroke: true,
     // Adjacent flat-color regions otherwise expose antialiased hairline gaps,
     // making details such as teeth look detached from the face.
@@ -45,5 +46,29 @@ export function finalizeTracedSvg(rawSvg: string, settings: VectorizeSettings): 
     splitCompoundPaths: false,
   });
 
-  return settings.traceMode === 'icon' ? regularizeLogoDetails(optimized) : optimized;
+  if (settings.traceMode !== 'icon') return optimized;
+
+  // Opaque-matte removal turns JPEG/WebP anti-alias dust into extra filled
+  // islands. Dropping those tiny bounds before regularization lets stroke
+  // primitives rebuild; otherwise path count stays above the logo budget and
+  // the UI keeps the jagged fills.
+  if (settings.matteReconstructed) {
+    const viewBox = optimized.match(
+      /\bviewBox="\s*[-+\d.e]+\s+[-+\d.e]+\s+([-+\d.e]+)\s+([-+\d.e]+)\s*"/i
+    );
+    const width = viewBox ? Number(viewBox[1]) : 0;
+    const height = viewBox ? Number(viewBox[2]) : 0;
+    const canvasSize = Math.min(width, height);
+    if (Number.isFinite(canvasSize) && canvasSize > 0) {
+      const minArea = Math.max(220, canvasSize * canvasSize * 0.00035);
+      // Do not preserve the full palette: every matte dust island already snapped
+      // to a palette color, so preserving those colors would keep the noise.
+      optimized = removeSmallSvgPathsByBounds(optimized, minArea);
+    }
+    // A few leftover dust paths are fine — raise the budget so frame strokes
+    // still rebuild. Illustrations keep the default 18 via non-matte calls.
+    return regularizeLogoDetails(optimized, { pathBudget: 28 });
+  }
+
+  return regularizeLogoDetails(optimized);
 }

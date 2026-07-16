@@ -69,6 +69,26 @@ export function resolveRasterSpeckleArea(
   return Math.max(2, Math.min(12, Math.round(base * sizeScale)));
 }
 
+/**
+ * Opaque-matte removal leaves JPEG/WebP edge dust as tiny palette islands.
+ * Those islands explode path count past the logo regularizer's budget, so the
+ * cleanup area is intentionally stronger than the standard raster pass.
+ */
+export function resolveMatteRasterSpeckleArea(
+  filterSpeckle: number,
+  width: number,
+  height: number
+): number {
+  const base = Math.max(12, Math.min(40, Math.round(filterSpeckle)));
+  const sizeScale = Math.min(1.5, Math.max(1, Math.sqrt(Math.max(1, width * height)) / 512));
+  return Math.max(24, Math.min(64, Math.round(base * sizeScale)));
+}
+
+/** Minimum VTracer speckle filter after reconstructing an opaque icon matte. */
+export function resolveMatteFilterSpeckle(filterSpeckle: number): number {
+  return Math.max(20, Math.min(40, Math.round(filterSpeckle)));
+}
+
 export function shouldPreserveTracePalette(
   settings: Pick<VectorizeSettings, 'customPalette'>
 ): boolean {

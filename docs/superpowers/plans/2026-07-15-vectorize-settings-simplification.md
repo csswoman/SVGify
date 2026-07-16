@@ -138,7 +138,7 @@ Reglas comunes:
 **Objetivo:** Evitar que la simplificación de la UI cambie silenciosamente la calidad del trazado.
 
 - [x] Identificar una matriz mínima de fixtures:
-  - `public/validation-icon.png` para Logo o icono.
+  - `public/svgify.svg` para Logo o icono.
   - Una ilustración con varios colores y sombreado.
   - Una foto con ruido/JPEG.
   - Un PNG transparente con halo semitransparente.

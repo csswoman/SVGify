@@ -36,6 +36,158 @@ function rgbaImageFromRows(rows: number[][][]): ImageData {
 }
 
 describe('background removal', () => {
+  it('preserves dark colored artwork on a black background', () => {
+    const black = [0, 0, 0];
+    const navy = [33, 42, 57];
+    const source = imageFromRows([
+      [black, black, black, black, black],
+      [black, navy, navy, navy, black],
+      [black, navy, navy, navy, black],
+      [black, navy, navy, navy, black],
+      [black, black, black, black, black],
+    ]);
+
+    const output = removeBackground(source, { tolerance: 48, contiguous: true });
+
+    expect([...output.data.subarray((2 * output.width + 2) * 4, (2 * output.width + 2) * 4 + 4)])
+      .toEqual([...navy, 255]);
+    expect(output.data[3]).toBe(0);
+  });
+
+  it('decontaminates a dark anti-aliased logo edge after removing black', () => {
+    const black = [0, 0, 0];
+    const edge = [25, 32, 43];
+    const navy = [33, 42, 57];
+    const source = imageFromRows([
+      [black, black, black, black, black],
+      [black, edge, edge, edge, black],
+      [black, edge, navy, edge, black],
+      [black, edge, edge, edge, black],
+      [black, black, black, black, black],
+    ]);
+
+    const output = removeBackground(source, { tolerance: 48, contiguous: true });
+    const edgeIndex = (1 * output.width + 2) * 4;
+
+    // Mostly-foreground coverage must come out fully opaque: the vectorize
+    // pipeline hard-thresholds alpha at 180, and fractional edges turned into
+    // 2-3px bites on shape borders (sun/star notches).
+    expect([...output.data.subarray(edgeIndex, edgeIndex + 4)]).toEqual([...navy, 255]);
+    expect(output.data[(2 * output.width + 2) * 4 + 3]).toBe(255);
+  });
+
+  it('drops mostly-background fringe pixels instead of leaving translucent remnants', () => {
+    const black = [0, 0, 0];
+    const faint = [77, 77, 77]; // ~30% white blended into a black canvas
+    const white = [255, 255, 255];
+    const source = imageFromRows([
+      [black, black, black, black, black],
+      [black, faint, faint, faint, black],
+      [black, faint, white, faint, black],
+      [black, faint, faint, faint, black],
+      [black, black, black, black, black],
+    ]);
+
+    const output = removeBackground(source, { tolerance: 48, contiguous: true });
+
+    expect(output.data[(1 * output.width + 2) * 4 + 3]).toBe(0);
+    expect([...output.data.subarray((2 * output.width + 2) * 4, (2 * output.width + 2) * 4 + 4)])
+      .toEqual([...white, 255]);
+  });
+
+  it('drops hue-shifted accent fringe instead of tracing it as dark brown', () => {
+    const black = [0, 0, 0];
+    // WebP can darken a yellow edge unevenly, reducing its blue channel more
+    // than red and green. It is still a background blend, not a brown detail.
+    const darkYellowEdge = [42, 28, 0];
+    const yellow = [241, 190, 60];
+    const source = imageFromRows([
+      [black, black, black, black, black],
+      [black, darkYellowEdge, yellow, yellow, black],
+      [black, darkYellowEdge, yellow, yellow, black],
+      [black, darkYellowEdge, yellow, yellow, black],
+      [black, black, black, black, black],
+    ]);
+
+    const output = removeBackground(source, { tolerance: 48, contiguous: true });
+    const edgeIndex = (2 * output.width + 1) * 4;
+
+    expect(output.data[edgeIndex + 3]).toBe(0);
+    expect([...output.data.subarray((2 * output.width + 2) * 4, (2 * output.width + 2) * 4 + 4)])
+      .toEqual([...yellow, 255]);
+  });
+
+  it('keeps yellow at a white junction in the strict opaque-matte pipeline', () => {
+    const black = [0, 0, 0];
+    const darkYellowEdge = [160, 110, 15];
+    const yellow = [241, 190, 60];
+    const white = [255, 255, 255];
+    const source = imageFromRows([
+      [black, black, black, black, black, black],
+      [black, darkYellowEdge, yellow, white, white, black],
+      [black, darkYellowEdge, yellow, white, white, black],
+      [black, darkYellowEdge, yellow, white, white, black],
+      [black, black, black, black, black, black],
+    ]);
+
+    const output = removeBackground(source, {
+      tolerance: 128,
+      contiguous: true,
+      matteCoreToleranceCap: 12,
+      matteFringeDepth: 6,
+      matteHueGuard: true,
+    });
+    const edgeIndex = (2 * output.width + 1) * 4;
+
+    expect([...output.data.subarray(edgeIndex, edgeIndex + 4)]).toEqual([...yellow, 255]);
+  });
+
+  it('preserves a distinct dark shape when tolerance is cranked up', () => {
+    const black = [0, 0, 0];
+    const navy = [33, 42, 57];
+    const source = imageFromRows([
+      [black, black, black, black, black, black, black],
+      [black, black, black, black, black, black, black],
+      [black, black, navy, navy, navy, black, black],
+      [black, black, navy, navy, navy, black, black],
+      [black, black, navy, navy, navy, black, black],
+      [black, black, black, black, black, black, black],
+      [black, black, black, black, black, black, black],
+    ]);
+
+    const output = removeBackground(source, { tolerance: 128, contiguous: true });
+
+    // The canvas is removed, but the solid navy plateau must not be flooded
+    // away just because a high tolerance radius reaches its color.
+    expect([...output.data.subarray((3 * output.width + 3) * 4, (3 * output.width + 3) * 4 + 4)])
+      .toEqual([...navy, 255]);
+    expect(output.data[3]).toBe(0);
+  });
+
+  it('still removes the contact halo ring at high tolerance', () => {
+    const black = [0, 0, 0];
+    const halo = [60, 60, 60];
+    const white = [255, 255, 255];
+    const source = imageFromRows([
+      [black, black, black, black, black, black, black],
+      [black, halo, halo, halo, halo, halo, black],
+      [black, halo, white, white, white, halo, black],
+      [black, halo, white, white, white, halo, black],
+      [black, halo, white, white, white, halo, black],
+      [black, halo, halo, halo, halo, halo, black],
+      [black, black, black, black, black, black, black],
+    ]);
+
+    const output = removeBackground(source, { tolerance: 128, contiguous: true });
+
+    // The dark halo hugging the background is inside the extended tolerance
+    // band and touches removed canvas, so it goes away…
+    expect(output.data[(1 * output.width + 3) * 4 + 3]).toBe(0);
+    // …while the shape itself stays.
+    expect([...output.data.subarray((3 * output.width + 3) * 4, (3 * output.width + 3) * 4 + 4)])
+      .toEqual([...white, 255]);
+  });
+
   it('preserves an enclosed foreground color that matches the background', () => {
     const light = [232, 232, 233];
     const dark = [9, 18, 30];
