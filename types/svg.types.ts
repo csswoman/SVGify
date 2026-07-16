@@ -41,8 +41,12 @@ export const DEFAULT_ZOOM_VIEWPORT: SvgZoomViewport = {
 export const DEFAULT_COLOR_PRECISION = 4;
 export const DEFAULT_COLOR_COUNT = 2 ** DEFAULT_COLOR_PRECISION;
 
+/** Human-readable trade-off applied to the tracer's internal parameters. */
+export type VectorizeDetailLevel = 'clean' | 'balanced' | 'detailed';
+
 export interface VectorizeSettings {
   traceMode: 'standard' | 'icon';
+  detailLevel: VectorizeDetailLevel;
   numberofcolors: number;      // UI alias for vtracer colorPrecision estimate
   customPalette?: RGBColor[];  // User-approved palette used by both trace modes
   colorPrecision: number;      // 1-8 significant RGB bits per channel
@@ -76,6 +80,7 @@ export interface VectorizeSettings {
 
 export const VECTORIZE_DEFAULTS: VectorizeSettings = {
   traceMode: 'standard',
+  detailLevel: 'balanced',
   numberofcolors: DEFAULT_COLOR_COUNT,
   colorPrecision: DEFAULT_COLOR_PRECISION,
   filterSpeckle: 6,

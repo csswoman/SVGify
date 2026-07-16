@@ -1,8 +1,8 @@
 # SVGify
 
-**SVGify** is a free, open-source web app that turns raster images (PNG, JPG, WEBP) into editable SVG files — entirely in your browser.
+**SVGify** is a free, open-source web app that turns raster images (PNG, JPG, WEBP) into editable SVG files.
 
-Upload an image, vectorize it, tweak colors and shapes, then download a clean SVG ready for icons, logos, or production use. Nothing is uploaded to a server: your files never leave your device.
+Upload an image, vectorize it, tweak colors and shapes, then download a clean SVG ready for icons, logos, or production use.
 
 ## What it does
 
@@ -13,7 +13,7 @@ Upload an image, vectorize it, tweak colors and shapes, then download a clean SV
 
 ## Why SVGify
 
-- **Privacy by design** — 100% client-side. No accounts, no backend, no telemetry.
+- **Editable by design** — Adjust colors, paths, labels, and export settings in one workspace.
 - **Real-time preview** — See the result as you adjust settings.
 - **Ship-ready output** — Aimed at designers, developers, and makers who need a usable SVG in one session.
 - **Bilingual UI** — English and Spanish.

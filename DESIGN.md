@@ -1,6 +1,6 @@
 ---
 name: SVGify
-description: Free SVG vectorizer — accessible workshop UI for client-side raster-to-SVG conversion
+description: Free SVG vectorizer — accessible workshop UI for raster-to-SVG conversion
 colors:
   action-blue: "#2563eb"
   action-blue-surface: "#eff6ff"

@@ -10,7 +10,7 @@ Perfiles mixtos: diseñadores que preparan iconos y assets, desarrolladores que 
 
 ## Product Purpose
 
-SVGify convierte imágenes raster (PNG, JPG, WEBP) en SVG editables, 100% en el navegador. Permite ajustar la vectorización, editar colores por path, etiquetar formas y descargar un archivo optimizado. Existe para ofrecer vectorización con privacidad real (sin backend, sin subida a servidor) y control fino sobre el output. El éxito se mide por un SVG limpio, optimizado y listo para producción al terminar cada sesión.
+SVGify convierte imágenes raster (PNG, JPG, WEBP) en SVG editables. Permite ajustar la vectorización, editar colores por path, etiquetar formas y descargar un archivo optimizado. Existe para ofrecer una vectorización rápida y control fino sobre el resultado. El éxito se mide por un SVG limpio, optimizado y listo para producción al terminar cada sesión.
 
 ## Brand Personality
 
@@ -25,7 +25,7 @@ Accesible y claro. Voz directa, sin jerga innecesaria. La herramienta se siente 
 ## Design Principles
 
 1. **Muestra el resultado, no el proceso.** La vista previa y la paleta deben actualizarse en tiempo real; el usuario ve el SVG mientras ajusta, no después de un paso oculto.
-2. **La privacidad es el producto.** El procesamiento 100% client-side no es un pie de página: es una garantía visible en cada pantalla relevante.
+2. **La promesa debe coincidir con el resultado.** La interfaz comunica SVG editable, calidad y control; no atribuye al procesamiento propiedades que la arquitectura no garantiza.
 3. **Revelación progresiva.** Las herramientas aparecen cuando el documento las necesita (importar → vectorizar → editar → exportar), sin abrumar al inicio.
 4. **Experto amigable.** Controles accesibles para perfiles mixtos: defaults sensatos para empezar rápido, profundidad para quien quiere afinar paths, colores y etiquetas.
 5. **Output listo para producción.** Cada sesión debe poder terminar con un SVG optimizado y usable, no un borrador que requiera otra herramienta.

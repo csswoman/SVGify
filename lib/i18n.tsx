@@ -117,6 +117,7 @@ const DICT = {
     es: 'La subida falló. Prueba con otra imagen.',
   },
   'upload.busy': { en: 'Loading image…', es: 'Cargando imagen…' },
+  'upload.replaceDrop': { en: 'Choose or drop a new image', es: 'Elige o suelta una imagen nueva' },
 
   // Vectorize
   'vec.title': { en: 'Vectorize', es: 'Vectorizar' },
@@ -175,10 +176,16 @@ const DICT = {
   'set.advanced': { en: 'More settings', es: 'Más ajustes' },
   // Settings controls
   'set.traceMode': { en: 'Mode', es: 'Modo' },
-  'set.traceMode.help': { en: 'Standard keeps your current settings. Icon flattens the image to a clean palette first — better for logos and UI icons.', es: 'Estándar mantiene tus ajustes actuales. Icono aplana la imagen a una paleta limpia primero — mejor para logos e iconos de UI.' },
-  'set.traceMode.standard': { en: 'Standard', es: 'Estándar' },
-  'set.traceMode.icon': { en: 'Icon', es: 'Icono' },
+  'set.traceMode.help': { en: 'Illustration keeps color variation and smooth curves. Logo or icon cleans the image into stable flat-color shapes first.', es: 'Ilustración conserva variaciones de color y curvas suaves. Logo o icono limpia primero la imagen en formas estables de color plano.' },
+  'set.traceMode.standard': { en: 'Illustration', es: 'Ilustración' },
+  'set.traceMode.icon': { en: 'Logo or icon', es: 'Logo o icono' },
   'set.traceMode.icon.help': { en: 'Best for flat logos, icons, and simple UI art. Cleans soft edge noise before tracing so you get fewer stray shapes.', es: 'Ideal para logos planos, iconos e ilustraciones simples de UI. Limpia el ruido de bordes suaves antes de trazar para que salgan menos formas sueltas.' },
+  'set.detailLevel': { en: 'Detail', es: 'Detalle' },
+  'set.detailLevel.help': { en: 'Clean removes more small fragments. More detail keeps smaller color and shape changes.', es: 'Limpio elimina más fragmentos pequeños. Más detalle conserva cambios de color y forma más pequeños.' },
+  'set.detailLevel.clean': { en: 'Clean', es: 'Limpio' },
+  'set.detailLevel.balanced': { en: 'Balanced', es: 'Equilibrado' },
+  'set.detailLevel.detailed': { en: 'More detail', es: 'Más detalle' },
+  'set.refine.summary': { en: 'Photo smoothing, corners, edge cleanup', es: 'Suavizado, esquinas y limpieza de borde' },
   'set.colors': { en: 'Colors', es: 'Colores' },
   'set.colors.levels': { en: '4 · 8 · 16 · 32 · 64 · 128', es: '4 · 8 · 16 · 32 · 64 · 128' },
   'set.colors.hint': { en: 'Default: 16 colors', es: 'Predeterminado: 16 colores' },
@@ -231,9 +238,9 @@ const DICT = {
   'set.curveSmoothing.help': { en: 'Turns jagged outlines into smooth curves after tracing. 0 keeps polygons; 1 is balanced; 2 is smoother.', es: 'Convierte contornos dentados en curvas suaves después de trazar. 0 conserva polígonos; 1 es equilibrado; 2 es más suave.' },
 
   // Blur
-  'set.blur': { en: 'Smooth noise', es: 'Suavizar ruido' },
+  'set.blur': { en: 'Smooth photo noise', es: 'Suavizar foto ruidosa' },
   'set.blur.hint': { en: '0 = off · 1 = default · 2–3 smooths noisy photos more.', es: '0 = apagado · 1 = predeterminado · 2–3 suaviza más las fotos ruidosas.' },
-  'set.blur.help': { en: 'Softens noise before tracing while trying to keep hard edges. Raise it for grainy photos; leave it low for sharp icons.', es: 'Suaviza el ruido antes de trazar y procura mantener los bordes duros. Súbelo en fotos granuladas; déjalo bajo en iconos nítidos.' },
+  'set.blur.help': { en: 'Softens grain before tracing while trying to keep hard edges. Use it for noisy photos, not flat logos.', es: 'Suaviza el grano antes de trazar y procura mantener bordes duros. Úsalo en fotos ruidosas, no en logos planos.' },
 
   // Background removal
   'bg.remove': { en: 'Remove background', es: 'Quitar fondo' },
@@ -500,10 +507,10 @@ const DICT = {
 
   // Workspace chrome
   'workspace.download': { en: 'Download SVG', es: 'Descargar SVG' },
-  'workspace.localOnly': { en: 'All local', es: 'Todo local' },
-  'workspace.localOnlyHint': {
-    en: 'Your image stays on this device',
-    es: 'Tu imagen se queda en este dispositivo',
+  'workspace.editableSvg': { en: 'Editable SVG', es: 'SVG editable' },
+  'workspace.vectorizeHint': {
+    en: 'Add an image to create an editable SVG',
+    es: 'Agrega una imagen para crear un SVG editable',
   },
   'workspace.readyToDownload': { en: 'Ready', es: 'Listo' },
   'workspace.downloadUnprepared': {
@@ -540,14 +547,14 @@ const DICT = {
   },
   'workspace.replaceImage': { en: 'Replace image', es: 'Reemplazar imagen' },
   'workspace.replaceImage.confirm': {
-    en: 'Clear this image and SVG? You can’t undo this.',
-    es: '¿Borrar esta imagen y el SVG? No se puede deshacer.',
+    en: 'Your current work stays until the new image loads successfully.',
+    es: 'Tu trabajo actual se conserva hasta que la nueva imagen se cargue correctamente.',
   },
   'workspace.replaceImage.confirmAction': { en: 'Replace image', es: 'Reemplazar imagen' },
   'workspace.replaceImage.cancel': { en: 'Keep current', es: 'Conservar actual' },
   'workspace.importReplaceHint': {
-    en: 'Use Replace image below to start over with a new file. This clears the current image and SVG.',
-    es: 'Usa Reemplazar imagen abajo para empezar con un archivo nuevo. Esto borra la imagen y el SVG actuales.',
+    en: 'Load a new file without losing this one if the upload is cancelled or fails.',
+    es: 'Carga un archivo nuevo sin perder este si cancelas o la subida falla.',
   },
   'workspace.canvas': { en: 'Editor canvas', es: 'Lienzo del editor' },
   'workspace.inspector': { en: 'Inspector panel', es: 'Panel inspector' },

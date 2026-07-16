@@ -35,6 +35,7 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
     error,
     isLoading,
     svg,
+    hasTranslucentEdges,
   } = session;
 
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -69,7 +70,11 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
         </div>
       )}
 
-      <VectorizeSettingsPanel settings={settings} onSettingsChange={updateSettings} />
+      <VectorizeSettingsPanel
+        settings={settings}
+        onSettingsChange={updateSettings}
+        hasTranslucentEdges={hasTranslucentEdges}
+      />
 
       <InspectorDisclosure
         title={t('vec.palette')}

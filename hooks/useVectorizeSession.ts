@@ -45,7 +45,7 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
       pathPrecision: Math.max(0, Math.min(8, Math.round(next.pathPrecision))),
       layerDifference: Math.max(0, Math.min(64, Math.round(next.layerDifference))),
       lengthThreshold: Math.max(1, Math.min(32, Math.round(next.lengthThreshold))),
-      maxIterations: Math.max(0, Math.min(10, Math.round(next.maxIterations))),
+      maxIterations: Math.max(1, Math.min(10, Math.round(next.maxIterations))),
       spliceThreshold: Math.max(0, Math.min(180, Math.round(next.spliceThreshold))),
       preprocessingScale: Math.max(1, Math.min(2, Math.round(next.preprocessingScale))),
       bilateralRadius: Math.max(0, Math.min(3, Math.round(next.bilateralRadius))),
@@ -78,6 +78,15 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
       seeds: seeds.length > 0 ? seeds : undefined,
     });
   }, [removeBg, imageData, bgTolerance, seeds]);
+
+  const hasTranslucentEdges = useMemo(() => {
+    if (!imageData) return false;
+    for (let index = 3; index < imageData.data.length; index += 4) {
+      const alpha = imageData.data[index];
+      if (alpha > 0 && alpha < 255) return true;
+    }
+    return false;
+  }, [imageData]);
 
   const suggestedPalette = useMemo(() => {
     if (!processedImageData) return [];
@@ -138,6 +147,7 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
     setSeeds,
     handlePick,
     processedImageData,
+    hasTranslucentEdges,
     suggestedPalette,
     paletteColors,
     selectedPaletteColor,

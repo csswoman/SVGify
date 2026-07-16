@@ -83,7 +83,7 @@ export function ToolBar({
   const desktopShapeTools = WORKSPACE_TOOL_GROUPS.find((group) => group.id === 'shape')?.tools ?? [];
   const desktopHint = hasSvg
     ? t(DESKTOP_TOOL_HINT_KEYS[activeTool] as Parameters<typeof t>[0])
-    : t('workspace.localOnlyHint');
+    : t('workspace.vectorizeHint');
 
   const renderDesktopTool = (id: WorkspaceTool, shortcut?: string) => (
     <ToolButton
@@ -244,7 +244,7 @@ export function ToolBar({
             </p>
             {!hasSvg ? (
               <span className="rounded-full bg-gray-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-500 dark:bg-gray-900 dark:text-gray-400">
-                {t('workspace.localOnly')}
+                {t('workspace.editableSvg')}
               </span>
             ) : null}
           </div>
