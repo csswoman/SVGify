@@ -65,7 +65,7 @@ const STANDARD_PROFILES: Record<VectorizeDetailLevel, ProfileOptions> = {
 const ICON_PROFILES: Record<VectorizeDetailLevel, ProfileOptions> = {
   clean: {
     ...ICON_MODE_SETTINGS,
-    filterSpeckle: 8,
+    filterSpeckle: 12,
     pathPrecision: 2,
     layerDifference: 18,
     maxIterations: 2,

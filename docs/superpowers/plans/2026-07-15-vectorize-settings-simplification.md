@@ -95,7 +95,7 @@ Los valores siguientes son puntos de partida. Deben ajustarse con las imágenes 
 | Ilustración | Limpio | 12 | 18 | 2 | spline segura |
 | Ilustración | Equilibrado | 6 | 10 | 1 | defaults actuales |
 | Ilustración | Más detalle | 2 | 6 | 0 | spline conservadora |
-| Logo o icono | Limpio | 8 | 18 | automático | polygon |
+| Logo o icono | Limpio | 12 | 18 | automático | polygon |
 | Logo o icono | Equilibrado | 4 | 12 | automático | polygon |
 | Logo o icono | Más detalle | 1 | 6 | automático | polygon |
 
@@ -152,6 +152,7 @@ Reglas comunes:
   - tiempo de trazado;
   - error o timeout.
 - [ ] Guardar métricas base para los defaults actuales de Ilustración e Icono.
+- [x] Ejecutar el fixture de Icono con los tres perfiles y comprobar SVG válido y progresión de paths.
 - [x] Añadir una prueba que demuestre que `maxIterations = 0` se normaliza a un valor válido antes del trazado, tanto en el perfil como en el worker.
 - [ ] Añadir una prueba de comportamiento, no un snapshot frágil, para cada control que se conservará.
 
