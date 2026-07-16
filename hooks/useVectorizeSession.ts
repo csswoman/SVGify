@@ -22,7 +22,7 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
   const [removeBg, setRemoveBg] = useState(false);
   const [bgTolerance, setBgTolerance] = useState(48);
   const [seeds, setSeeds] = useState<SeedPoint[]>([]);
-  const { svg, isLoading, error, vectorize, clear } = useVectorizer();
+  const { svg, isLoading, error, vectorize, cancel, clear } = useVectorizer();
   const {
     colors: paletteColors,
     selectedColor: selectedPaletteColor,
@@ -132,9 +132,13 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
 
   useEffect(() => {
     if (!enabled || !processedImageData) return;
+    cancel();
     const timer = setTimeout(() => vectorize(processedImageData, settingsWithPalette), 300);
-    return () => clearTimeout(timer);
-  }, [enabled, processedImageData, settingsWithPalette, vectorize]);
+    return () => {
+      clearTimeout(timer);
+      cancel();
+    };
+  }, [enabled, processedImageData, settingsWithPalette, vectorize, cancel]);
 
   return {
     settings,

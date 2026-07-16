@@ -30,7 +30,9 @@ describe('icon-only product surface', () => {
     const packageJson = readSource('package.json');
     const settingsPanel = readSource('components/vectorize/VectorizeSettings.tsx');
 
-    expect(settingsPanel).toContain('ICON_MODE_SETTINGS');
+    expect(settingsPanel).toContain('applyVectorizeProfile');
+    expect(settingsPanel).not.toContain("t('set.maxIterations')");
+    expect(settingsPanel).not.toContain("t('set.spliceThreshold')");
     expect(worker).toContain('getVectorizeEndpoint');
     expect(worker).toContain('/api/vectorize');
     expect(worker).toContain("new CompressionStream('gzip')");
@@ -41,7 +43,9 @@ describe('icon-only product surface', () => {
     expect(worker).toContain('smoothQuantizedPalette');
     expect(worker).toContain('paletteForTrace');
     expect(route).toContain("from '@neplex/vectorizer'");
+    expect(route).toContain('Hierarchical.Cutout');
     expect(route).toContain('Hierarchical.Stacked');
+    expect(route).toContain("settings.traceMode === 'icon'");
     expect(route).toContain('PathSimplifyMode.Spline');
     expect(route).toContain('vectorizeRaw');
     expect(route).toContain('gunzipSync');
@@ -57,5 +61,13 @@ describe('icon-only product surface', () => {
     expect(worker).not.toContain('vectortracer');
     expect(packageJson).toContain('@neplex/vectorizer');
     expect(packageJson).not.toContain('vectortracer');
+  });
+
+  it('keeps the last SVG visible and cancels stale trace work while settings change', () => {
+    const vectorizer = readSource('hooks/useVectorizer.ts');
+    const session = readSource('hooks/useVectorizeSession.ts');
+
+    expect(vectorizer).toContain('svg: prev.svg');
+    expect(session).toContain('cancel();');
   });
 });

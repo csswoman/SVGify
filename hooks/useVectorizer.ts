@@ -105,7 +105,9 @@ export function useVectorizer() {
 
       setState((prev) => ({
         ...prev,
-        svg: null,
+        // Keep the last successful result visible while the replacement is
+        // processing. Stale worker responses are rejected by requestId.
+        svg: prev.svg,
         isLoading: true,
         progress: 0,
         error: null,
@@ -117,7 +119,7 @@ export function useVectorizer() {
         setState((prev) => ({
           ...prev,
           isLoading: false,
-          error: 'La vectorización tardó demasiado. Prueba bajar Colors o Pre-blur.',
+          error: 'La vectorización tardó demasiado. Prueba con menos colores o un nivel más limpio.',
         }));
       }, VECTORIZE_TIMEOUT_MS);
 
