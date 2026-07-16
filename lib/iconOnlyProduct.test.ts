@@ -52,6 +52,7 @@ describe('icon-only product surface', () => {
     expect(route).toContain('gunzipSync');
     expect(route).toContain('resolveTraceColorPrecision');
     expect(route).toContain('finalizeTracedSvg');
+    expect(route).toContain('maxIterations: clampInt(settings.maxIterations, 1, 10)');
     expect(worker).not.toContain('applyAlphaMask');
     expect(worker).not.toContain('traceIconByColorLayers');
     expect(worker).not.toContain('traceIconColorLayers');

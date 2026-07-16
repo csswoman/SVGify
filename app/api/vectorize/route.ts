@@ -44,7 +44,7 @@ function toVTracerConfig(settings: VectorizeSettings): VTracerConfig {
     pathPrecision: clampInt(settings.pathPrecision, 0, 8),
     layerDifference: clampInt(settings.layerDifference, 0, 64),
     lengthThreshold: clampInt(settings.lengthThreshold, 1, 32),
-    maxIterations: clampInt(settings.maxIterations, 0, 10),
+    maxIterations: clampInt(settings.maxIterations, 1, 10),
     spliceThreshold: clampInt(settings.spliceThreshold, 0, 180),
     smallCircle: resolveTraceSmallCircle(settings.traceMode),
   };
