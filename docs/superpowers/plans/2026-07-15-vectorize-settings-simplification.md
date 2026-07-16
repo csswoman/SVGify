@@ -154,7 +154,7 @@ Reglas comunes:
 - [x] Guardar métricas base para los defaults actuales de Ilustración e Icono.
 - [x] Ejecutar el fixture de Icono con los tres perfiles y comprobar SVG válido y progresión de paths.
 - [x] Añadir una prueba que demuestre que `maxIterations = 0` se normaliza a un valor válido antes del trazado, tanto en el perfil como en el worker.
-- [ ] Añadir una prueba de comportamiento, no un snapshot frágil, para cada control que se conservará.
+- [x] Añadir pruebas de comportamiento, no snapshots frágiles, para modo, detalle, colores, fondo y bordes transparentes.
 
 **Criterio de aceptación:** Existe una matriz repetible que permite comparar antes/después sin inspección manual como única evidencia.
 

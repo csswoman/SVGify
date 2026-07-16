@@ -47,4 +47,14 @@ describe('vectorize profiles', () => {
 
     expect(settings.numberofcolors).toBe(16);
   });
+
+  it('turns the color choice into a matching trace count and automatic merge ceiling', () => {
+    const settings = applyVectorizeProfile(
+      { ...VECTORIZE_DEFAULTS, colorPrecision: 6, numberofcolors: 64, paletteMergeThreshold: 128 },
+      { detailLevel: 'balanced' }
+    );
+
+    expect(settings.numberofcolors).toBe(64);
+    expect(settings.paletteMergeThreshold).toBe(12);
+  });
 });
