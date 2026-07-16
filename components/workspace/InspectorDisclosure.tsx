@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { CaretDown, CaretUp } from '@phosphor-icons/react';
+import { useId } from 'react';
 
 interface InspectorDisclosureProps {
   title: string;
@@ -19,6 +20,8 @@ export function InspectorDisclosure({
   onOpenChange,
   children,
 }: InspectorDisclosureProps) {
+  const contentId = useId();
+
   return (
     <div className="border-t border-gray-100 pt-3 dark:border-gray-700">
       <button
@@ -26,6 +29,7 @@ export function InspectorDisclosure({
         onClick={() => onOpenChange(!open)}
         className="focus-ring flex min-h-11 w-full items-center justify-between gap-2 rounded py-1 text-left"
         aria-expanded={open}
+        aria-controls={contentId}
       >
         <span className="min-w-0">
           <span className="block text-xs font-semibold text-gray-700 dark:text-gray-300">{title}</span>
@@ -39,7 +43,7 @@ export function InspectorDisclosure({
           <CaretDown size={14} className="shrink-0 text-gray-400" aria-hidden />
         )}
       </button>
-      {open ? <div className="mt-3 space-y-3">{children}</div> : null}
+      {open ? <div id={contentId} className="mt-3 space-y-3">{children}</div> : null}
     </div>
   );
 }

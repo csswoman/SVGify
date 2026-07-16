@@ -22,6 +22,12 @@
   --color-dark-ink: #f3f4f6;
   --color-dark-ink-muted: #9ca3af;
   --color-dark-border: #374151;
+  --color-danger-surface: #fef2f2;
+  --color-danger-border: #fca5a5;
+  --color-danger-ink: #991b1b;
+  --color-dark-danger-surface: #450a0a;
+  --color-dark-danger-border: #991b1b;
+  --color-dark-danger-ink: #fecaca;
 }
 
 @layer utilities {

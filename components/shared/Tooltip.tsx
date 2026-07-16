@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useId } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useI18n } from '@/lib/i18n';
 
 interface TooltipProps {
@@ -30,28 +31,77 @@ function stopPropagation(event: React.SyntheticEvent) {
 export function Tooltip({ text, label, nested = false }: TooltipProps) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<{
+    left: number;
+    top: number;
+    placement: 'top' | 'bottom';
+  } | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
   const id = useId();
   const accessibleLabel = label ?? t('a11y.moreInfo');
 
-  const tooltip = open ? (
-    <span
-      id={id}
-      role="tooltip"
-      className="absolute bottom-full left-1/2 z-50 mb-2 w-52 max-w-[min(13rem,70vw)] -translate-x-1/2 rounded-md bg-gray-900 px-3 py-2 text-xs font-normal leading-snug text-pretty text-white shadow-lg"
-    >
-      {text}
-    </span>
-  ) : null;
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const updatePosition = () => {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+
+      const rect = trigger.getBoundingClientRect();
+      const width = Math.min(208, window.innerWidth - 24);
+      const gap = 8;
+      const canPlaceAbove = rect.top >= 72;
+      const top = canPlaceAbove ? rect.top - gap : rect.bottom + gap;
+      const left = Math.max(
+        12,
+        Math.min(rect.left + rect.width / 2 - width / 2, window.innerWidth - width - 12)
+      );
+
+      setPosition({ left, top, placement: canPlaceAbove ? 'top' : 'bottom' });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [open]);
+
+  const closeTooltip = () => {
+    setOpen(false);
+    setPosition(null);
+  };
+
+  const tooltip = open && position && typeof document !== 'undefined'
+    ? createPortal(
+        <span
+          id={id}
+          role="tooltip"
+          className={`fixed z-[60] w-52 max-w-[calc(100vw-1.5rem)] -translate-x-0 -translate-y-full rounded-md bg-gray-900 px-3 py-2 text-xs font-normal leading-snug text-pretty text-white shadow-lg ${
+            position.placement === 'bottom' ? 'translate-y-0' : ''
+          }`}
+          style={{ left: position.left, top: position.top }}
+        >
+          {text}
+        </span>,
+        document.body
+      )
+    : null;
 
   if (nested) {
     return (
       <span className="group relative inline-flex items-center">
         <span
+          ref={triggerRef}
           role="img"
           aria-label={accessibleLabel}
           aria-describedby={open ? id : undefined}
           onMouseEnter={() => setOpen(true)}
-          onMouseLeave={() => setOpen(false)}
+          onMouseLeave={closeTooltip}
           onClick={stopPropagation}
           onMouseDown={stopPropagation}
           onPointerDown={stopPropagation}
@@ -69,13 +119,16 @@ export function Tooltip({ text, label, nested = false }: TooltipProps) {
   return (
     <span className="group relative inline-flex items-center">
       <button
+        ref={(node) => {
+          triggerRef.current = node;
+        }}
         type="button"
         aria-label={accessibleLabel}
         aria-describedby={open ? id : undefined}
         onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
+        onMouseLeave={closeTooltip}
         onFocus={() => setOpen(true)}
-        onBlur={() => setOpen(false)}
+        onBlur={closeTooltip}
         className={triggerClassName}
       >
         <span className={glyphClassName} aria-hidden>

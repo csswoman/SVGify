@@ -48,15 +48,15 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
   const paletteSummary = `${paletteCountSummary} · ${t(`set.detailLevel.${settings.detailLevel}`)}`;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="space-y-2">
         <div className="space-y-1">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('vec.title')}</h2>
-          <p className="text-pretty text-xs text-gray-500 dark:text-gray-400">{t('vec.subtitle')}</p>
+          <h2 className="text-sm font-semibold text-ink dark:text-dark-ink">{t('vec.title')}</h2>
+          <p className="text-pretty text-xs text-ink-muted dark:text-dark-ink-muted">{t('vec.subtitle')}</p>
         </div>
 
         {!hasSvg ? (
-          <p className="text-pretty text-xs text-gray-500 dark:text-gray-400" aria-live="polite">
+          <p className="text-pretty text-xs text-ink-muted dark:text-dark-ink-muted" aria-live="polite">
             {isLoading ? t('onboard.traceAction') : t('onboard.vectorizeCue')}
           </p>
         ) : null}
@@ -65,79 +65,83 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
       {error && (
         <div
           role="alert"
-          className="rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200"
+          className="rounded-lg border border-danger-border bg-danger-surface p-3 text-xs text-danger-ink dark:border-dark-danger-border dark:bg-dark-danger-surface dark:text-dark-danger-ink"
         >
           {error}
         </div>
       )}
 
-      <VectorizeSettingsPanel
-        settings={settings}
-        onSettingsChange={updateSettings}
-      />
+      <div className="space-y-5">
+        <VectorizeSettingsPanel
+          settings={settings}
+          onSettingsChange={updateSettings}
+        />
 
-      <div className="space-y-3 border-t border-gray-100 pt-3 dark:border-gray-700">
-        <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-          <input
-            type="checkbox"
-            checked={removeBg}
-            onChange={(e) => setRemoveBg(e.target.checked)}
-            className="h-4 w-4 accent-blue-600"
-          />
-          {t('bg.remove')}
-          <Tooltip text={t('bg.auto.help')} label={t('bg.remove')} />
-        </label>
+        <div className="space-y-4 border-t border-border pt-4 dark:border-dark-border">
+          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <input
+              type="checkbox"
+              checked={removeBg}
+              onChange={(e) => setRemoveBg(e.target.checked)}
+              className="h-4 w-4 accent-action-blue"
+            />
+            {t('bg.remove')}
+            <Tooltip text={t('bg.auto.help')} label={t('bg.remove')} />
+          </label>
 
-        {removeBg && (
-          <>
-            {seeds.length > 0 ? (
-              <p className="text-pretty text-xs text-gray-500 dark:text-gray-400">{t('bg.picking')}</p>
-            ) : null}
-            <div>
-              <label className="mb-1 flex items-center text-sm font-medium text-gray-600 dark:text-gray-400">
-                {t('bg.tolerance')}: <span className="ml-1 font-mono">{bgTolerance}</span>
-                <Tooltip text={t('bg.tolerance.help')} label={t('bg.tolerance')} />
+          {removeBg && (
+            <div className="space-y-3">
+              {seeds.length > 0 ? (
+                <p className="text-pretty text-xs text-ink-muted dark:text-dark-ink-muted">{t('bg.picking')}</p>
+              ) : null}
+              <div className="space-y-1">
+                <label id="vectorize-bg-tolerance-label" htmlFor="vectorize-bg-tolerance" className="flex items-center text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
+                  {t('bg.tolerance')}: <span className="ml-1 font-mono">{bgTolerance}</span>
+                  <Tooltip text={t('bg.tolerance.help')} label={t('bg.tolerance')} />
+                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={128}
+                  value={bgTolerance}
+                  onChange={(e) => setBgTolerance(Number(e.target.value))}
+                  id="vectorize-bg-tolerance"
+                  className="min-h-11 w-full accent-action-blue"
+                  aria-labelledby="vectorize-bg-tolerance-label"
+                />
+              </div>
+              {seeds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSeeds([])}
+                  className="focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-md px-1 text-sm font-medium text-action-blue transition hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100"
+                >
+                  <X size={14} weight="bold" aria-hidden />
+                  {t('bg.clear')} ({seeds.length})
+                </button>
+              )}
+            </div>
+          )}
+
+          {hasTranslucentEdges && (
+            <div className="space-y-1">
+              <label id="vectorize-alpha-threshold-label" htmlFor="vectorize-alpha-threshold" className="flex items-center text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
+                {t('set.alphaThreshold')}: <span className="ml-1 font-mono">{settings.alphaThreshold}</span>
+                <Tooltip text={t('set.alphaThreshold.help')} label={t('set.alphaThreshold')} />
               </label>
               <input
                 type="range"
                 min={0}
-                max={128}
-                value={bgTolerance}
-                onChange={(e) => setBgTolerance(Number(e.target.value))}
-                className="w-full accent-blue-600"
-                aria-label={`${t('bg.tolerance')}: ${bgTolerance}`}
+                max={255}
+                value={settings.alphaThreshold}
+                onChange={(event) => updateSettings({ ...settings, alphaThreshold: Number(event.target.value) })}
+                id="vectorize-alpha-threshold"
+                className="min-h-11 w-full accent-action-blue"
+                aria-labelledby="vectorize-alpha-threshold-label"
               />
             </div>
-            {seeds.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setSeeds([])}
-                className="focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-md px-1 text-sm font-medium text-blue-700 transition hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100"
-              >
-                <X size={14} weight="bold" aria-hidden />
-                {t('bg.clear')} ({seeds.length})
-              </button>
-            )}
-          </>
-        )}
-
-        {hasTranslucentEdges && (
-          <div>
-            <label className="mb-1 flex items-center text-sm font-medium text-gray-600 dark:text-gray-400">
-              {t('set.alphaThreshold')}: <span className="ml-1 font-mono">{settings.alphaThreshold}</span>
-              <Tooltip text={t('set.alphaThreshold.help')} label={t('set.alphaThreshold')} />
-            </label>
-            <input
-              type="range"
-              min={0}
-              max={255}
-              value={settings.alphaThreshold}
-              onChange={(event) => updateSettings({ ...settings, alphaThreshold: Number(event.target.value) })}
-              className="w-full accent-blue-600"
-              aria-label={`${t('set.alphaThreshold')}: ${settings.alphaThreshold}`}
-            />
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <InspectorDisclosure
@@ -159,7 +163,7 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
       </InspectorDisclosure>
 
       {isLoading && (
-        <p className="text-xs text-gray-500 dark:text-gray-400" aria-live="polite">
+        <p className="border-t border-border pt-3 text-xs text-ink-muted dark:border-dark-border dark:text-dark-ink-muted" aria-live="polite">
           {t('vec.vectorizing')}
         </p>
       )}

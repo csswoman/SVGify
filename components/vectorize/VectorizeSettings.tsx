@@ -126,7 +126,7 @@ export function VectorizeSettingsPanel({
       </div>
 
       <div>
-        <label className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <label id="vectorize-color-precision-label" htmlFor="vectorize-color-precision" className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
           {t('set.colors')}: <span className="ml-1 font-mono">{colorCount}</span>
           <Tooltip text={t('set.colors.help')} label={t('set.colors')} />
         </label>
@@ -137,8 +137,9 @@ export function VectorizeSettingsPanel({
           step={1}
           value={colorPrecision}
           onChange={(e) => setColorPrecision(Number(e.target.value))}
-          className="w-full accent-blue-600"
-          aria-label={`${t('set.colors')}: ${colorCount}`}
+          id="vectorize-color-precision"
+          className="min-h-11 w-full accent-action-blue"
+          aria-labelledby="vectorize-color-precision-label"
           list="color-precision-ticks"
         />
         <datalist id="color-precision-ticks">
@@ -146,22 +147,15 @@ export function VectorizeSettingsPanel({
             <option key={COLOR_COUNT_TICKS[i]} value={COLOR_PRECISION_MIN + i} />
           ))}
         </datalist>
-        <div className="relative mt-1 h-4" aria-hidden>
-          {COLOR_COUNT_TICKS.map((count, i) => {
-            const pct = (i / (COLOR_COUNT_TICKS.length - 1)) * 100;
-            return (
-              <span
-                key={count}
-                className="absolute top-0 flex -translate-x-1/2 flex-col items-center"
-                style={{ left: `${pct}%` }}
-              >
-                <span className="h-1.5 w-px bg-gray-300 dark:bg-gray-600" />
-                <span className="mt-0.5 font-mono text-[10px] leading-none text-gray-400 dark:text-gray-500">
-                  {count}
-                </span>
+        <div className="mt-1 grid h-5 grid-cols-6 px-1" aria-hidden>
+          {COLOR_COUNT_TICKS.map((count) => (
+            <span key={count} className="flex min-w-0 flex-col items-center">
+              <span className="h-1.5 w-px bg-gray-400 dark:bg-gray-500" />
+              <span className="mt-1 font-mono text-[10px] leading-none text-gray-500 dark:text-gray-400">
+                {count}
               </span>
-            );
-          })}
+            </span>
+          ))}
         </div>
       </div>
 
@@ -175,11 +169,12 @@ export function VectorizeSettingsPanel({
           {settings.traceMode === 'standard' && (
             <>
               <div>
-                <label className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
+                <label id="vectorize-bilateral-radius-label" htmlFor="vectorize-bilateral-radius" className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
                   {t('set.blur')}: <span className="ml-1 font-mono">{settings.bilateralRadius}</span>
                   <Tooltip text={t('set.blur.help')} label={t('set.blur')} />
                 </label>
                 <input
+                  id="vectorize-bilateral-radius"
                   type="range"
                   min={0}
                   max={3}
@@ -191,25 +186,26 @@ export function VectorizeSettingsPanel({
                       bilateralRadius: Number(e.target.value),
                     })
                   }
-                  className="w-full accent-blue-600"
-                  aria-label={`${t('set.blur')}: ${settings.bilateralRadius}`}
+                  className="min-h-11 w-full accent-action-blue"
+                  aria-labelledby="vectorize-bilateral-radius-label"
                 />
               </div>
 
               <div>
-                <label className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
+                <label id="vectorize-corner-threshold-label" htmlFor="vectorize-corner-threshold" className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
                   {t('set.cornerThreshold')}: <span className="ml-1 font-mono">{settings.cornerThreshold}</span>
                   <Tooltip text={t('set.cornerThreshold.help')} label={t('set.cornerThreshold')} />
                 </label>
                 <input
+                  id="vectorize-corner-threshold"
                   type="range"
                   min={0}
                   max={180}
                   step={5}
                   value={settings.cornerThreshold}
                   onChange={(e) => onSettingsChange({ ...settings, cornerThreshold: Number(e.target.value) })}
-                  className="w-full accent-blue-600"
-                  aria-label={`${t('set.cornerThreshold')}: ${settings.cornerThreshold}`}
+                  className="min-h-11 w-full accent-action-blue"
+                  aria-labelledby="vectorize-corner-threshold-label"
                 />
               </div>
             </>

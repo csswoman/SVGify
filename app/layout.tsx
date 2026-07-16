@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://svg-ify.vercel.app/"),
+  icons: {
+    icon: "/svgify.svg",
+  },
   title: {
     default: "SVGify — Free SVG Vectorizer",
     template: "%s — SVGify",
