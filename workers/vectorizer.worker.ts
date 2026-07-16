@@ -58,26 +58,10 @@ function normalizeSettings(settings: VectorizeSettings): VectorizeSettings {
     1,
     8
   );
-  const filterSpeckle = clampInt(
-    Number.isFinite(merged.filterSpeckle) ? merged.filterSpeckle : merged.pathomit,
-    0,
-    40
-  );
-  const pathPrecision = clampInt(
-    Number.isFinite(merged.pathPrecision) ? merged.pathPrecision : merged.roundcoords,
-    0,
-    8
-  );
-  const preprocessingScale = clampInt(
-    Number.isFinite(merged.preprocessingScale) ? merged.preprocessingScale : merged.traceScale,
-    1,
-    2
-  );
-  const bilateralRadius = clampInt(
-    Number.isFinite(merged.bilateralRadius) ? merged.bilateralRadius : merged.blurRadius,
-    0,
-    3
-  );
+  const filterSpeckle = clampInt(merged.filterSpeckle, 0, 40);
+  const pathPrecision = clampInt(merged.pathPrecision, 0, 8);
+  const preprocessingScale = clampInt(merged.preprocessingScale, 1, 2);
+  const bilateralRadius = clampInt(merged.bilateralRadius, 0, 3);
 
   return {
     ...merged,
@@ -96,10 +80,6 @@ function normalizeSettings(settings: VectorizeSettings): VectorizeSettings {
     lengthThreshold: clampInt(merged.lengthThreshold, 1, 32),
     maxIterations: clampInt(merged.maxIterations, 1, 10),
     spliceThreshold: clampInt(merged.spliceThreshold, 0, 180),
-    pathomit: filterSpeckle,
-    roundcoords: pathPrecision,
-    traceScale: preprocessingScale,
-    blurRadius: bilateralRadius,
   };
 }
 

@@ -62,20 +62,7 @@ export interface VectorizeSettings {
   bilateralColorSigma: number; // edge preservation threshold
   alphaThreshold: number;      // semi-transparent pixels below this become transparent
   paletteMergeThreshold: number; // merge near-duplicate output colors
-  colorQuantCycles: number;    // legacy palette suggestion only
-  ltres: number;               // legacy, ignored by vtracer
-  qtres: number;               // legacy, ignored by vtracer
-  strokewidth: number;         // legacy, ignored by vtracer
-  scale: number;
-  pathomit: number;            // legacy alias for filterSpeckle
-  linePathOmit: number;        // legacy, ignored by vtracer
-  roundcoords: number;         // legacy alias for pathPrecision
-  blurRadius: number;          // legacy alias for bilateralRadius
-  blurDelta: number;           // legacy, ignored by vtracer
-  traceScale: number;          // legacy alias for preprocessingScale
-  fillOverlap: number;         // legacy, ignored by vtracer
-  lineSmoothing: number;       // legacy, ignored by vtracer
-  curveSmoothing: number;      // legacy, ignored by vtracer
+  colorQuantCycles: number;    // palette suggestion passes
 }
 
 export const VECTORIZE_DEFAULTS: VectorizeSettings = {
@@ -96,19 +83,6 @@ export const VECTORIZE_DEFAULTS: VectorizeSettings = {
   alphaThreshold: 180,
   paletteMergeThreshold: 44,
   colorQuantCycles: 6,
-  ltres: 0.9,
-  qtres: 0.8,
-  strokewidth: 0,
-  scale: 1,
-  pathomit: 6,
-  linePathOmit: 2,
-  roundcoords: 2,
-  blurRadius: 1,
-  blurDelta: 20,
-  traceScale: 1,
-  fillOverlap: 0,
-  lineSmoothing: 1,
-  curveSmoothing: 1,
 };
 
 export interface WorkerMessage {

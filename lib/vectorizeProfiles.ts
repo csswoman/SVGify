@@ -133,10 +133,5 @@ export function applyVectorizeProfile(
     paletteMergeThreshold: next.traceMode === 'standard'
       ? Math.min(next.paletteMergeThreshold, resolvePaletteMergeCeiling(numberofcolors))
       : next.paletteMergeThreshold,
-    // Keep legacy aliases synchronized until the worker transport is replaced.
-    pathomit: profile.filterSpeckle,
-    roundcoords: profile.pathPrecision,
-    blurRadius: profile.bilateralRadius,
-    traceScale: profile.preprocessingScale,
   };
 }

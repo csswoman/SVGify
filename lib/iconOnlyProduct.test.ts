@@ -22,6 +22,10 @@ describe('icon-only product surface', () => {
     expect(i18n).not.toContain('set.mode.lineart');
     expect(types).not.toContain('VectorizePreset');
     expect(types).toContain("traceMode: 'standard' | 'icon'");
+    expect(types).not.toContain('pathomit');
+    expect(types).not.toContain('roundcoords');
+    expect(types).not.toContain('traceScale');
+    expect(types).not.toContain('linePathOmit');
   });
 
   it('keeps standard vectorization on the vtracer pipeline', () => {
@@ -56,6 +60,8 @@ describe('icon-only product surface', () => {
     expect(worker).not.toContain('applyAlphaMask');
     expect(worker).not.toContain('traceIconByColorLayers');
     expect(worker).not.toContain('traceIconColorLayers');
+    expect(worker).not.toContain('pathomit');
+    expect(worker).not.toContain('roundcoords');
     expect(worker).not.toContain('strokeWidth');
     expect(worker).not.toContain('vectorizeLineart');
     expect(worker).not.toContain('quantizeToDominantPalette');

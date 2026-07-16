@@ -196,7 +196,6 @@ export function VectorizeSettingsPanel({
                     onSettingsChange({
                       ...settings,
                       bilateralRadius: Number(e.target.value),
-                      blurRadius: Number(e.target.value),
                     })
                   }
                   className="w-full accent-blue-600"

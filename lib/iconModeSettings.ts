@@ -6,25 +6,19 @@ export const ICON_MODE_SETTINGS = {
   numberofcolors: 8,
   // Preserve small logo details instead of dropping thin teeth or marks.
   filterSpeckle: 4,
-  pathomit: 4,
   // Keep intentional corners and short straight runs. The old 95/10/3/75
   // profile over-fit splines and visibly bowed flat logo geometry.
   cornerThreshold: 60,
   pathPrecision: 2,
-  roundcoords: 2,
   // Keep below ~52 so light pink fills do not merge into near-white/lavender.
   paletteMergeThreshold: 36,
   bilateralRadius: 1,
-  blurRadius: 1,
   layerDifference: 12,
   // Moderate subdivision keeps large rounded forms smooth; thin bars are
   // regularized after tracing, so they no longer need globally harsh fitting.
   lengthThreshold: 5,
   maxIterations: 2,
   spliceThreshold: 45,
-  fillOverlap: 1,
-  lineSmoothing: 1,
-  curveSmoothing: 1,
 } as const;
 
 export function resolveTraceSmallCircle(traceMode: VectorizeSettings['traceMode']): number | undefined {

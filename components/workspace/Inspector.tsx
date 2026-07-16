@@ -164,7 +164,7 @@ export function Inspector({
             selectedColor={selectedColor}
             onSelectedColorChange={onSelectedColorChange}
             serializeMountedSvg={editor.serializeMountedSvg}
-            pathOmit={VECTORIZE_DEFAULTS.pathomit}
+            pathOmit={VECTORIZE_DEFAULTS.filterSpeckle}
             onSvgString={onSvgString}
             onPrepared={onOptimizePrepared}
             prepared={exportStatus === 'prepared_current'}

@@ -53,16 +53,6 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
       alphaThreshold: Math.max(0, Math.min(255, Math.round(next.alphaThreshold))),
       paletteMergeThreshold: Math.max(0, Math.min(128, Math.round(next.paletteMergeThreshold))),
       colorQuantCycles: Math.max(1, Math.min(8, next.colorQuantCycles)),
-      pathomit: Math.max(0, Math.min(40, next.filterSpeckle)),
-      linePathOmit: Math.max(0, Math.min(12, next.linePathOmit)),
-      roundcoords: Math.max(0, Math.min(8, next.pathPrecision)),
-      blurRadius: Math.max(0, Math.min(3, next.bilateralRadius)),
-      blurDelta: Math.max(1, Math.min(64, next.blurDelta)),
-      traceScale: Math.max(1, Math.min(2, next.preprocessingScale)),
-      strokewidth: 0,
-      fillOverlap: 0,
-      lineSmoothing: Math.max(0, Math.min(2, next.lineSmoothing)),
-      curveSmoothing: Math.max(0, Math.min(2, next.curveSmoothing)),
     });
   }, []);
 

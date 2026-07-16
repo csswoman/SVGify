@@ -175,10 +175,10 @@ Reglas comunes:
 - [x] Centralizar en ese resolvedor los clamps de perfiles y la regla de `maxIterations`.
 - [x] Asegurar que Icono no muestre opciones de spline como configurables.
 - [x] Hacer que el resolvedor fuerce `maxIterations >= 1`.
-- [ ] Eliminar de `VectorizeSettings` los campos heredados e ignorados:
+- [x] Eliminar de `VectorizeSettings` los campos heredados e ignorados:
   - `ltres`, `qtres`, `strokewidth`, `linePathOmit`, `blurDelta`, `fillOverlap`, `lineSmoothing`, `curveSmoothing`;
   - aliases `pathomit`, `roundcoords`, `blurRadius`, `traceScale` si ya existe un campo canónico.
-- [ ] Actualizar tests y consumidores hasta que no exista escritura doble de campo canónico + alias.
+- [x] Actualizar tests y consumidores hasta que no exista escritura doble de campo canónico + alias.
 
 **Criterio de aceptación:** La UI no puede construir una configuración inválida y no hay comentarios `legacy, ignored by vtracer` dentro del contrato activo.
 
@@ -282,14 +282,14 @@ Reglas comunes:
 
 **Objetivo:** Terminar la migración sin mantener dos modelos de settings.
 
-- [ ] Eliminar funciones y constantes de `iconModeSettings.ts` absorbidas por los perfiles.
+- [x] Eliminar el trazador de capas y las constantes/aliases que ya no tienen consumidores; conservar en `iconModeSettings.ts` solo las políticas activas de iconos.
 - [ ] Actualizar `useVectorizeSession` para persistir solo ajustes de producto.
 - [ ] Revisar que el cambio de modo restablezca únicamente valores dependientes del modo y no borre la paleta sin necesidad.
 - [x] Cancelar el trazado anterior al cambiar rápidamente Modo, Detalle o Colores.
 - [x] Evitar reemplazar el SVG válido por `null` durante cada ajuste; conservar el último resultado mientras se procesa el nuevo si no causa inconsistencias.
 - [x] Actualizar errores para mencionar las nuevas decisiones: menos colores, modo adecuado o nivel más limpio.
 - [ ] Eliminar claves i18n, comentarios y tests referidos a la antigua promesa local.
-- [ ] Confirmar que no quedan aliases legacy y que el endpoint mantiene un único contrato documentado.
+- [x] Confirmar que no quedan aliases legacy y que el endpoint mantiene un único contrato documentado.
 
 **Criterio de aceptación:** Búsqueda global limpia de campos eliminados y un único camino desde UI → perfil → worker → SVG.
 
