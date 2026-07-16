@@ -220,7 +220,7 @@ Reglas comunes:
 - [x] En Logo o icono, ocultar por completo esos ajustes geométricos mientras use `Polygon`.
 - [x] Mantener Quitar fondo fuera del grupo de calidad, porque modifica el contenido de entrada.
 - [ ] Mostrar Tolerancia solo cuando Quitar fondo esté activo.
-- [x] Mostrar Limpieza de borde transparente solo cuando se detecten píxeles con `0 < alpha < 255`.
+- [x] Mostrar Limpieza de borde transparente junto a Quitar fondo solo cuando se detecten píxeles con `0 < alpha < 255`.
 - [x] Mantener Paleta después de los controles principales y colapsada por defecto.
 - [x] Actualizar summaries para que indiquen decisiones de producto, por ejemplo `16 colores · Equilibrado`.
 - [x] Eliminar claves i18n sin consumidores tras verificar EN/ES.

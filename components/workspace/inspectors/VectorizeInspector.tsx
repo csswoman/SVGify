@@ -74,7 +74,6 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
       <VectorizeSettingsPanel
         settings={settings}
         onSettingsChange={updateSettings}
-        hasTranslucentEdges={hasTranslucentEdges}
       />
 
       <div className="space-y-3 border-t border-gray-100 pt-3 dark:border-gray-700">
@@ -120,6 +119,24 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
               </button>
             )}
           </>
+        )}
+
+        {hasTranslucentEdges && (
+          <div>
+            <label className="mb-1 flex items-center text-sm font-medium text-gray-600 dark:text-gray-400">
+              {t('set.alphaThreshold')}: <span className="ml-1 font-mono">{settings.alphaThreshold}</span>
+              <Tooltip text={t('set.alphaThreshold.help')} label={t('set.alphaThreshold')} />
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={255}
+              value={settings.alphaThreshold}
+              onChange={(event) => updateSettings({ ...settings, alphaThreshold: Number(event.target.value) })}
+              className="w-full accent-blue-600"
+              aria-label={`${t('set.alphaThreshold')}: ${settings.alphaThreshold}`}
+            />
+          </div>
         )}
       </div>
 

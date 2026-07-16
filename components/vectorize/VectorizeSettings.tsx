@@ -16,13 +16,11 @@ const COLOR_COUNT_TICKS = [4, 8, 16, 32, 64, 128] as const;
 interface VectorizeSettingsProps {
   settings: VectorizeSettings;
   onSettingsChange: (settings: VectorizeSettings) => void;
-  hasTranslucentEdges?: boolean;
 }
 
 export function VectorizeSettingsPanel({
   settings,
   onSettingsChange,
-  hasTranslucentEdges = false,
 }: VectorizeSettingsProps) {
   const { t } = useI18n();
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -60,7 +58,7 @@ export function VectorizeSettingsPanel({
     onSettingsChange(applyVectorizeProfile(settings, { detailLevel }));
   };
 
-  const hasContextualRefinement = settings.traceMode === 'standard' || hasTranslucentEdges;
+  const hasContextualRefinement = settings.traceMode === 'standard';
 
   return (
     <div className="space-y-4">
@@ -223,24 +221,6 @@ export function VectorizeSettingsPanel({
                 />
               </div>
             </>
-          )}
-
-          {hasTranslucentEdges && (
-            <div>
-              <label className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {t('set.alphaThreshold')}: <span className="ml-1 font-mono">{settings.alphaThreshold}</span>
-                <Tooltip text={t('set.alphaThreshold.help')} label={t('set.alphaThreshold')} />
-              </label>
-              <input
-                type="range"
-                min={0}
-                max={255}
-                value={settings.alphaThreshold}
-                onChange={(e) => onSettingsChange({ ...settings, alphaThreshold: Number(e.target.value) })}
-                className="w-full accent-blue-600"
-                aria-label={`${t('set.alphaThreshold')}: ${settings.alphaThreshold}`}
-              />
-            </div>
           )}
         </InspectorDisclosure>
       )}
