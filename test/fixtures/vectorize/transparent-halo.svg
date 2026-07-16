@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <filter id="blur"><feGaussianBlur stdDeviation="8"/></filter>
+  </defs>
+  <circle cx="128" cy="128" r="94" fill="#4a80cc" opacity=".24" filter="url(#blur)"/>
+  <circle cx="128" cy="128" r="77" fill="#2767bd"/>
+  <path d="m128 71 16 37 40 4-30 27 9 40-35-20-35 20 9-40-30-27 40-4Z" fill="#fff"/>
+</svg>

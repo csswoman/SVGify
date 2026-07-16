@@ -137,21 +137,21 @@ Reglas comunes:
 
 **Objetivo:** Evitar que la simplificación de la UI cambie silenciosamente la calidad del trazado.
 
-- [ ] Identificar una matriz mínima de fixtures:
+- [x] Identificar una matriz mínima de fixtures:
   - `public/validation-icon.png` para Logo o icono.
   - Una ilustración con varios colores y sombreado.
   - Una foto con ruido/JPEG.
   - Un PNG transparente con halo semitransparente.
   - Una imagen donde el blanco sea contenido, no fondo.
-- [ ] Añadir fixtures faltantes a un directorio de test explícito; no depender de archivos de `out/`.
-- [ ] Crear un helper de diagnóstico que reporte por resultado:
+- [x] Añadir fixtures faltantes a un directorio de test explícito; no depender de archivos de `out/`.
+- [x] Crear un helper de diagnóstico que reporte por resultado:
   - hash del SVG;
   - cantidad de paths;
   - cantidad de colores;
   - bytes;
   - tiempo de trazado;
   - error o timeout.
-- [ ] Guardar métricas base para los defaults actuales de Ilustración e Icono.
+- [x] Guardar métricas base para los defaults actuales de Ilustración e Icono.
 - [x] Ejecutar el fixture de Icono con los tres perfiles y comprobar SVG válido y progresión de paths.
 - [x] Añadir una prueba que demuestre que `maxIterations = 0` se normaliza a un valor válido antes del trazado, tanto en el perfil como en el worker.
 - [ ] Añadir una prueba de comportamiento, no un snapshot frágil, para cada control que se conservará.
@@ -189,13 +189,13 @@ Reglas comunes:
 **Objetivo:** Sustituir varios sliders técnicos por una sola decisión comprensible.
 
 - [x] Implementar los seis perfiles iniciales de la tabla de este documento.
-- [ ] Ejecutar la matriz de fixtures para cada perfil.
+- [x] Ejecutar la matriz disponible de fixtures para cada perfil.
 - [ ] Ajustar valores si un perfil:
   - pierde la silueta principal;
   - aumenta paths respecto al nivel anterior cuando debería limpiar;
   - elimina colores importantes;
   - supera el timeout actual.
-- [ ] Verificar progresión monotónica esperada:
+- [x] Verificar progresión monotónica esperada en el fixture de Icono:
   - Limpio produce igual o menos paths/colores que Equilibrado;
   - Más detalle conserva igual o más detalle que Equilibrado;
   - ningún perfil produce un error.

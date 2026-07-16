@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="220" viewBox="0 0 320 220">
+  <defs>
+    <filter id="noise"><feTurbulence type="fractalNoise" baseFrequency=".18" numOctaves="3" seed="7"/><feColorMatrix type="saturate" values=".25"/><feComponentTransfer><feFuncA type="table" tableValues="0 .26"/></feComponentTransfer></filter>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d9a57a"/><stop offset=".5" stop-color="#9d8fc0"/><stop offset="1" stop-color="#385a81"/></linearGradient>
+  </defs>
+  <rect width="320" height="220" fill="url(#sky)"/>
+  <ellipse cx="160" cy="126" rx="88" ry="68" fill="#d4a079"/>
+  <ellipse cx="130" cy="112" rx="10" ry="7" fill="#342837"/>
+  <ellipse cx="190" cy="112" rx="10" ry="7" fill="#342837"/>
+  <path d="M136 151Q160 168 184 151" fill="none" stroke="#7e3f4c" stroke-width="8" stroke-linecap="round"/>
+  <path d="M76 96Q91 36 156 44Q233 31 247 98Q211 68 160 69Q108 67 76 96Z" fill="#3c374e"/>
+  <rect width="320" height="220" filter="url(#noise)"/>
+</svg>
