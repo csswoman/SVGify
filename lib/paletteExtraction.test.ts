@@ -92,6 +92,18 @@ describe('palette extraction', () => {
     expect(collapsed.some((c) => c.r === 243 && c.g === 188)).toBe(true);
   });
 
+  it('keeps distinct same-family logo fills that are not JPEG twins', () => {
+    const collapsed = collapseNearDuplicateAccents([
+      { r: 170, g: 54, b: 135 },
+      { r: 255, g: 175, b: 220 },
+      { r: 211, g: 138, b: 186 },
+      { r: 255, g: 255, b: 255 },
+    ]);
+
+    expect(collapsed.some((c) => c.r === 255 && c.g === 175 && c.b === 220)).toBe(true);
+    expect(collapsed.some((c) => c.r === 211 && c.g === 138 && c.b === 186)).toBe(true);
+  });
+
   it('absorbs tiny palette islands into an existing neighboring color', () => {
     const teal = [37, 185, 181, 255];
     const beige = [224, 205, 164, 255];

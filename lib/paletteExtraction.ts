@@ -452,10 +452,15 @@ function accentPreference(color: RGBColor): number {
  * JPEG/WebP antialiasing of a flat accent over a dark matte invents a second,
  * lighter shade of the same hue. Keeping both splits solid shapes (sun, star)
  * into half-and-half fills so only one side can regularize as a full primitive.
- * Collapse accents that share nearly the same RGB direction into the stronger
- * logo color.
+ * Collapse accents that share nearly the same RGB direction AND sit close in
+ * RGB space into the stronger logo color. Distinct logo fills that merely point
+ * in a similar hue direction (for example light pink vs medium magenta) must
+ * stay separate.
  */
 export function collapseNearDuplicateAccents(palette: readonly RGBColor[]): RGBColor[] {
+  // Twin JPEG shades of one accent land well under ~50ΔE-ish RGB units; distinct
+  // logo fills of the same family (EN light pink vs letter magenta) sit farther.
+  const maxTwinDistanceSq = 52 * 52;
   const result: RGBColor[] = [];
   for (const color of palette) {
     const sat = saturationRange(color);
@@ -469,6 +474,7 @@ export function collapseNearDuplicateAccents(palette: readonly RGBColor[]): RGBC
     for (let index = 0; index < result.length; index++) {
       const existing = result[index];
       if (saturationRange(existing) < 40 || luminance(existing) < 80) continue;
+      if (colorDistanceSq(color, existing) > maxTwinDistanceSq) continue;
       if (scaledColorDirectionSimilarity(color, existing) < 0.97) continue;
       if (accentPreference(color) > accentPreference(existing)) {
         result[index] = { ...color };
