@@ -31,20 +31,10 @@ export function FillInspector({
   const [fillColor, setFillColor] = useState<RGBColor>(
     initialColor ?? { r: 0, g: 0, b: 0 }
   );
-  const [paletteSettled, setPaletteSettled] = useState(false);
   const userPickedRef = useRef(false);
   const adoptedRef = useRef(false);
   const fillHex = rgbToHex(fillColor);
-  const paintReady = paletteSettled && colors.length > 0;
-
-  useEffect(() => {
-    if (!svgEl) {
-      setPaletteSettled(true);
-      return;
-    }
-    extractColors();
-    setPaletteSettled(true);
-  }, [svgEl, extractColors]);
+  const paintReady = colors.length > 0;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- local picker buffer mirrors the shared Fill color
@@ -64,7 +54,7 @@ export function FillInspector({
 
   // Adopt first SVG color once when the user hasn't chosen yet (avoids painting default black).
   useEffect(() => {
-    if (!paletteSettled || userPickedRef.current || adoptedRef.current || colors.length === 0) {
+    if (userPickedRef.current || adoptedRef.current || colors.length === 0) {
       return;
     }
     const initialHex = initialColor ? rgbToHex(initialColor) : null;
@@ -74,7 +64,7 @@ export function FillInspector({
     adoptedRef.current = true;
     setFillColor(next);
     onFillColorChange(next);
-  }, [paletteSettled, colors, initialColor, onFillColorChange]);
+  }, [colors, initialColor, onFillColorChange]);
 
   const handleColorChange = (color: RGBColor) => {
     userPickedRef.current = true;
@@ -112,22 +102,14 @@ export function FillInspector({
         </p>
       ) : null}
 
-      {!paletteSettled ? (
-        <p className={inspectorHint} aria-busy="true">
-          {t('col.loadingColors')}
-        </p>
-      ) : (
-        <>
-          <ColorSwatches
-            colors={colors}
-            selectedColor={fillColor}
-            onColorClick={handleColorChange}
-          />
-          <fieldset disabled={!paintReady} className="min-w-0 disabled:opacity-50">
-            <ColorPicker color={fillColor} onChange={handleColorChange} />
-          </fieldset>
-        </>
-      )}
+      <ColorSwatches
+        colors={colors}
+        selectedColor={fillColor}
+        onColorClick={handleColorChange}
+      />
+      <fieldset disabled={!paintReady} className="min-w-0 disabled:opacity-50">
+        <ColorPicker color={fillColor} onChange={handleColorChange} />
+      </fieldset>
     </div>
   );
 }

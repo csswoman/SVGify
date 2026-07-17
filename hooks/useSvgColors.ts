@@ -44,16 +44,23 @@ function getColorStats(svgElement: SVGElement): ColorStat[] {
   return [...stats.values()].sort((a, b) => b.weight - a.weight);
 }
 
+function colorsFromSvg(svgElement: SVGElement | null): RGBColor[] {
+  if (!svgElement) return [];
+  return getColorStats(svgElement).map((stat) => stat.color);
+}
+
 export function useSvgColors(svgElement: SVGElement | null) {
-  const [colors, setColors] = useState<RGBColor[]>([]);
+  const [colors, setColors] = useState<RGBColor[]>(() => colorsFromSvg(svgElement));
+  const [watchedElement, setWatchedElement] = useState(svgElement);
+
+  // Keep palette in sync when the mounted SVG identity changes (no extract effect needed).
+  if (svgElement !== watchedElement) {
+    setWatchedElement(svgElement);
+    setColors(colorsFromSvg(svgElement));
+  }
 
   const refreshColors = useCallback((): RGBColor[] => {
-    if (!svgElement) {
-      setColors([]);
-      return [];
-    }
-
-    const nextColors = getColorStats(svgElement).map((stat) => stat.color);
+    const nextColors = colorsFromSvg(svgElement);
     setColors(nextColors);
     return nextColors;
   }, [svgElement]);
