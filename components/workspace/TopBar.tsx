@@ -121,7 +121,6 @@ export function TopBar({
             payload={payload}
             fileName="vectorized.svg"
             prepared={downloadPrepared}
-            gateUntilPrepared
             highlight={downloadHighlight}
             onDownloaded={onDownloadComplete}
           />
