@@ -16,6 +16,15 @@ import {
 import { Tooltip } from '@/components/shared/Tooltip';
 import { DownloadButton } from '@/components/shared/DownloadButton';
 import { InspectorDisclosure } from '@/components/workspace/InspectorDisclosure';
+import { InspectorHeader } from '@/components/workspace/InspectorHeader';
+import {
+  inspectorHint,
+  inspectorLabel,
+  inspectorMono,
+  inspectorRange,
+  inspectorSection,
+  inspectorStack,
+} from '@/components/workspace/inspectorChrome';
 import { buildDownloadPayload } from '@/lib/exportPayload';
 import {
   getDownloadPreparationTargets,
@@ -68,7 +77,8 @@ export function OptimizeInspector({
   const [shapeTarget, setShapeTarget] = useState(50);
   const [preparePreset, setPreparePreset] = useState<DownloadPreparationPreset>('balanced');
   const [showOriginalPalette, setShowOriginalPalette] = useState(false);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [compressionOpen, setCompressionOpen] = useState(false);
   const [confirmMaxOptimize, setConfirmMaxOptimize] = useState(false);
   const [confirmForSvg, setConfirmForSvg] = useState(svgString);
   const [byteDelta, setByteDelta] = useState<{ before: number; after: number } | null>(null);
@@ -209,34 +219,32 @@ export function OptimizeInspector({
     [maxReduce]
   );
 
-  const advancedSummary = prepared
-    ? `${colors.length} ${t('vec.colors')} · ${pathCount} ${t('workspace.paths')}`
-    : t('optimize.advanced.summary');
+  const paletteSummary = `${colors.length} ${t('vec.colors')} · ${t('optimize.morePalette.summary')}`;
+  const compressionSummary = `${pathCount} ${t('workspace.paths')} · ${t('optimize.moreCompression.summary')}`;
 
   return (
-    <div className="space-y-5">
-      <div className="space-y-1">
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-          {t('tool.optimize')}
-        </h2>
-        <p className="text-pretty text-xs text-gray-500 dark:text-gray-400">{t('optimize.subtitle')}</p>
-        {showComplexWarn && (
-          <p className="text-pretty text-xs text-amber-800 dark:text-amber-200">{t('vec.complexWarn')}</p>
-        )}
-      </div>
+    <div className={inspectorStack}>
+      <InspectorHeader
+        title={t('tool.optimize')}
+        subtitle={t('optimize.subtitle')}
+      />
+      {showComplexWarn ? (
+        <p className="text-pretty text-xs text-amber-800 dark:text-amber-200">{t('vec.complexWarn')}</p>
+      ) : null}
 
-      {/* Hero: one primary action for production-ready export */}
-      <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/40">
-        <div className="flex items-baseline justify-between gap-2 font-mono text-[11px] tabular-nums text-gray-600 dark:text-gray-300">
+      {/* Single primary path: prepare → download in TopBar */}
+      <div className="space-y-3">
+        <div className={`flex items-baseline justify-between gap-2 ${inspectorMono}`}>
           <span>
             {pathCount} {t('workspace.paths')} · {byteSizeLabel}
           </span>
           {savedBytes !== null ? (
-            <span className="text-gray-700 dark:text-gray-200">−{formatBytes(savedBytes)}</span>
+            <span className="text-ink dark:text-dark-ink">−{formatBytes(savedBytes)}</span>
           ) : null}
         </div>
+
         <div
-          className="flex gap-0.5 rounded-md border border-gray-200 bg-white p-0.5 dark:border-gray-600 dark:bg-gray-800"
+          className="flex gap-0.5 rounded-md border border-border bg-canvas-bg p-0.5 dark:border-dark-border dark:bg-dark-canvas-bg"
           role="group"
           aria-label={t('optimize.prepare')}
         >
@@ -256,18 +264,20 @@ export function OptimizeInspector({
                 'focus-ring flex-1 rounded px-2 py-1.5 text-[11px] font-semibold transition',
                 preparePreset === id
                   ? 'bg-action-blue-surface text-action-blue dark:bg-blue-950/50 dark:text-blue-300'
-                  : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700',
+                  : 'text-ink-muted hover:bg-surface dark:text-dark-ink-muted dark:hover:bg-dark-surface',
               ].join(' ')}
             >
               {t(key)}
             </button>
           ))}
         </div>
-        <p className="font-mono text-[11px] tabular-nums text-gray-500 dark:text-gray-400">
+
+        <p className={inspectorMono}>
           {t('optimize.prepare.targets')
             .replace('{colors}', String(Math.min(targetCount, maxReduce)))
             .replace('{shapes}', String(shapeTarget))}
         </p>
+
         <button
           type="button"
           onClick={handlePrepareDownload}
@@ -276,114 +286,91 @@ export function OptimizeInspector({
         >
           {t('optimize.prepare')}
         </button>
-        <p className="text-pretty text-[11px] text-gray-500 dark:text-gray-400">
-          {t('optimize.prepare.help')}
-        </p>
+        <p className={inspectorHint}>{t('optimize.prepare.help')}</p>
+
         {prepared ? (
-          <div className="space-y-2 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-900 dark:bg-green-950/30">
-            <p className="text-sm font-semibold text-green-900 dark:text-green-100">
+          <div className="space-y-1 border-t border-border pt-3 dark:border-dark-border">
+            <p className="text-sm font-semibold text-action-green dark:text-green-300">
               {t('workspace.preparedReady')}
             </p>
-            <p className="text-xs text-green-800 dark:text-green-200">
-              {t('workspace.preparedReadyHint')}
-            </p>
-            <DownloadButton
-              payload={exportPayload}
-              prepared
-              gateUntilPrepared={false}
-              className="w-full !min-h-10 text-xs"
-            />
+            <p className={inspectorHint}>{t('workspace.preparedReadyHint')}</p>
           </div>
-        ) : stale ? (
-          <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
+        ) : null}
+
+        {stale ? (
+          <div className="space-y-1 border-t border-amber-200 pt-3 dark:border-amber-900">
             <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">
               {t('workspace.preparedStale')}
             </p>
-            <p className="text-xs text-amber-800 dark:text-amber-200">
+            <p className="text-pretty text-xs text-amber-800 dark:text-amber-200">
               {t('workspace.preparedStaleHint')}
             </p>
           </div>
         ) : null}
-        {!prepared ? (
-          <DownloadButton
-            payload={exportPayload}
-            prepared={false}
-            gateUntilPrepared={false}
-            className="w-full !min-h-10 text-xs"
-          />
-        ) : null}
       </div>
 
       <InspectorDisclosure
-        title={t('optimize.advanced')}
-        summary={advancedSummary}
-        open={advancedOpen}
-        onOpenChange={(open) => {
-          setAdvancedOpen(open);
-          if (!open) setConfirmMaxOptimize(false);
-        }}
+        title={t('optimize.morePalette')}
+        summary={paletteSummary}
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
       >
-        <section className="space-y-3">
-          <div className="flex items-baseline justify-between gap-2">
-            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-              {t('optimize.paletteSection')}
-            </h3>
-            <span className="font-mono text-[11px] text-gray-500 dark:text-gray-400">
-              {colors.length} {t('vec.colors')}
-            </span>
-          </div>
+        <div className="flex items-baseline justify-between gap-2">
+          <h3 className="text-xs font-semibold text-ink dark:text-dark-ink">
+            {t('optimize.paletteSection')}
+          </h3>
+          <span className={inspectorMono}>
+            {colors.length} {t('vec.colors')}
+          </span>
+        </div>
 
-          <ColorSwatches
-            colors={colors}
-            onColorClick={onSelectedColorChange}
-            selectedColor={selectedColor}
-            onColorDelete={handleDeleteColor}
-            showTitle={false}
-          />
+        <ColorSwatches
+          colors={colors}
+          onColorClick={onSelectedColorChange}
+          selectedColor={selectedColor}
+          onColorDelete={handleDeleteColor}
+          showTitle={false}
+        />
 
-          {originalPalette.length > 0 && (
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => setShowOriginalPalette((v) => !v)}
-                className="focus-ring flex min-h-11 w-full items-center justify-between gap-2 rounded py-1 text-xs font-semibold text-gray-600 transition hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-                aria-expanded={showOriginalPalette}
-              >
-                {t('col.originalColors')}
-                {showOriginalPalette ? (
-                  <CaretUp size={14} className="text-gray-400" aria-hidden />
-                ) : (
-                  <CaretDown size={14} className="text-gray-400" aria-hidden />
-                )}
-              </button>
-              {showOriginalPalette && (
-                <div className="flex flex-wrap gap-1.5">
-                  {originalPalette.map((c) => {
-                    const hex = rgbToHex(c);
-                    return (
-                      <button
-                        key={hex}
-                        type="button"
-                        title={hex}
-                        onClick={() => handleReapplyOriginal(c)}
-                        className="focus-ring h-8 w-8 rounded border border-gray-200 transition hover:ring-2 hover:ring-blue-400 dark:border-gray-700"
-                        style={{ backgroundColor: hex }}
-                        aria-label={`${t('col.originalColors')}: ${hex}`}
-                      />
-                    );
-                  })}
-                </div>
+        {originalPalette.length > 0 ? (
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => setShowOriginalPalette((v) => !v)}
+              className="focus-ring flex min-h-11 w-full items-center justify-between gap-2 rounded py-1 text-xs font-semibold text-ink-muted transition hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+              aria-expanded={showOriginalPalette}
+            >
+              {t('col.originalColors')}
+              {showOriginalPalette ? (
+                <CaretUp size={14} className="text-ink-subtle" aria-hidden />
+              ) : (
+                <CaretDown size={14} className="text-ink-subtle" aria-hidden />
               )}
-            </div>
-          )}
-        </section>
+            </button>
+            {showOriginalPalette ? (
+              <div className="flex flex-wrap gap-1.5">
+                {originalPalette.map((c) => {
+                  const hex = rgbToHex(c);
+                  return (
+                    <button
+                      key={hex}
+                      type="button"
+                      title={hex}
+                      onClick={() => handleReapplyOriginal(c)}
+                      className="focus-ring h-8 w-8 rounded border border-border transition hover:ring-2 hover:ring-action-blue dark:border-dark-border"
+                      style={{ backgroundColor: hex }}
+                      aria-label={`${t('col.originalColors')}: ${hex}`}
+                    />
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
-        <div className="space-y-3 border-t border-gray-100 pt-3 dark:border-gray-700">
-          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-            {t('optimize.morePalette')}
-          </p>
+        <div className={inspectorSection}>
           <div>
-            <label className="mb-1 flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className={inspectorLabel}>
               {t('col.reduce')}: <span className="ml-1 font-mono">{targetCount}</span>
               <Tooltip text={t('col.reduce.help')} label={t('col.reduce')} />
             </label>
@@ -396,7 +383,7 @@ export function OptimizeInspector({
                 setTargetCount(Number(e.target.value));
                 setPreparePreset('balanced');
               }}
-              className="w-full accent-blue-600"
+              className={inspectorRange}
               aria-label={`${t('col.reduce')}: ${targetCount}`}
             />
           </div>
@@ -418,7 +405,7 @@ export function OptimizeInspector({
           </button>
 
           <div>
-            <label className="mb-1 flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className={inspectorLabel}>
               {t('col.merge')}: <span className="ml-1 font-mono">{mergeThreshold}</span>
               <Tooltip text={t('col.merge.help')} label={t('col.merge')} />
             </label>
@@ -429,7 +416,7 @@ export function OptimizeInspector({
               step={4}
               value={mergeThreshold}
               onChange={(e) => setMergeThreshold(Number(e.target.value))}
-              className="w-full accent-blue-600"
+              className={inspectorRange}
               aria-label={`${t('col.merge')}: ${mergeThreshold}`}
             />
           </div>
@@ -455,77 +442,93 @@ export function OptimizeInspector({
             <Tooltip nested text={t('col.snapBlack.help')} label={t('col.snapBlack')} />
           </button>
         </div>
+      </InspectorDisclosure>
 
-        <div className="space-y-3 border-t border-gray-100 pt-3 dark:border-gray-700">
-          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-            {t('optimize.moreCompression')}
-          </p>
-          <div>
-            <label className="mb-1 flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
-              {t('shape.compactTarget')}: <span className="ml-1 font-mono">{shapeTarget}</span>
-              <Tooltip text={t('shape.compact.help')} label={t('shape.compactTarget')} />
-            </label>
-            <input
-              type="range"
-              min={20}
-              max={120}
-              step={5}
-              value={shapeTarget}
-              onChange={(e) => {
-                setShapeTarget(Number(e.target.value));
-                setPreparePreset('balanced');
-              }}
-              className="w-full accent-blue-600"
-              aria-label={`${t('shape.compactTarget')}: ${shapeTarget}`}
-            />
+      <InspectorDisclosure
+        title={t('optimize.moreCompression')}
+        summary={compressionSummary}
+        open={compressionOpen}
+        onOpenChange={(open) => {
+          setCompressionOpen(open);
+          if (!open) setConfirmMaxOptimize(false);
+        }}
+      >
+        <div>
+          <label className={inspectorLabel}>
+            {t('shape.compactTarget')}: <span className="ml-1 font-mono">{shapeTarget}</span>
+            <Tooltip text={t('shape.compact.help')} label={t('shape.compactTarget')} />
+          </label>
+          <input
+            type="range"
+            min={20}
+            max={120}
+            step={5}
+            value={shapeTarget}
+            onChange={(e) => {
+              setShapeTarget(Number(e.target.value));
+              setPreparePreset('balanced');
+            }}
+            className={inspectorRange}
+            aria-label={`${t('shape.compactTarget')}: ${shapeTarget}`}
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleCompactShapes}
+          className={secondaryBtn}
+          disabled={pathCount === 0}
+        >
+          {t('shape.compact')}
+        </button>
+        <button type="button" onClick={handleCleanFragments} className={secondaryBtn}>
+          {t('vec.cleanFragments')}
+          <Tooltip nested text={t('vec.cleanFragments.help')} label={t('vec.cleanFragments')} />
+        </button>
+
+        {confirmMaxOptimize ? (
+          <div
+            role="group"
+            aria-label={t('vec.maxOptimize')}
+            className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30"
+          >
+            <p className="text-pretty text-xs text-amber-950 dark:text-amber-100">
+              {t('vec.maxOptimize.confirm')}
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button type="button" onClick={handleMaxOptimize} className={`${secondaryBtn} sm:flex-1`}>
+                {t('vec.maxOptimize.confirmAction')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmMaxOptimize(false)}
+                className="btn-tertiary sm:flex-1"
+              >
+                {t('vec.maxOptimize.cancel')}
+              </button>
+            </div>
           </div>
-
+        ) : (
           <button
             type="button"
-            onClick={handleCompactShapes}
+            onClick={() => setConfirmMaxOptimize(true)}
             className={secondaryBtn}
             disabled={pathCount === 0}
           >
-            {t('shape.compact')}
+            {t('vec.maxOptimize')}
+            <Tooltip nested text={t('vec.maxOptimize.help')} label={t('vec.maxOptimize')} />
           </button>
-          <button type="button" onClick={handleCleanFragments} className={secondaryBtn}>
-            {t('vec.cleanFragments')}
-            <Tooltip nested text={t('vec.cleanFragments.help')} label={t('vec.cleanFragments')} />
-          </button>
+        )}
 
-          {confirmMaxOptimize ? (
-            <div
-              role="group"
-              aria-label={t('vec.maxOptimize')}
-              className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30"
-            >
-              <p className="text-pretty text-xs text-amber-950 dark:text-amber-100">
-                {t('vec.maxOptimize.confirm')}
-              </p>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <button type="button" onClick={handleMaxOptimize} className={`${secondaryBtn} sm:flex-1`}>
-                  {t('vec.maxOptimize.confirmAction')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmMaxOptimize(false)}
-                  className="btn-tertiary sm:flex-1"
-                >
-                  {t('vec.maxOptimize.cancel')}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirmMaxOptimize(true)}
-              className={secondaryBtn}
-              disabled={pathCount === 0}
-            >
-              {t('vec.maxOptimize')}
-              <Tooltip nested text={t('vec.maxOptimize.help')} label={t('vec.maxOptimize')} />
-            </button>
-          )}
+        {/* Raw download escape hatch — secondary to TopBar prepared download */}
+        <div className={`${inspectorSection} !border-t-border`}>
+          <p className={inspectorHint}>{t('workspace.downloadRaw')}</p>
+          <DownloadButton
+            payload={exportPayload}
+            prepared={false}
+            gateUntilPrepared={false}
+            className="w-full !min-h-10 text-xs"
+          />
         </div>
       </InspectorDisclosure>
     </div>

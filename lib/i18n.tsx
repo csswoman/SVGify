@@ -236,6 +236,10 @@ const DICT = {
   'col.originalColors.help': { en: 'The colors the image had when you entered this step. Click one to reapply it.', es: 'Los colores que tenía la imagen al entrar a este paso. Haz clic en uno para reaplicarlo.' },
   'col.paletteTitle': { en: 'Palette', es: 'Paleta' },
   'col.noColors': { en: 'No colors found.', es: 'No se encontraron colores.' },
+  'col.loadingColors': {
+    en: 'Reading colors from the SVG…',
+    es: 'Leyendo colores del SVG…',
+  },
   'col.selectColor': { en: 'Select color', es: 'Seleccionar color' },
   'col.deleteColor': { en: 'Delete — reassign to nearest color', es: 'Borrar — reasignar al color más cercano' },
   'col.deleteColor.confirm': { en: 'Delete', es: 'Borrar' },
@@ -432,8 +436,8 @@ const DICT = {
   'optimize.prepare.preset.balanced': { en: 'Balanced', es: 'Equilibrado' },
   'optimize.prepare.preset.detail': { en: 'Keep detail', es: 'Más detalle' },
   'optimize.preparedStatus': {
-    en: 'Prepared. Undo if needed, then Download SVG in the top bar.',
-    es: 'Preparado. Deshaz si hace falta y luego Descarga el SVG arriba.',
+    en: 'Prepared — Download SVG is ready in the top bar.',
+    es: 'Preparado — Descargar SVG está listo en la barra superior.',
   },
   'optimize.morePalette': { en: 'More palette tools', es: 'Más herramientas de paleta' },
   'optimize.morePalette.summary': {
@@ -532,8 +536,8 @@ const DICT = {
     es: 'Listo para exportar',
   },
   'workspace.preparedReadyHint': {
-    en: 'Prepared snapshot matches the current export file.',
-    es: 'El snapshot preparado coincide con el archivo actual de exportación.',
+    en: 'Use Download SVG in the top bar to save the prepared file.',
+    es: 'Usa Descargar SVG en la barra superior para guardar el archivo preparado.',
   },
   'workspace.preparedStale': {
     en: 'Edited after prepare',

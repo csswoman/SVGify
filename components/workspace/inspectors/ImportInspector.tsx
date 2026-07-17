@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { ImageDropzone } from '@/components/upload/ImageDropzone';
+import { InspectorHeader } from '@/components/workspace/InspectorHeader';
+import { inspectorStack } from '@/components/workspace/inspectorChrome';
 
 interface ImportInspectorProps {
   onReplace: (imageData: ImageData) => void;
@@ -16,27 +18,26 @@ export function ImportInspector({ onReplace, onError, uploadError }: ImportInspe
   const [confirmReplace, setConfirmReplace] = useState(false);
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-1">
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-          {t('workspace.replaceImage')}
-        </h2>
-        <p className="text-pretty text-xs text-gray-500 dark:text-gray-400">
-          {t('workspace.importReplaceHint')}
-        </p>
-      </div>
-      {uploadError && (
-        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+    <div className={inspectorStack}>
+      <InspectorHeader
+        title={t('workspace.replaceImage')}
+        subtitle={t('workspace.importReplaceHint')}
+      />
+      {uploadError ? (
+        <p
+          role="alert"
+          className="rounded-lg border border-danger-border bg-danger-surface p-3 text-xs text-danger-ink dark:border-dark-danger-border dark:bg-dark-danger-surface dark:text-dark-danger-ink"
+        >
           {uploadError}
         </p>
-      )}
+      ) : null}
       {confirmReplace ? (
         <div
           role="group"
           aria-label={t('workspace.replaceImage')}
-          className="space-y-2 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950/30"
+          className="space-y-2 rounded-lg border border-action-blue/30 bg-action-blue-surface p-3 dark:border-blue-900 dark:bg-blue-950/30"
         >
-          <p className="text-pretty text-xs text-blue-950 dark:text-blue-100">
+          <p className="text-pretty text-xs text-ink dark:text-blue-100">
             {t('workspace.replaceImage.confirm')}
           </p>
           <ImageDropzone
@@ -50,7 +51,7 @@ export function ImportInspector({ onReplace, onError, uploadError }: ImportInspe
           <button
             type="button"
             onClick={() => setConfirmReplace(false)}
-            className="w-full py-1.5 text-xs font-medium text-gray-600 underline-offset-2 hover:underline dark:text-gray-300"
+            className="w-full py-1.5 text-xs font-medium text-ink-muted underline-offset-2 hover:underline dark:text-dark-ink-muted"
           >
             {t('workspace.replaceImage.cancel')}
           </button>

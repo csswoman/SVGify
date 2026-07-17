@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { RGBColor } from '@/types/svg.types';
 import { ColorPicker } from '@/components/colors/ColorPicker';
 import { ColorSwatches } from '@/components/colors/ColorSwatches';
 import { useSvgColors } from '@/hooks/useSvgColors';
 import { rgbToHex } from '@/lib/colorUtils';
 import { useI18n } from '@/lib/i18n';
+import { InspectorHeader } from '@/components/workspace/InspectorHeader';
+import { inspectorHint, inspectorStack } from '@/components/workspace/inspectorChrome';
 
 interface FillInspectorProps {
   initialColor: RGBColor | null;
@@ -29,11 +31,20 @@ export function FillInspector({
   const [fillColor, setFillColor] = useState<RGBColor>(
     initialColor ?? { r: 0, g: 0, b: 0 }
   );
+  const [paletteSettled, setPaletteSettled] = useState(false);
+  const userPickedRef = useRef(false);
+  const adoptedRef = useRef(false);
   const fillHex = rgbToHex(fillColor);
+  const paintReady = paletteSettled && colors.length > 0;
 
   useEffect(() => {
+    if (!svgEl) {
+      setPaletteSettled(true);
+      return;
+    }
     extractColors();
-  }, [extractColors]);
+    setPaletteSettled(true);
+  }, [svgEl, extractColors]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- local picker buffer mirrors the shared Fill color
@@ -51,45 +62,72 @@ export function FillInspector({
     return () => observer.disconnect();
   }, [svgEl, extractColors]);
 
+  // Adopt first SVG color once when the user hasn't chosen yet (avoids painting default black).
+  useEffect(() => {
+    if (!paletteSettled || userPickedRef.current || adoptedRef.current || colors.length === 0) {
+      return;
+    }
+    const initialHex = initialColor ? rgbToHex(initialColor) : null;
+    const initialInPalette =
+      initialHex !== null && colors.some((c) => rgbToHex(c) === initialHex);
+    const next = initialInPalette && initialColor ? initialColor : colors[0];
+    adoptedRef.current = true;
+    setFillColor(next);
+    onFillColorChange(next);
+  }, [paletteSettled, colors, initialColor, onFillColorChange]);
+
   const handleColorChange = (color: RGBColor) => {
+    userPickedRef.current = true;
     setFillColor(color);
     onFillColorChange(color);
   };
 
   return (
-    <div className="space-y-5">
-      <div className="space-y-1">
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('tool.fill')}</h2>
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          {isSampling ? t('workspace.fillSampleHint') : t('workspace.fillHint')}
-        </p>
-      </div>
+    <div className={inspectorStack}>
+      <InspectorHeader
+        title={t('tool.fill')}
+        subtitle={isSampling ? t('workspace.fillSampleHint') : t('workspace.fillHint')}
+      />
 
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/40">
-        <div className="flex items-center gap-3">
-          <span
-            className="h-12 w-12 shrink-0 rounded-md border border-gray-300 dark:border-gray-600"
-            style={{ backgroundColor: fillHex }}
-            aria-hidden
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              {t('workspace.fillCurrentColor')}
-            </p>
-            <p className="truncate font-mono text-xs text-gray-500 dark:text-gray-400">
-              {fillHex}
-            </p>
-          </div>
-        </div>
-        {sampledColor && (
-          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            {t('workspace.fillSampledColor')} {rgbToHex(sampledColor)}
+      <div className="flex items-center gap-3">
+        <span
+          className={`h-12 w-12 shrink-0 rounded-md border border-border dark:border-dark-border ${
+            paintReady ? '' : 'opacity-40'
+          }`}
+          style={{ backgroundColor: paintReady ? fillHex : 'transparent' }}
+          aria-hidden
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-ink-muted dark:text-dark-ink-muted">
+            {t('workspace.fillCurrentColor')}
           </p>
-        )}
+          <p className="truncate font-mono text-xs text-ink dark:text-dark-ink">
+            {paintReady ? fillHex : '—'}
+          </p>
+        </div>
       </div>
+      {sampledColor ? (
+        <p className={inspectorHint}>
+          {t('workspace.fillSampledColor')} {rgbToHex(sampledColor)}
+        </p>
+      ) : null}
 
-      <ColorSwatches colors={colors} selectedColor={fillColor} onColorClick={handleColorChange} />
-      <ColorPicker color={fillColor} onChange={handleColorChange} />
+      {!paletteSettled ? (
+        <p className={inspectorHint} aria-busy="true">
+          {t('col.loadingColors')}
+        </p>
+      ) : (
+        <>
+          <ColorSwatches
+            colors={colors}
+            selectedColor={fillColor}
+            onColorClick={handleColorChange}
+          />
+          <fieldset disabled={!paintReady} className="min-w-0 disabled:opacity-50">
+            <ColorPicker color={fillColor} onChange={handleColorChange} />
+          </fieldset>
+        </>
+      )}
     </div>
   );
 }

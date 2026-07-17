@@ -51,7 +51,7 @@ export function StatusBar({
   const showViewControls = showZoom || showPreviewBg;
   const showPanHint =
     showZoom && zoomScale !== undefined && Math.abs(zoomScale - DEFAULT_ZOOM_SCALE) > 0.01;
-  const hint = statusMessage;
+  const hint = suppressGuidance ? null : statusMessage;
 
   const activeToolLabel =
     activeTool === 'eyedropper'
@@ -63,37 +63,36 @@ export function StatusBar({
   return (
     <div
       role="status"
-      className="grid shrink-0 grid-cols-1 items-center gap-x-4 gap-y-1.5 border-t border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 sm:grid-cols-[minmax(0,1fr)_auto_auto] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+      className="grid shrink-0 grid-cols-1 items-center gap-x-4 gap-y-1.5 border-t border-border bg-surface px-3 py-1.5 text-xs text-ink-muted sm:grid-cols-[minmax(0,1fr)_auto_auto] dark:border-dark-border dark:bg-dark-surface dark:text-dark-ink-muted"
     >
+      {/* Document metrics + ephemeral status */}
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
         {isPreTrace ? (
           <span>{t('vec.notTracedYet')}</span>
         ) : hasSvg ? (
-          <span className="inline-flex items-center gap-2 font-mono tabular-nums">
+          <span className="inline-flex items-center gap-2 font-mono tabular-nums text-ink dark:text-dark-ink">
             <span>
               {pathCount ?? 0} {t('workspace.paths')}
             </span>
-            <span className="text-gray-300 dark:text-gray-600" aria-hidden>
+            <span className="text-border dark:text-dark-border" aria-hidden>
               ·
             </span>
             <span>{byteSize !== null ? formatBytes(byteSize) : '0 B'}</span>
           </span>
         ) : null}
-        {hint && (
-          <span
-            aria-live="polite"
-            className="min-w-0 max-w-md text-pretty text-gray-500 dark:text-gray-400"
-          >
+        {hint ? (
+          <span aria-live="polite" className="min-w-0 max-w-md text-pretty text-ink-muted dark:text-dark-ink-muted">
             {hint}
           </span>
-        )}
+        ) : null}
       </div>
 
+      {/* View controls only */}
       {showViewControls ? (
         <div className="flex flex-wrap items-center justify-self-start gap-2 sm:justify-self-center">
-          {showPreviewBg && previewBackground && onPreviewBackgroundChange && (
+          {showPreviewBg && previewBackground && onPreviewBackgroundChange ? (
             <div
-              className="flex gap-0.5 rounded-md border border-gray-200 bg-gray-50 p-0.5 dark:border-gray-600 dark:bg-gray-900"
+              className="flex gap-0.5 rounded-md border border-border bg-canvas-bg p-0.5 dark:border-dark-border dark:bg-dark-canvas-bg"
               role="group"
               aria-label={t('shape.previewBg')}
             >
@@ -104,8 +103,8 @@ export function StatusBar({
                   onClick={() => onPreviewBackgroundChange(bg)}
                   className={`min-h-8 rounded px-2 py-1 text-[11px] font-medium transition ${
                     previewBackground === bg
-                      ? 'bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100'
-                      : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                      ? 'bg-surface text-ink dark:bg-dark-surface dark:text-dark-ink'
+                      : 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'
                   }`}
                   aria-pressed={previewBackground === bg}
                 >
@@ -113,30 +112,30 @@ export function StatusBar({
                 </button>
               ))}
             </div>
-          )}
-          {showZoom && onZoomIn && onZoomOut && onZoomReset && (
-            <ZoomControls
-              scale={zoomScale}
-              onZoomIn={onZoomIn}
-              onZoomOut={onZoomOut}
-              onReset={onZoomReset}
-            />
-          )}
+          ) : null}
+          {showZoom ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <ZoomControls
+                scale={zoomScale!}
+                onZoomIn={onZoomIn!}
+                onZoomOut={onZoomOut!}
+                onReset={onZoomReset!}
+              />
+              {showPanHint ? (
+                <span className="max-lg:hidden text-ink-subtle dark:text-dark-ink-muted">
+                  {t('zoom.panHint')}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : (
         <span className="hidden sm:block" aria-hidden />
       )}
 
-      <div className="flex min-w-0 flex-wrap items-center justify-self-start gap-3 sm:justify-self-end">
-        <span className="text-gray-500 dark:text-gray-400">{activeToolLabel}</span>
-        {hasSvg && !suppressGuidance ? (
-          <span className="hidden max-w-xs truncate text-gray-400 lg:inline dark:text-gray-500">
-            {t('workspace.shortcutHint')}
-          </span>
-        ) : null}
-        {showPanHint && (
-          <span className="max-lg:hidden text-gray-400 dark:text-gray-500">{t('zoom.panHint')}</span>
-        )}
+      {/* Quiet tool name only — shortcuts live on ToolBar tooltips */}
+      <div className="justify-self-start sm:justify-self-end">
+        <span className="text-ink-subtle dark:text-dark-ink-muted">{activeToolLabel}</span>
       </div>
     </div>
   );

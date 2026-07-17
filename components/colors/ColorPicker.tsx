@@ -38,16 +38,19 @@ export function ColorPicker({ color, onChange, onCommit, actionLabel }: ColorPic
     }
   };
 
+  const fieldClass =
+    'h-9 min-w-0 flex-1 rounded-md border border-border bg-surface px-2.5 font-mono text-xs text-ink outline-none focus-visible:ring-2 focus-visible:ring-action-blue dark:border-dark-border dark:bg-dark-canvas-bg dark:text-dark-ink';
+
   return (
-    <div className="space-y-2">
-      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('col.pickerLabel')}</p>
-      <div className="flex items-center gap-2 min-w-0">
+    <div className="space-y-1.5">
+      <p className="text-xs font-semibold text-ink dark:text-dark-ink">{t('col.pickerLabel')}</p>
+      <div className="flex items-center gap-1.5">
         <input
           type="color"
           value={hexInput.startsWith('#') ? hexInput : '#000000'}
           onChange={handleNativeChange}
           onBlur={onCommit}
-          className="h-9 w-9 shrink-0 cursor-pointer rounded border border-gray-300 bg-white p-0.5 dark:border-gray-600"
+          className="size-9 shrink-0 cursor-pointer rounded-md border border-border bg-surface p-0.5 dark:border-dark-border dark:bg-dark-surface"
           aria-label={t('col.pickerLabel')}
         />
         <input
@@ -60,24 +63,25 @@ export function ColorPicker({ color, onChange, onCommit, actionLabel }: ColorPic
           }}
           maxLength={7}
           placeholder="#000000"
-          className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+          spellCheck={false}
+          className={fieldClass}
           aria-label={t('a11y.hexColor')}
         />
-        {actionLabel && (
-          <button
-            type="button"
-            onClick={() => onCommit?.()}
-          className="btn-secondary min-h-11 shrink-0 px-3 text-xs"
-          >
-            {actionLabel}
-          </button>
-        )}
       </div>
-      {!isValidHex(hexInput) && hexInput !== '' && (
+      {actionLabel ? (
+        <button
+          type="button"
+          onClick={() => onCommit?.()}
+          className="btn-secondary-sm w-full"
+        >
+          {actionLabel}
+        </button>
+      ) : null}
+      {!isValidHex(hexInput) && hexInput !== '' ? (
         <p role="alert" className="text-xs text-red-600 dark:text-red-400">
           {t('col.invalidHex')}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }

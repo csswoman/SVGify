@@ -5,6 +5,13 @@ import { X } from '@phosphor-icons/react';
 import { VectorizeSettingsPanel } from '@/components/vectorize/VectorizeSettings';
 import { EditablePalette } from '@/components/vectorize/EditablePalette';
 import { InspectorDisclosure } from '@/components/workspace/InspectorDisclosure';
+import { InspectorHeader } from '@/components/workspace/InspectorHeader';
+import {
+  inspectorCheckbox,
+  inspectorHint,
+  inspectorLabel,
+  inspectorRange,
+} from '@/components/workspace/inspectorChrome';
 import { Tooltip } from '@/components/shared/Tooltip';
 import type { useVectorizeSession } from '@/hooks/useVectorizeSession';
 import { useI18n } from '@/lib/i18n';
@@ -48,15 +55,11 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
   const paletteSummary = `${paletteCountSummary} · ${t(`set.detailLevel.${settings.detailLevel}`)}`;
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <div className="space-y-1">
-          <h2 className="text-sm font-semibold text-ink dark:text-dark-ink">{t('vec.title')}</h2>
-          <p className="text-pretty text-xs text-ink-muted dark:text-dark-ink-muted">{t('vec.subtitle')}</p>
-        </div>
-
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <InspectorHeader title={t('vec.title')} subtitle={t('vec.subtitle')} />
         {!hasSvg ? (
-          <p className="text-pretty text-xs text-ink-muted dark:text-dark-ink-muted" aria-live="polite">
+          <p className={inspectorHint} aria-live="polite">
             {isLoading ? t('onboard.traceAction') : t('onboard.vectorizeCue')}
           </p>
         ) : null}
@@ -71,31 +74,31 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
         </div>
       )}
 
-      <div className="space-y-5">
+      <div className="space-y-3">
         <VectorizeSettingsPanel
           settings={settings}
           onSettingsChange={updateSettings}
         />
 
-        <div className="space-y-4 border-t border-border pt-4 dark:border-dark-border">
-          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+        <div className="space-y-2.5 border-t border-border pt-3 dark:border-dark-border">
+          <label className="flex min-h-9 cursor-pointer items-center gap-2 text-sm font-medium text-ink dark:text-dark-ink">
             <input
               type="checkbox"
               checked={removeBg}
               onChange={(e) => setRemoveBg(e.target.checked)}
-              className="h-4 w-4 accent-action-blue"
+              className={inspectorCheckbox}
             />
             {t('bg.remove')}
             <Tooltip text={t('bg.auto.help')} label={t('bg.remove')} />
           </label>
 
           {removeBg && (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {seeds.length > 0 ? (
-                <p className="text-pretty text-xs text-ink-muted dark:text-dark-ink-muted">{t('bg.picking')}</p>
+                <p className={inspectorHint}>{t('bg.picking')}</p>
               ) : null}
-              <div className="space-y-1">
-                <label id="vectorize-bg-tolerance-label" htmlFor="vectorize-bg-tolerance" className="flex items-center text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
+              <div>
+                <label id="vectorize-bg-tolerance-label" htmlFor="vectorize-bg-tolerance" className={inspectorLabel}>
                   {t('bg.tolerance')}: <span className="ml-1 font-mono">{bgTolerance}</span>
                   <Tooltip text={t('bg.tolerance.help')} label={t('bg.tolerance')} />
                 </label>
@@ -106,7 +109,7 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
                   value={bgTolerance}
                   onChange={(e) => setBgTolerance(Number(e.target.value))}
                   id="vectorize-bg-tolerance"
-                  className="min-h-11 w-full accent-action-blue"
+                  className={inspectorRange}
                   aria-labelledby="vectorize-bg-tolerance-label"
                 />
               </div>
@@ -114,7 +117,7 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
                 <button
                   type="button"
                   onClick={() => setSeeds([])}
-                  className="focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-md px-1 text-sm font-medium text-action-blue transition hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100"
+                  className="focus-ring inline-flex min-h-9 items-center gap-1.5 rounded-md px-1 text-sm font-medium text-action-blue transition hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100"
                 >
                   <X size={14} weight="bold" aria-hidden />
                   {t('bg.clear')} ({seeds.length})
@@ -124,8 +127,8 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
           )}
 
           {hasTranslucentEdges && (
-            <div className="space-y-1">
-              <label id="vectorize-alpha-threshold-label" htmlFor="vectorize-alpha-threshold" className="flex items-center text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
+            <div>
+              <label id="vectorize-alpha-threshold-label" htmlFor="vectorize-alpha-threshold" className={inspectorLabel}>
                 {t('set.alphaThreshold')}: <span className="ml-1 font-mono">{settings.alphaThreshold}</span>
                 <Tooltip text={t('set.alphaThreshold.help')} label={t('set.alphaThreshold')} />
               </label>
@@ -136,7 +139,7 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
                 value={settings.alphaThreshold}
                 onChange={(event) => updateSettings({ ...settings, alphaThreshold: Number(event.target.value) })}
                 id="vectorize-alpha-threshold"
-                className="min-h-11 w-full accent-action-blue"
+                className={inspectorRange}
                 aria-labelledby="vectorize-alpha-threshold-label"
               />
             </div>

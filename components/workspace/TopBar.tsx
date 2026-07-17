@@ -48,15 +48,28 @@ export function TopBar({
   return (
     <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-gray-200 bg-white px-3 py-2 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:px-4 dark:border-gray-700 dark:bg-gray-800">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="min-w-0">
-          <span className="block text-[1.125rem] font-bold leading-tight tracking-tight text-gray-900 dark:text-gray-100">
-            SVGify
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[#0a111c]">
+            {/* eslint-disable-next-line @next/next/no-img-element -- static brand SVG from /public */}
+            <img
+              src="/svgify-transparent.svg"
+              alt=""
+              width={36}
+              height={32}
+              className="h-8 w-8 object-contain"
+              decoding="async"
+            />
           </span>
-          <span className="block truncate text-xs text-gray-500 dark:text-gray-400">
-            {t('app.tagline')}
-          </span>
+          <div className="min-w-0">
+            <span className="block text-[1.125rem] font-bold leading-tight tracking-tight text-gray-900 dark:text-gray-100">
+              SVGify
+            </span>
+            <span className="block truncate text-xs text-gray-500 dark:text-gray-400">
+              {t('app.tagline')}
+            </span>
+          </div>
         </div>
-        <span className="hidden rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-500 xl:inline-flex dark:bg-gray-900 dark:text-gray-400">
+        <span className="hidden text-xs text-ink-muted xl:inline dark:text-dark-ink-muted">
           {t('workspace.editableSvg')}
         </span>
       </div>
@@ -107,8 +120,8 @@ export function TopBar({
           <DownloadButton
             payload={payload}
             fileName="vectorized.svg"
-            label={t('workspace.download')}
             prepared={downloadPrepared}
+            gateUntilPrepared
             highlight={downloadHighlight}
             onDownloaded={onDownloadComplete}
           />

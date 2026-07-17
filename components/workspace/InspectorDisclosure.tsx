@@ -23,7 +23,7 @@ export function InspectorDisclosure({
   const contentId = useId();
 
   return (
-    <div className="border-t border-gray-100 pt-3 dark:border-gray-700">
+    <div className="border-t border-border pt-3 dark:border-dark-border">
       <button
         type="button"
         onClick={() => onOpenChange(!open)}
@@ -32,15 +32,15 @@ export function InspectorDisclosure({
         aria-controls={contentId}
       >
         <span className="min-w-0">
-          <span className="block text-xs font-semibold text-gray-700 dark:text-gray-300">{title}</span>
+          <span className="block text-xs font-semibold text-ink dark:text-dark-ink">{title}</span>
           {!open && summary ? (
-            <span className="mt-0.5 block truncate text-xs text-gray-500 dark:text-gray-400">{summary}</span>
+            <span className="mt-0.5 block truncate text-xs text-ink-muted dark:text-dark-ink-muted">{summary}</span>
           ) : null}
         </span>
         {open ? (
-          <CaretUp size={14} className="shrink-0 text-gray-400" aria-hidden />
+          <CaretUp size={14} className="shrink-0 text-ink-subtle" aria-hidden />
         ) : (
-          <CaretDown size={14} className="shrink-0 text-gray-400" aria-hidden />
+          <CaretDown size={14} className="shrink-0 text-ink-subtle" aria-hidden />
         )}
       </button>
       {open ? <div id={contentId} className="mt-3 space-y-3">{children}</div> : null}

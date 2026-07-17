@@ -6,6 +6,8 @@ import { ColorPicker } from '@/components/colors/ColorPicker';
 import { useSvgColors } from '@/hooks/useSvgColors';
 import { useI18n } from '@/lib/i18n';
 import type { WorkspaceTool } from '@/types/workspace.types';
+import { InspectorHeader } from '@/components/workspace/InspectorHeader';
+import { inspectorHint, inspectorStack } from '@/components/workspace/inspectorChrome';
 
 interface EyedropperInspectorProps {
   svgEl: SVGElement | null;
@@ -28,19 +30,18 @@ export function EyedropperInspector({
   const { replaceColor } = useSvgColors(svgEl);
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('tool.eyedropper')}</h2>
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('col.eyedropperHint')}</p>
-      </div>
+    <div className={inspectorStack}>
+      <InspectorHeader title={t('tool.eyedropper')} subtitle={t('col.eyedropperHint')} />
 
       {selectedColor ? (
         <>
           <div
-            className="h-10 w-full rounded border border-gray-200 dark:border-gray-700"
+            className="h-10 w-full rounded border border-border dark:border-dark-border"
             style={{ backgroundColor: rgbToHex(selectedColor) }}
           />
-          <p className="font-mono text-xs text-gray-600 dark:text-gray-400">{rgbToHex(selectedColor)}</p>
+          <p className="font-mono text-xs text-ink-muted dark:text-dark-ink-muted">
+            {rgbToHex(selectedColor)}
+          </p>
           <ColorPicker
             color={selectedColor}
             onChange={(newColor) => {
@@ -63,7 +64,7 @@ export function EyedropperInspector({
           </button>
         </>
       ) : (
-        <p className="text-xs text-gray-500 dark:text-gray-400">{t('col.eyedropperEmpty')}</p>
+        <p className={inspectorHint}>{t('col.eyedropperEmpty')}</p>
       )}
     </div>
   );

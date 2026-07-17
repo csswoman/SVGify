@@ -16,6 +16,12 @@ interface ColorSwatchesProps {
   showTitle?: boolean;
 }
 
+function isLightColor(color: RGBColor): boolean {
+  // Relative luminance (sRGB approx) — light chips need a visible edge on white surfaces.
+  const y = (0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b) / 255;
+  return y > 0.82;
+}
+
 export function ColorSwatches({
   colors,
   onColorClick,
@@ -27,25 +33,31 @@ export function ColorSwatches({
   const [pendingDeleteHex, setPendingDeleteHex] = useState<string | null>(null);
 
   if (colors.length === 0) {
-    return <p className="text-sm text-gray-500 dark:text-gray-400">{t('col.noColors')}</p>;
+    return (
+      <p className="text-xs text-ink-muted dark:text-dark-ink-muted">{t('col.noColors')}</p>
+    );
   }
 
   return (
     <div className="space-y-2">
-      {showTitle && (
-        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-          {t('col.paletteTitle')} ({colors.length} {t('vec.colors')})
+      {showTitle ? (
+        <p className="text-xs font-semibold text-ink dark:text-dark-ink">
+          {t('col.paletteTitle')}{' '}
+          <span className="font-mono font-normal text-ink-muted dark:text-dark-ink-muted">
+            ({colors.length})
+          </span>
         </p>
-      )}
-      {pendingDeleteHex && onColorDelete && (
+      ) : null}
+
+      {pendingDeleteHex && onColorDelete ? (
         <div
           role="group"
           aria-label={t('col.deleteColor')}
-          className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30"
+          className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-2.5 dark:border-amber-900 dark:bg-amber-950/30"
         >
           <p className="text-xs text-amber-950 dark:text-amber-100">{t('col.deleteColor.prompt')}</p>
           <p className="font-mono text-[11px] text-amber-900 dark:text-amber-200">{pendingDeleteHex}</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             <button
               type="button"
               onClick={() => {
@@ -53,70 +65,70 @@ export function ColorSwatches({
                 if (target) onColorDelete(target);
                 setPendingDeleteHex(null);
               }}
-              className="focus-ring rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+              className="focus-ring rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-semibold text-ink transition hover:bg-canvas-bg dark:border-dark-border dark:bg-dark-surface dark:text-dark-ink"
             >
               {t('col.deleteColor.confirm')}
             </button>
             <button
               type="button"
               onClick={() => setPendingDeleteHex(null)}
-              className="focus-ring rounded-md px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-white/60 dark:text-gray-300"
+              className="focus-ring rounded-md px-2.5 py-1 text-xs font-medium text-ink-muted transition hover:text-ink dark:text-dark-ink-muted"
             >
               {t('col.deleteColor.cancel')}
             </button>
           </div>
         </div>
-      )}
-      <div className="max-h-[280px] overflow-y-auto pr-1">
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(44px,1fr))] gap-1.5">
-          {colors.map((color, idx) => {
-            const hex = rgbToHex(color);
-            const isSelected =
-              selectedColor !== null && rgbToHex(selectedColor) === hex;
+      ) : null}
 
-            return (
-              <div key={`${hex}-${idx}`} className="group relative min-w-0">
-                <button
-                  type="button"
-                  onClick={() => onColorClick(color)}
-                  className="focus-ring flex w-full flex-col items-stretch gap-1 text-left transition"
-                  aria-label={`${t('col.selectColor')} ${hex}`}
-                  aria-pressed={isSelected}
-                >
+      {/* Padding keeps selection rings inside the overflow clip; gap gives the chips room to breathe. */}
+      <div className="scroll-quiet grid max-h-48 grid-cols-[repeat(auto-fill,minmax(2.5rem,1fr))] gap-2.5 p-1.5">
+        {colors.map((color, idx) => {
+          const hex = rgbToHex(color);
+          const isSelected =
+            selectedColor !== null && rgbToHex(selectedColor) === hex;
+          const light = isLightColor(color);
+
+          return (
+            <div key={`${hex}-${idx}`} className="group relative p-0.5">
+              <button
+                type="button"
+                onClick={() => onColorClick(color)}
+                title={hex}
+                className={[
+                  'focus-ring relative aspect-square w-full rounded-lg shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)] transition dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]',
+                  isSelected
+                    ? 'ring-2 ring-action-blue ring-offset-2 ring-offset-surface dark:ring-offset-dark-surface'
+                    : 'hover:ring-2 hover:ring-ink-subtle/50 hover:ring-offset-2 hover:ring-offset-surface dark:hover:ring-dark-ink-muted/50 dark:hover:ring-offset-dark-surface',
+                ].join(' ')}
+                style={{ backgroundColor: hex }}
+                aria-label={`${t('col.selectColor')} ${hex}`}
+                aria-pressed={isSelected}
+              >
+                {isSelected ? (
                   <span
                     className={[
-                      'aspect-square w-full rounded-md transition',
-                      'group-hover:ring-1 group-hover:ring-gray-300 dark:group-hover:ring-gray-600',
-                      isSelected
-                        ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-800'
-                        : '',
+                      'pointer-events-none absolute inset-0 flex items-center justify-center',
+                      light ? 'text-ink' : 'text-white',
                     ].join(' ')}
-                    style={{ backgroundColor: hex }}
-                  />
-                  <span className="truncate font-mono text-[10px] text-gray-500 opacity-0 transition group-hover:opacity-100 dark:text-gray-400">
-                    {hex}
-                  </span>
-                  {isSelected && (
-                    <span className="pointer-events-none absolute bottom-5 left-1 flex size-4 items-center justify-center rounded-sm bg-white/90 text-blue-700 dark:bg-gray-900/90 dark:text-blue-300">
-                      <Check size={10} weight="bold" aria-hidden />
-                    </span>
-                  )}
-                </button>
-                {onColorDelete && colors.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => setPendingDeleteHex(hex)}
-                    className="focus-ring absolute right-0.5 top-0.5 rounded-md bg-white/90 p-1 text-gray-500 opacity-0 shadow-sm transition hover:text-red-700 group-hover:opacity-100 group-focus-within:opacity-100 dark:bg-gray-900/90 dark:text-gray-400 dark:hover:text-red-300"
-                    aria-label={`${t('col.deleteColor')} ${hex}`}
-                    title={t('col.deleteColor')}
                   >
-                    <Trash size={12} weight="bold" aria-hidden />
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                    <Check size={14} weight="bold" aria-hidden />
+                  </span>
+                ) : null}
+              </button>
+              {onColorDelete && colors.length > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setPendingDeleteHex(hex)}
+                  className="focus-ring absolute right-1 top-1 flex size-4 items-center justify-center rounded-full bg-surface/90 text-ink-muted opacity-0 backdrop-blur-sm transition hover:text-red-700 group-hover:opacity-100 group-focus-within:opacity-100 dark:bg-dark-surface/90 dark:text-dark-ink-muted dark:hover:text-red-300"
+                  aria-label={`${t('col.deleteColor')} ${hex}`}
+                  title={t('col.deleteColor')}
+                >
+                  <Trash size={10} weight="bold" aria-hidden />
+                </button>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

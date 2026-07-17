@@ -84,35 +84,13 @@ export function Inspector({
       <aside
         aria-label={t('workspace.inspector')}
         className={[
-          'fixed inset-y-0 right-0 z-40 w-[min(100%,20rem)] max-h-dvh shrink-0 overflow-y-auto border-l border-gray-200 bg-white px-4 py-4 transition-transform duration-200 ease-out lg:static lg:z-auto lg:max-h-none lg:w-80 lg:translate-x-0 dark:border-gray-700 dark:bg-gray-800',
+          'fixed inset-y-0 right-0 z-40 flex w-[min(100%,20rem)] max-h-dvh shrink-0 flex-col overflow-hidden border-l border-gray-200 bg-white px-4 py-4 transition-transform duration-200 ease-out lg:static lg:z-auto lg:h-full lg:max-h-none lg:w-80 lg:translate-x-0 dark:border-gray-700 dark:bg-gray-800',
           open
             ? 'translate-x-0'
             : 'pointer-events-none translate-x-full lg:pointer-events-auto lg:translate-x-0',
         ].join(' ')}
       >
-        {activeTool === 'import' && (
-          <ImportInspector
-            onReplace={onReplaceImage}
-            onError={onUploadError}
-            uploadError={uploadError}
-          />
-        )}
-
-        {activeTool === 'vectorize' && (
-          <VectorizeInspector session={vectorizeSession} />
-        )}
-
-        {(activeTool === 'fill' || activeTool === 'eyedropper') && (
-          <FillInspector
-            initialColor={fillColor}
-            svgEl={editor?.svgEl ?? null}
-            isSampling={activeTool === 'eyedropper'}
-            sampledColor={selectedColor}
-            onFillColorChange={onFillColorChange}
-          />
-        )}
-
-        {(activeTool === 'erase' || activeTool === 'erasePath') && editor && (
+        {(activeTool === 'erase' || activeTool === 'erasePath') && editor ? (
           <EraseInspector
             mode={activeTool === 'erase' ? 'brush' : 'path'}
             pathItems={shapeTools.pathItems}
@@ -121,58 +99,82 @@ export function Inspector({
             onDelete={shapeTools.handleDeleteItem}
             onEraseSizeChange={shapeTools.setBrushSize}
           />
-        )}
+        ) : (
+          <div className="scroll-quiet min-h-0 flex-1">
+            {activeTool === 'import' && (
+              <ImportInspector
+                onReplace={onReplaceImage}
+                onError={onUploadError}
+                uploadError={uploadError}
+              />
+            )}
 
-        {activeTool === 'brush' && (
-          <BrushInspector
-            brushColor={shapeTools.brushColor}
-            brushSize={shapeTools.brushSize}
-            onBrushColorChange={shapeTools.setBrushColor}
-            onBrushSizeChange={shapeTools.setBrushSize}
-          />
-        )}
+            {activeTool === 'vectorize' && (
+              <VectorizeInspector session={vectorizeSession} />
+            )}
 
-        {activeTool === 'nodes' && (
-          <NodesInspector
-            hasSelectedPath={!!shapeTools.selectedPath}
-            nodeCount={shapeTools.selectedNodeCount}
-            onSimplifySelected={shapeTools.simplifySelectedPath}
-            onDeselect={() => shapeTools.setSelectedPath(null)}
-          />
-        )}
+            {(activeTool === 'fill' || activeTool === 'eyedropper') && (
+              <FillInspector
+                initialColor={fillColor}
+                svgEl={editor?.svgEl ?? null}
+                isSampling={activeTool === 'eyedropper'}
+                sampledColor={selectedColor}
+                onFillColorChange={onFillColorChange}
+              />
+            )}
 
-        {activeTool === 'labels' && (
-          <LabelsInspector
-            labels={labelTools.labels}
-            editingPath={labelTools.editingPath}
-            selectedLabel={labelTools.selectedLabel}
-            includeLabelLegend={includeLabelLegend}
-            onLabelSave={labelTools.handleLabelSave}
-            onLabelClick={labelTools.handleLabelClick}
-            onCancelEdit={() => {
-              labelTools.setEditingPath(null);
-              labelTools.clearSelection();
-            }}
-            onIncludeLabelLegendChange={onIncludeLabelLegendChange}
-          />
-        )}
+            {activeTool === 'brush' && (
+              <BrushInspector
+                brushColor={shapeTools.brushColor}
+                brushSize={shapeTools.brushSize}
+                onBrushColorChange={shapeTools.setBrushColor}
+                onBrushSizeChange={shapeTools.setBrushSize}
+              />
+            )}
 
-        {activeTool === 'optimize' && svgString && editor && (
-          <OptimizeInspector
-            svgEl={editor.svgEl}
-            svgString={svgString}
-            selectedColor={selectedColor}
-            onSelectedColorChange={onSelectedColorChange}
-            serializeMountedSvg={editor.serializeMountedSvg}
-            pathOmit={VECTORIZE_DEFAULTS.filterSpeckle}
-            onSvgString={onSvgString}
-            onPrepared={onOptimizePrepared}
-            prepared={exportStatus === 'prepared_current'}
-            stale={exportStatus === 'prepared_stale'}
-            exportPayload={exportPayload}
-            includeLabelLegend={includeLabelLegend}
-            labels={labelTools.labels}
-          />
+            {activeTool === 'nodes' && (
+              <NodesInspector
+                hasSelectedPath={!!shapeTools.selectedPath}
+                nodeCount={shapeTools.selectedNodeCount}
+                onSimplifySelected={shapeTools.simplifySelectedPath}
+                onDeselect={() => shapeTools.setSelectedPath(null)}
+              />
+            )}
+
+            {activeTool === 'labels' && (
+              <LabelsInspector
+                labels={labelTools.labels}
+                editingPath={labelTools.editingPath}
+                selectedLabel={labelTools.selectedLabel}
+                includeLabelLegend={includeLabelLegend}
+                onLabelSave={labelTools.handleLabelSave}
+                onLabelClick={labelTools.handleLabelClick}
+                onCancelEdit={() => {
+                  labelTools.setEditingPath(null);
+                  labelTools.clearSelection();
+                }}
+                onIncludeLabelLegendChange={onIncludeLabelLegendChange}
+              />
+            )}
+
+            {activeTool === 'optimize' && svgString && editor && (
+              <OptimizeInspector
+                svgEl={editor.svgEl}
+                svgString={svgString}
+                selectedColor={selectedColor}
+                onSelectedColorChange={onSelectedColorChange}
+                serializeMountedSvg={editor.serializeMountedSvg}
+                pathOmit={VECTORIZE_DEFAULTS.filterSpeckle}
+                onSvgString={onSvgString}
+                onPrepared={onOptimizePrepared}
+                prepared={exportStatus === 'prepared_current'}
+                stale={exportStatus === 'prepared_stale'}
+                exportPayload={exportPayload}
+                includeLabelLegend={includeLabelLegend}
+                labels={labelTools.labels}
+              />
+            )}
+          </div>
         )}
       </aside>
     </>

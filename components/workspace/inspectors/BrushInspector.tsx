@@ -1,7 +1,15 @@
 'use client';
 
+import { ColorPicker } from '@/components/colors/ColorPicker';
 import { Tooltip } from '@/components/shared/Tooltip';
+import { hexToRgb, rgbToHex } from '@/lib/colorUtils';
 import { useI18n } from '@/lib/i18n';
+import { InspectorHeader } from '@/components/workspace/InspectorHeader';
+import {
+  inspectorLabel,
+  inspectorRange,
+  inspectorStack,
+} from '@/components/workspace/inspectorChrome';
 
 interface BrushInspectorProps {
   brushColor: string;
@@ -17,26 +25,24 @@ export function BrushInspector({
   onBrushSizeChange,
 }: BrushInspectorProps) {
   const { t } = useI18n();
+  const colorRgb = hexToRgb(brushColor) ?? { r: 0, g: 0, b: 0 };
 
   return (
-    <div className="space-y-5">
-      <div className="space-y-1">
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('tool.brush')}</h2>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{t('shape.brushSub')}</p>
-      </div>
-      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-        {t('shape.brushColor')}
-        <input
-          type="color"
-          value={brushColor}
-          onChange={(e) => onBrushColorChange(e.target.value)}
-          className="h-8 w-12 cursor-pointer rounded border border-gray-300 dark:border-gray-600"
+    <div className={inspectorStack}>
+      <InspectorHeader title={t('tool.brush')} subtitle={t('shape.brushSub')} />
+      <div className="space-y-2">
+        <p className="flex items-center text-sm font-semibold text-ink dark:text-dark-ink">
+          {t('shape.brushColor')}
+          <Tooltip text={t('shape.brush.help')} label={t('shape.modeBrush')} />
+        </p>
+        <ColorPicker
+          color={colorRgb}
+          onChange={(rgb) => onBrushColorChange(rgbToHex(rgb))}
         />
-        <Tooltip text={t('shape.brush.help')} label={t('shape.modeBrush')} />
-      </label>
+      </div>
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-600 dark:text-gray-400">
-          {t('shape.brushSize')}: <span className="font-mono">{brushSize}</span>
+        <label className={inspectorLabel}>
+          {t('shape.brushSize')}: <span className="ml-1 font-mono">{brushSize}</span>
         </label>
         <input
           type="range"
@@ -44,7 +50,7 @@ export function BrushInspector({
           max={40}
           value={brushSize}
           onChange={(e) => onBrushSizeChange(Number(e.target.value))}
-          className="w-full accent-blue-600"
+          className={inspectorRange}
           aria-label={`${t('shape.brushSize')}: ${brushSize}`}
         />
       </div>

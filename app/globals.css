@@ -54,6 +54,56 @@
   .btn-tertiary {
     @apply inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 outline-none transition hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:focus-visible:ring-offset-gray-800;
   }
+
+  /*
+   * Quiet scroll areas: the bar only paints while the pointer is over the
+   * container (thumb appears on hover; track stays invisible). `overflow-y:
+   * auto` already means it only exists when the content overflows. Firefox
+   * gets a thin bar toggled via scrollbar-color; WebKit via ::-webkit-scrollbar.
+   */
+  .scroll-quiet {
+    overflow-y: auto;
+    /* Without this, setting only overflow-y computes overflow-x to `auto`,
+       so any sub-pixel/negative-offset child spawns a horizontal scrollbar. */
+    overflow-x: clip;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+
+  .scroll-quiet:hover,
+  .scroll-quiet:focus-within {
+    scrollbar-color: var(--color-ink-subtle) transparent;
+  }
+
+  .dark .scroll-quiet:hover,
+  .dark .scroll-quiet:focus-within {
+    scrollbar-color: var(--color-dark-ink-muted) transparent;
+  }
+
+  .scroll-quiet::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .scroll-quiet::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scroll-quiet::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  .scroll-quiet:hover::-webkit-scrollbar-thumb,
+  .scroll-quiet:focus-within::-webkit-scrollbar-thumb {
+    background-color: var(--color-ink-subtle);
+  }
+
+  .dark .scroll-quiet:hover::-webkit-scrollbar-thumb,
+  .dark .scroll-quiet:focus-within::-webkit-scrollbar-thumb {
+    background-color: var(--color-dark-ink-muted);
+  }
 }
 
 @keyframes download-attention-pulse {

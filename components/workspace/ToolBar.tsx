@@ -108,7 +108,7 @@ export function ToolBar({
       <nav
         role="toolbar"
         aria-label={t('workspace.tools')}
-        className="flex w-14 shrink-0 flex-col items-center gap-1 overflow-y-auto border-r border-gray-200 bg-white py-2 lg:hidden dark:border-gray-700 dark:bg-gray-800"
+        className="scroll-quiet flex w-14 shrink-0 flex-col items-center gap-1 border-r border-gray-200 bg-white py-2 lg:hidden dark:border-gray-700 dark:bg-gray-800"
       >
         {visibleGroups.map((group, groupIndex) => {
           const isEdit = group.id === 'edit';
@@ -253,7 +253,7 @@ export function ToolBar({
           </p>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-3 py-4">
+        <div className="scroll-quiet flex min-h-0 flex-1 flex-col gap-5 px-3 py-4">
           {visibleGroups.map((group) => {
             const isEdit = group.id === 'edit';
             const isShape = group.id === 'shape';

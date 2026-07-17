@@ -4,6 +4,10 @@ import { useState } from 'react';
 import { type VectorizeDetailLevel, type VectorizeProductSettings } from '@/types/svg.types';
 import { Tooltip } from '@/components/shared/Tooltip';
 import { InspectorDisclosure } from '@/components/workspace/InspectorDisclosure';
+import {
+  inspectorLabelStrong,
+  inspectorRange,
+} from '@/components/workspace/inspectorChrome';
 import { applyVectorizeProductChoice } from '@/lib/vectorizeProfiles';
 import { useI18n } from '@/lib/i18n';
 
@@ -11,6 +15,20 @@ import { useI18n } from '@/lib/i18n';
 const COLOR_PRECISION_MIN = 2;
 const COLOR_PRECISION_MAX = 7;
 const COLOR_COUNT_TICKS = [4, 8, 16, 32, 64, 128] as const;
+
+/** Half of the typical range thumb — ticks share this inset so marks sit under the thumb. */
+const RANGE_THUMB_INSET = 'px-2';
+
+const segmentGroup =
+  'grid rounded-md border border-border bg-canvas-bg p-0.5 text-xs dark:border-dark-border dark:bg-dark-canvas-bg';
+
+const segmentBtn = (active: boolean) =>
+  [
+    'focus-ring min-h-9 rounded px-2 py-1.5 font-semibold transition',
+    active
+      ? 'bg-surface text-ink dark:bg-dark-surface dark:text-dark-ink'
+      : 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink',
+  ].join(' ');
 
 interface VectorizeSettingsProps {
   settings: VectorizeProductSettings;
@@ -54,25 +72,21 @@ export function VectorizeSettingsPanel({
   const hasContextualRefinement = settings.traceMode === 'standard';
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div>
-        <label className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <label className={inspectorLabelStrong}>
           {t('set.traceMode')}
           <Tooltip text={t('set.traceMode.help')} label={t('set.traceMode')} />
         </label>
         <div
-          className="grid grid-cols-2 rounded-lg border border-gray-200 bg-gray-50 p-1 text-sm dark:border-gray-700 dark:bg-gray-900"
+          className={`${segmentGroup} grid-cols-2`}
           role="group"
           aria-label={t('set.traceMode')}
         >
           <button
             type="button"
             onClick={() => setTraceMode('standard')}
-            className={`focus-ring min-h-11 rounded-md px-3 py-2 font-semibold transition ${
-                settings.traceMode === 'standard'
-                  ? 'bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100'
-                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
-              }`}
+            className={segmentBtn(settings.traceMode === 'standard')}
             aria-pressed={settings.traceMode === 'standard'}
           >
             {t('set.traceMode.standard')}
@@ -80,30 +94,26 @@ export function VectorizeSettingsPanel({
           <button
             type="button"
             onClick={() => setTraceMode('icon')}
-            className={`focus-ring min-h-11 rounded-md px-3 py-2 font-semibold transition ${
-                settings.traceMode === 'icon'
-                  ? 'bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100'
-                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
-              }`}
+            className={segmentBtn(settings.traceMode === 'icon')}
             aria-pressed={settings.traceMode === 'icon'}
           >
             {t('set.traceMode.icon')}
           </button>
         </div>
-        {settings.traceMode === 'icon' && (
-          <p className="mt-2 text-pretty text-xs text-gray-500 dark:text-gray-400">
+        {settings.traceMode === 'icon' ? (
+          <p className="mt-1.5 text-pretty text-xs text-ink-muted dark:text-dark-ink-muted">
             {t('set.traceMode.icon.help')}
           </p>
-        )}
+        ) : null}
       </div>
 
       <div>
-        <label className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <label className={inspectorLabelStrong}>
           {t('set.detailLevel')}
           <Tooltip text={t('set.detailLevel.help')} label={t('set.detailLevel')} />
         </label>
         <div
-          className="grid grid-cols-3 rounded-lg border border-gray-200 bg-gray-50 p-1 text-sm dark:border-gray-700 dark:bg-gray-900"
+          className={`${segmentGroup} grid-cols-3`}
           role="group"
           aria-label={t('set.detailLevel')}
         >
@@ -112,11 +122,7 @@ export function VectorizeSettingsPanel({
               key={level}
               type="button"
               onClick={() => setDetailLevel(level)}
-              className={`focus-ring min-h-11 rounded-md px-2 py-2 font-semibold transition ${
-                settings.detailLevel === level
-                  ? 'bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100'
-                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
-              }`}
+              className={segmentBtn(settings.detailLevel === level)}
               aria-pressed={settings.detailLevel === level}
             >
               {t(`set.detailLevel.${level}`)}
@@ -126,7 +132,11 @@ export function VectorizeSettingsPanel({
       </div>
 
       <div>
-        <label id="vectorize-color-precision-label" htmlFor="vectorize-color-precision" className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <label
+          id="vectorize-color-precision-label"
+          htmlFor="vectorize-color-precision"
+          className={inspectorLabelStrong}
+        >
           {t('set.colors')}: <span className="ml-1 font-mono">{colorCount}</span>
           <Tooltip text={t('set.colors.help')} label={t('set.colors')} />
         </label>
@@ -138,7 +148,7 @@ export function VectorizeSettingsPanel({
           value={colorPrecision}
           onChange={(e) => setColorPrecision(Number(e.target.value))}
           id="vectorize-color-precision"
-          className="min-h-11 w-full accent-action-blue"
+          className={inspectorRange}
           aria-labelledby="vectorize-color-precision-label"
           list="color-precision-ticks"
         />
@@ -147,11 +157,15 @@ export function VectorizeSettingsPanel({
             <option key={COLOR_COUNT_TICKS[i]} value={COLOR_PRECISION_MIN + i} />
           ))}
         </datalist>
-        <div className="mt-1 grid h-5 grid-cols-6 px-1" aria-hidden>
+        {/*
+          Tick centers must match discrete thumb stops (0%…100% of travel),
+          not equal column centers. Inset ≈ half thumb width.
+        */}
+        <div className={`mt-0.5 flex justify-between ${RANGE_THUMB_INSET}`} aria-hidden>
           {COLOR_COUNT_TICKS.map((count) => (
-            <span key={count} className="flex min-w-0 flex-col items-center">
-              <span className="h-1.5 w-px bg-gray-400 dark:bg-gray-500" />
-              <span className="mt-1 font-mono text-[10px] leading-none text-gray-500 dark:text-gray-400">
+            <span key={count} className="flex w-0 flex-col items-center">
+              <span className="h-1 w-px bg-ink-subtle dark:bg-dark-ink-muted" />
+              <span className="mt-0.5 font-mono text-[10px] leading-none text-ink-muted dark:text-dark-ink-muted">
                 {count}
               </span>
             </span>
@@ -159,17 +173,21 @@ export function VectorizeSettingsPanel({
         </div>
       </div>
 
-      {hasContextualRefinement && (
+      {hasContextualRefinement ? (
         <InspectorDisclosure
           title={t('set.advanced')}
           summary={t('set.refine.summary')}
           open={showAdvanced}
           onOpenChange={setShowAdvanced}
         >
-          {settings.traceMode === 'standard' && (
-            <>
+          {settings.traceMode === 'standard' ? (
+            <div className="space-y-3">
               <div>
-                <label id="vectorize-bilateral-radius-label" htmlFor="vectorize-bilateral-radius" className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
+                <label
+                  id="vectorize-bilateral-radius-label"
+                  htmlFor="vectorize-bilateral-radius"
+                  className={inspectorLabelStrong}
+                >
                   {t('set.blur')}: <span className="ml-1 font-mono">{settings.bilateralRadius}</span>
                   <Tooltip text={t('set.blur.help')} label={t('set.blur')} />
                 </label>
@@ -186,14 +204,19 @@ export function VectorizeSettingsPanel({
                       bilateralRadius: Number(e.target.value),
                     })
                   }
-                  className="min-h-11 w-full accent-action-blue"
+                  className={inspectorRange}
                   aria-labelledby="vectorize-bilateral-radius-label"
                 />
               </div>
 
               <div>
-                <label id="vectorize-corner-threshold-label" htmlFor="vectorize-corner-threshold" className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  {t('set.cornerThreshold')}: <span className="ml-1 font-mono">{settings.cornerThreshold}</span>
+                <label
+                  id="vectorize-corner-threshold-label"
+                  htmlFor="vectorize-corner-threshold"
+                  className={inspectorLabelStrong}
+                >
+                  {t('set.cornerThreshold')}:{' '}
+                  <span className="ml-1 font-mono">{settings.cornerThreshold}</span>
                   <Tooltip text={t('set.cornerThreshold.help')} label={t('set.cornerThreshold')} />
                 </label>
                 <input
@@ -203,15 +226,17 @@ export function VectorizeSettingsPanel({
                   max={180}
                   step={5}
                   value={settings.cornerThreshold}
-                  onChange={(e) => onSettingsChange({ ...settings, cornerThreshold: Number(e.target.value) })}
-                  className="min-h-11 w-full accent-action-blue"
+                  onChange={(e) =>
+                    onSettingsChange({ ...settings, cornerThreshold: Number(e.target.value) })
+                  }
+                  className={inspectorRange}
                   aria-labelledby="vectorize-corner-threshold-label"
                 />
               </div>
-            </>
-          )}
+            </div>
+          ) : null}
         </InspectorDisclosure>
-      )}
+      ) : null}
     </div>
   );
 }

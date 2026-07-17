@@ -3,6 +3,13 @@
 import { useState } from 'react';
 import { Tooltip } from '@/components/shared/Tooltip';
 import { useI18n } from '@/lib/i18n';
+import { InspectorHeader } from '@/components/workspace/InspectorHeader';
+import {
+  inspectorHint,
+  inspectorLabelStrong,
+  inspectorRange,
+  inspectorStack,
+} from '@/components/workspace/inspectorChrome';
 
 interface NodesInspectorProps {
   hasSelectedPath: boolean;
@@ -21,34 +28,38 @@ export function NodesInspector({
   const [simplifyStrength, setSimplifyStrength] = useState(0.55);
 
   return (
-    <div className="space-y-5">
-      <div className="space-y-1">
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('tool.nodes')}</h2>
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          {hasSelectedPath ? t('shape.nodesActive') : t('shape.nodesHint')}
-        </p>
-      </div>
-      <p className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-        <Tooltip text={t('shape.nodes.help')} label={t('shape.modeNodes')} />
-      </p>
-      {hasSelectedPath && (
-        <div className="space-y-2">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+    <div className={inspectorStack}>
+      <InspectorHeader
+        title={t('tool.nodes')}
+        subtitle={hasSelectedPath ? t('shape.nodesActive') : undefined}
+      />
+      {!hasSelectedPath ? (
+        <div className="space-y-1.5">
+          <p className="text-sm text-ink dark:text-dark-ink">{t('shape.nodesHint')}</p>
+          <p className={inspectorHint}>{t('shape.nodesSub')}</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className={inspectorHint}>
             {nodeCount} {t('shape.nodesCount')}
           </p>
-          <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-            {t('shape.simplifyStrength')}: <span className="ml-1 font-mono">{simplifyStrength.toFixed(2)}</span>
-            <Tooltip text={t('shape.simplifyStrength.help')} label={t('shape.simplifyStrength')} />
-          </label>
-          <input
-            type="range"
-            min={0.2}
-            max={1.6}
-            step={0.05}
-            value={simplifyStrength}
-            onChange={(e) => setSimplifyStrength(Number(e.target.value))}
-            className="w-full accent-blue-600"
-          />
+          <div>
+            <label className={inspectorLabelStrong}>
+              {t('shape.simplifyStrength')}:{' '}
+              <span className="ml-1 font-mono">{simplifyStrength.toFixed(2)}</span>
+              <Tooltip text={t('shape.simplifyStrength.help')} label={t('shape.simplifyStrength')} />
+            </label>
+            <input
+              type="range"
+              min={0.2}
+              max={1.6}
+              step={0.05}
+              value={simplifyStrength}
+              onChange={(e) => setSimplifyStrength(Number(e.target.value))}
+              className={inspectorRange}
+              aria-label={`${t('shape.simplifyStrength')}: ${simplifyStrength.toFixed(2)}`}
+            />
+          </div>
           <button
             type="button"
             onClick={() => onSimplifySelected(simplifyStrength)}
@@ -56,11 +67,7 @@ export function NodesInspector({
           >
             {t('shape.simplifySelected')}
           </button>
-          <button
-            type="button"
-            onClick={onDeselect}
-            className="btn-tertiary w-full"
-          >
+          <button type="button" onClick={onDeselect} className="btn-tertiary w-full">
             {t('shape.deselect')}
           </button>
         </div>

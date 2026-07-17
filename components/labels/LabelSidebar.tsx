@@ -31,7 +31,7 @@ export function LabelSidebar({ labels, onLabelClick, selectedLabel }: LabelSideb
           {t('labels.empty')}
         </p>
       ) : (
-        <ul className="space-y-1 max-h-64 overflow-y-auto pr-1">
+        <ul className="scroll-quiet max-h-64 space-y-1 pr-1">
           {uniqueLabels.map((label) => (
             <li key={label}>
               <button
