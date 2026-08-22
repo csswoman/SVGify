@@ -27,6 +27,11 @@
 
   --color-success: #00A578;
   --color-success-soft: #E3F8F1;
+  /* --color-success as text on light surfaces fails 4.5:1 (2.85:1 on
+     success-soft, 3.16:1 on white) — this darker text-only variant keeps
+     the same hue at a passing ratio. Non-text uses (dots, borders) keep
+     --color-success unchanged. */
+  --color-success-text: #067A56;
 
   --color-canvas-bg: #F2F0F7;
   --color-dark-canvas-bg: #0B0715;

@@ -120,7 +120,7 @@ export function TopBar({
           />
         ) : null}
         {downloadPrepared ? (
-          <span className="hidden rounded-full bg-success-soft px-2.5 py-1 text-[11px] font-semibold text-success lg:inline-flex dark:bg-dark-success-soft dark:text-dark-success">
+          <span className="hidden rounded-full bg-success-soft px-2.5 py-1 text-[11px] font-semibold text-success-text lg:inline-flex dark:bg-dark-success-soft dark:text-dark-success">
             {t('workspace.readyToDownload')}
           </span>
         ) : null}

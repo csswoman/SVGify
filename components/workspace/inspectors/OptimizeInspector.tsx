@@ -290,7 +290,7 @@ export function OptimizeInspector({
 
         {prepared ? (
           <div className="space-y-1 border-t border-border pt-3 dark:border-dark-border">
-            <p className="text-sm font-semibold text-success dark:text-dark-success">
+            <p className="text-sm font-semibold text-success-text dark:text-dark-success">
               {t('workspace.preparedReady')}
             </p>
             <p className={inspectorHint}>{t('workspace.preparedReadyHint')}</p>
