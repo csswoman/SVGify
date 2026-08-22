@@ -80,7 +80,7 @@ function SvgPreviewInner({
 
   return (
     <div
-      className={`${transparentBackground ? 'transparent-preview ' : ''}relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700${
+      className={`${transparentBackground ? 'transparent-preview ' : ''}relative overflow-hidden rounded-lg border border-border dark:border-dark-border${
         displaySize ? ' mx-auto w-fit max-w-full' : ' w-full h-full'
       }`}
       style={
@@ -91,7 +91,7 @@ function SvgPreviewInner({
     >
       {!svgString && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <p className="text-pretty p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-pretty p-4 text-center text-sm text-ink-muted dark:text-dark-ink-muted">
             {t('vec.previewPlaceholder')}
           </p>
         </div>

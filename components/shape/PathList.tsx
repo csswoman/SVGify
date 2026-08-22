@@ -42,7 +42,7 @@ export function PathList({ items, onHover, onDelete }: PathListProps) {
             key={item.id}
             onMouseEnter={() => onHover(item.el)}
             onMouseLeave={() => onHover(null)}
-            className="group flex items-center gap-2 rounded-md bg-canvas-bg px-2 py-1.5 text-sm transition hover:bg-action-blue-surface dark:bg-gray-700/50 dark:hover:bg-gray-700"
+            className="group flex items-center gap-2 rounded-md bg-canvas-bg px-2 py-1.5 text-sm transition hover:bg-accent-soft dark:bg-dark-surface-sunken dark:hover:bg-dark-accent-soft"
           >
             <span
               className="h-5 w-5 shrink-0 rounded border border-border dark:border-dark-border"
@@ -68,7 +68,7 @@ export function PathList({ items, onHover, onDelete }: PathListProps) {
                 <button
                   type="button"
                   onClick={() => setPendingDeleteId(null)}
-                  className="focus-ring rounded px-2 py-1 text-[11px] font-medium text-ink-muted transition hover:bg-canvas-bg dark:text-dark-ink-muted dark:hover:bg-gray-600"
+                  className="focus-ring rounded px-2 py-1 text-[11px] font-medium text-ink-muted transition hover:bg-canvas-bg dark:text-dark-ink-muted dark:hover:bg-dark-surface-sunken"
                 >
                   {t('shape.deleteShape.cancel')}
                 </button>
@@ -77,7 +77,7 @@ export function PathList({ items, onHover, onDelete }: PathListProps) {
               <button
                 type="button"
                 onClick={() => setPendingDeleteId(item.id)}
-                className="focus-ring flex h-8 w-8 shrink-0 items-center justify-center rounded text-ink-muted transition hover:bg-border hover:text-red-700 dark:text-dark-ink-muted dark:hover:bg-gray-600 dark:hover:text-red-300"
+                className="focus-ring flex h-8 w-8 shrink-0 items-center justify-center rounded text-ink-muted transition hover:bg-border hover:text-red-700 dark:text-dark-ink-muted dark:hover:bg-dark-surface-sunken dark:hover:text-red-300"
                 aria-label={`${t('shape.deleteShape')} ${item.id + 1}`}
                 title={t('shape.deleteShape')}
               >

@@ -12,11 +12,11 @@ export const inspectorLabelStrong =
   'mb-1 flex items-center text-sm font-semibold text-ink dark:text-dark-ink';
 
 /** Compact track — label sits close; 32px still meets touch guidance. */
-export const inspectorRange = 'h-8 w-full accent-action-blue';
+export const inspectorRange = 'themed-range h-8 w-full';
 
 export const inspectorHint = 'text-pretty text-xs text-ink-muted dark:text-dark-ink-muted';
 
 export const inspectorMono = 'font-mono text-[11px] tabular-nums text-ink-muted dark:text-dark-ink-muted';
 
 export const inspectorCheckbox =
-  'h-4 w-4 accent-action-blue';
+  'h-4 w-4 accent-accent dark:accent-dark-accent';

@@ -35,9 +35,9 @@ export function ImportInspector({ onReplace, onError, uploadError }: ImportInspe
         <div
           role="group"
           aria-label={t('workspace.replaceImage')}
-          className="space-y-2 rounded-lg border border-action-blue/30 bg-action-blue-surface p-3 dark:border-blue-900 dark:bg-blue-950/30"
+          className="space-y-2 rounded-lg border border-accent/30 bg-accent-soft p-3 dark:border-dark-accent/40 dark:bg-dark-accent-soft"
         >
-          <p className="text-pretty text-xs text-ink dark:text-blue-100">
+          <p className="text-pretty text-xs text-ink dark:text-dark-ink">
             {t('workspace.replaceImage.confirm')}
           </p>
           <ImageDropzone

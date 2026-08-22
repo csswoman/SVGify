@@ -44,12 +44,12 @@ const DICT = {
   'upload.drop': { en: 'Drag & drop an image here, or click to browse', es: 'Arrastra una imagen aquí, o haz clic para elegir' },
   'upload.formats': { en: 'PNG, JPG or WEBP · up to 10 MB', es: 'PNG, JPG o WEBP · hasta 10 MB' },
   'onboard.emptyTitle': {
-    en: 'Drop an image to get a production-ready SVG',
-    es: 'Suelta una imagen para obtener un SVG listo para producción',
+    en: 'Turn any image into an editable SVG.',
+    es: 'Convierte cualquier imagen en un SVG editable.',
   },
   'onboard.emptyBody': {
-    en: 'Trace a flat icon or logo, then recolor, refine shapes, and download.',
-    es: 'Traza un icono o logo plano; luego recolorea, refina formas y descarga.',
+    en: 'Runs entirely in your browser. Nothing is uploaded, nothing is stored.',
+    es: 'Funciona completamente en tu navegador. Nada se sube, nada se almacena.',
   },
   'onboard.trySample': {
     en: 'Try a sample icon',

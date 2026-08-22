@@ -47,7 +47,7 @@ export function TopBar({
   const nextTheme = theme === 'light' ? 'dark' : 'light';
 
   return (
-    <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-gray-200 bg-white px-3 py-2 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:px-4 dark:border-gray-700 dark:bg-gray-800">
+    <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-surface px-3 py-2 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:px-4 dark:border-dark-border dark:bg-dark-surface">
       <div className="flex min-w-0 items-center gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <AnchorPointIcon className="h-6 w-6 shrink-0 text-ink dark:text-dark-ink" />
@@ -74,7 +74,7 @@ export function TopBar({
           onClick={onUndo}
           disabled={!canUndo}
           aria-label={t('workspace.undo')}
-          className="focus-ring flex h-10 w-10 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700"
+          className="focus-ring flex h-10 w-10 items-center justify-center rounded-md text-ink-muted hover:bg-surface-sunken disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-surface-sunken"
         >
           <ArrowCounterClockwise size={18} aria-hidden />
         </button>
@@ -83,20 +83,20 @@ export function TopBar({
           onClick={onRedo}
           disabled={!canRedo}
           aria-label={t('workspace.redo')}
-          className="focus-ring flex h-10 w-10 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700"
+          className="focus-ring flex h-10 w-10 items-center justify-center rounded-md text-ink-muted hover:bg-surface-sunken disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-surface-sunken"
         >
           <ArrowClockwise size={18} aria-hidden />
         </button>
       </div>
 
       <div className="flex items-center justify-self-end gap-1.5">
-        <div className="flex items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 p-0.5 lg:hidden dark:border-gray-700 dark:bg-gray-900">
+        <div className="flex items-center gap-0.5 rounded-lg border border-border bg-surface-sunken p-0.5 lg:hidden dark:border-dark-border dark:bg-dark-surface-sunken">
           <button
             type="button"
             onClick={onUndo}
             disabled={!canUndo}
             aria-label={t('workspace.undo')}
-            className="focus-ring flex h-10 w-10 items-center justify-center rounded-md text-gray-600 hover:bg-white disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-800"
+            className="focus-ring flex h-10 w-10 items-center justify-center rounded-md text-ink-muted hover:bg-surface disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-surface"
           >
             <ArrowCounterClockwise size={18} aria-hidden />
           </button>
@@ -105,7 +105,7 @@ export function TopBar({
             onClick={onRedo}
             disabled={!canRedo}
             aria-label={t('workspace.redo')}
-            className="focus-ring flex h-10 w-10 items-center justify-center rounded-md text-gray-600 hover:bg-white disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-800"
+            className="focus-ring flex h-10 w-10 items-center justify-center rounded-md text-ink-muted hover:bg-surface disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-surface"
           >
             <ArrowClockwise size={18} aria-hidden />
           </button>
@@ -120,7 +120,7 @@ export function TopBar({
           />
         ) : null}
         {downloadPrepared ? (
-          <span className="hidden rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700 lg:inline-flex dark:bg-green-950/40 dark:text-green-300">
+          <span className="hidden rounded-full bg-success-soft px-2.5 py-1 text-[11px] font-semibold text-success lg:inline-flex dark:bg-dark-success-soft dark:text-dark-success">
             {t('workspace.readyToDownload')}
           </span>
         ) : null}
@@ -130,7 +130,7 @@ export function TopBar({
             onClick={onInspectorToggle}
             aria-label={inspectorOpen ? t('workspace.closeInspector') : t('workspace.openInspector')}
             aria-pressed={inspectorOpen}
-            className="focus-ring flex h-10 w-10 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 lg:hidden dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+            className="focus-ring flex h-10 w-10 items-center justify-center rounded-md border border-border text-ink-muted hover:bg-surface-sunken lg:hidden dark:border-dark-border dark:text-dark-ink-muted dark:hover:bg-dark-surface-sunken"
           >
             {inspectorOpen ? <X size={18} aria-hidden /> : <Sidebar size={18} aria-hidden />}
           </button>
@@ -139,7 +139,7 @@ export function TopBar({
           type="button"
           onClick={() => setTheme(nextTheme)}
           aria-label={nextTheme === 'dark' ? t('theme.switchToDark') : t('theme.switchToLight')}
-          className="focus-ring flex h-10 w-10 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+          className="focus-ring flex h-10 w-10 items-center justify-center rounded-md border border-border text-ink-muted hover:bg-surface-sunken dark:border-dark-border dark:text-dark-ink-muted dark:hover:bg-dark-surface-sunken"
         >
           {theme === 'light' ? <Moon size={18} aria-hidden /> : <Sun size={18} aria-hidden />}
         </button>
@@ -147,7 +147,7 @@ export function TopBar({
           type="button"
           onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
           aria-label={`${t('theme.switchLang')}: ${t('lang.current')}`}
-          className="focus-ring flex h-10 items-center gap-1 rounded-md border border-gray-200 px-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+          className="focus-ring flex h-10 items-center gap-1 rounded-md border border-border px-2.5 text-sm font-medium text-ink-muted hover:bg-surface-sunken dark:border-dark-border dark:text-dark-ink-muted dark:hover:bg-dark-surface-sunken"
         >
           <Globe size={16} aria-hidden />
           {t('lang.toggle')}

@@ -22,9 +22,9 @@ export function PalettePreview({ svg }: PalettePreviewProps) {
 
   return (
     <div className="space-y-2">
-      <p className="flex items-center text-xs font-semibold text-gray-600 dark:text-gray-400">
+      <p className="flex items-center text-xs font-semibold text-ink-muted dark:text-dark-ink-muted">
         {t('vec.palette')}
-        <span className="ml-2 font-normal text-gray-500 dark:text-gray-400">
+        <span className="ml-2 font-mono font-normal text-ink-subtle dark:text-dark-ink-subtle">
           {palette.length} {palette.length === 1 ? t('vec.color') : t('vec.colors')}
         </span>
       </p>
@@ -35,7 +35,7 @@ export function PalettePreview({ svg }: PalettePreviewProps) {
             <span
               key={hex}
               title={hex}
-              className="h-7 w-7 rounded border border-gray-200 dark:border-gray-700"
+              className="h-7 w-7 rounded border border-border dark:border-dark-border"
               style={{ backgroundColor: hex }}
               aria-label={`Color ${hex}`}
             />

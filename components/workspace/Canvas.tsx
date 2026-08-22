@@ -205,7 +205,7 @@ export function Canvas({
     return (
       <section
         aria-label={t('workspace.canvas')}
-        className="flex min-w-0 flex-1 flex-col items-center justify-center gap-5 bg-gray-200/60 p-4 sm:p-8 dark:bg-gray-950/60"
+        className="flex min-w-0 flex-1 flex-col items-center justify-center gap-5 bg-surface-sunken p-4 sm:p-8 dark:bg-dark-bg"
       >
         {uploadError && (
           <div
@@ -217,10 +217,13 @@ export function Canvas({
         )}
         <div className="w-full max-w-lg space-y-4">
           <div className="space-y-1 text-center">
-            <h2 className="text-balance text-base font-semibold text-gray-900 dark:text-gray-100">
+            <h2
+              className="text-balance text-[1.75rem] leading-[1.1] font-bold tracking-[-0.03em] text-ink dark:text-dark-ink"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
               {t('onboard.emptyTitle')}
             </h2>
-            <p className="text-pretty text-sm text-gray-600 dark:text-gray-300">
+            <p className="text-pretty text-sm text-ink-muted dark:text-dark-ink-muted">
               {t('onboard.emptyBody')}
             </p>
           </div>
@@ -229,7 +232,7 @@ export function Canvas({
             <button
               type="button"
               onClick={handleSample}
-              className="focus-ring rounded-md px-2 py-1.5 text-xs font-medium text-gray-600 underline-offset-2 hover:text-gray-900 hover:underline dark:text-gray-400 dark:hover:text-gray-200"
+              className="focus-ring rounded-md px-2 py-1.5 text-xs font-medium text-ink-muted underline-offset-2 hover:text-ink hover:underline dark:text-dark-ink-muted dark:hover:text-dark-ink"
             >
               {t('onboard.trySample')}
             </button>
@@ -243,16 +246,16 @@ export function Canvas({
     return (
       <section
         aria-label={t('workspace.canvas')}
-        className="flex min-w-0 flex-1 flex-col bg-gray-200/60 dark:bg-gray-950/60"
+        className="flex min-w-0 flex-1 flex-col bg-surface-sunken dark:bg-dark-bg"
       >
         <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
-            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+            <p className="text-xs font-semibold text-ink-muted dark:text-dark-ink-muted">
               {t('tool.vectorize')}
             </p>
           </div>
           <div
-            className={`relative min-h-0 flex-1 overflow-hidden border border-gray-200 dark:border-gray-700 ${previewBackgroundClass}`}
+            className={`relative min-h-0 flex-1 overflow-hidden border border-border dark:border-dark-border ${previewBackgroundClass}`}
           >
             <ImagePreview
               imageData={imageData}
@@ -286,7 +289,7 @@ export function Canvas({
     <section
       ref={canvasPanelRef}
       aria-label={t('workspace.canvas')}
-      className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-gray-200/60 p-3 dark:bg-gray-950/60"
+      className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-surface-sunken p-3 dark:bg-dark-bg"
     >
       {isVectorizeView && (
         <>
@@ -301,10 +304,10 @@ export function Canvas({
           {processedImageData && (
             <div className="flex flex-col h-full gap-2">
               <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
-                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                <p className="text-xs font-semibold text-ink-muted dark:text-dark-ink-muted">
                   {t('vec.vector')}
                   {tracedSvg && !isPreTrace && (
-                    <span className="ml-2 font-normal text-gray-500 dark:text-gray-400">
+                    <span className="ml-2 font-mono font-normal text-ink-subtle dark:text-dark-ink-subtle">
                       ({formatBytes(svgByteSize(tracedSvg))})
                     </span>
                   )}
@@ -312,11 +315,11 @@ export function Canvas({
               </div>
 
               <div
-                className={`relative flex-1 overflow-hidden border border-gray-200 dark:border-gray-700 ${previewBackgroundClass}`}
+                className={`relative flex-1 overflow-hidden border border-border dark:border-dark-border ${previewBackgroundClass}`}
               >
                 <CanvasOverlay isVisible={isLoading} label={t('vec.vectorizing')} />
                 {isPreTrace && (
-                  <div className="absolute left-3 top-3 rounded-md border border-gray-200 bg-white px-3 py-1 text-[11px] font-medium text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                  <div className="absolute left-3 top-3 rounded-md border border-border bg-surface px-3 py-1 text-[11px] font-medium text-ink-muted dark:border-dark-border dark:bg-dark-surface dark:text-dark-ink-muted">
                     {t('vec.notTracedYet')}
                   </div>
                 )}
@@ -365,23 +368,23 @@ export function Canvas({
         >
           <div className="flex min-h-0 flex-1 flex-col gap-2">
             <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
-              <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+              <p className="text-xs font-semibold text-ink-muted dark:text-dark-ink-muted">
                 {t(`tool.${activeTool}`)}
               </p>
             </div>
             <div
-              className={`relative min-h-0 flex-1 overflow-hidden border border-gray-200 dark:border-gray-700 ${previewBackgroundClass}`}
+              className={`relative min-h-0 flex-1 overflow-hidden border border-border dark:border-dark-border ${previewBackgroundClass}`}
               style={{
                 cursor: showEditorSurface ? cursor : undefined,
               }}
             >
               <CanvasOverlay isVisible={editor?.isBusy ?? false} label={t('workspace.working')} />
               {activeTool === 'labels' && labelTools.editingPath ? (
-                <div className="pointer-events-none absolute left-3 top-3 z-10 max-w-[min(22rem,calc(100%-1.5rem))] rounded-md border border-blue-200 bg-white px-3 py-2 text-xs text-gray-700 dark:border-blue-800 dark:bg-gray-900 dark:text-gray-200">
-                  <span className="block font-semibold text-blue-700 dark:text-blue-300">
+                <div className="pointer-events-none absolute left-3 top-3 z-10 max-w-[min(22rem,calc(100%-1.5rem))] rounded-md border border-accent bg-surface px-3 py-2 text-xs text-ink-muted dark:border-dark-accent dark:bg-dark-surface dark:text-dark-ink-muted">
+                  <span className="block font-semibold text-accent dark:text-dark-accent">
                     {t('labels.editingCanvas')}
                   </span>
-                  <span className="mt-0.5 block truncate font-mono text-[11px] text-gray-600 dark:text-gray-400">
+                  <span className="mt-0.5 block truncate font-mono text-[11px] text-ink-muted dark:text-dark-ink-muted">
                     {editingLabelClass ? `.${editingLabelClass}` : t('labels.newLabelTarget')}
                   </span>
                 </div>

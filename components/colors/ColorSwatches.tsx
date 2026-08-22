@@ -97,7 +97,7 @@ export function ColorSwatches({
                 className={[
                   'focus-ring relative aspect-square w-full rounded-lg shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)] transition dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]',
                   isSelected
-                    ? 'ring-2 ring-action-blue ring-offset-2 ring-offset-surface dark:ring-offset-dark-surface'
+                    ? 'ring-2 ring-accent ring-offset-2 ring-offset-surface dark:ring-dark-accent dark:ring-offset-dark-surface'
                     : 'hover:ring-2 hover:ring-ink-subtle/50 hover:ring-offset-2 hover:ring-offset-surface dark:hover:ring-dark-ink-muted/50 dark:hover:ring-offset-dark-surface',
                 ].join(' ')}
                 style={{ backgroundColor: hex }}

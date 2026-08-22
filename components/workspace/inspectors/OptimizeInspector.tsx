@@ -263,7 +263,7 @@ export function OptimizeInspector({
               className={[
                 'focus-ring flex-1 rounded px-2 py-1.5 text-[11px] font-semibold transition',
                 preparePreset === id
-                  ? 'bg-action-blue-surface text-action-blue dark:bg-blue-950/50 dark:text-blue-300'
+                  ? 'bg-surface text-ink shadow-sm dark:bg-dark-surface dark:text-dark-ink'
                   : 'text-ink-muted hover:bg-surface dark:text-dark-ink-muted dark:hover:bg-dark-surface',
               ].join(' ')}
             >
@@ -290,7 +290,7 @@ export function OptimizeInspector({
 
         {prepared ? (
           <div className="space-y-1 border-t border-border pt-3 dark:border-dark-border">
-            <p className="text-sm font-semibold text-action-green dark:text-green-300">
+            <p className="text-sm font-semibold text-success dark:text-dark-success">
               {t('workspace.preparedReady')}
             </p>
             <p className={inspectorHint}>{t('workspace.preparedReadyHint')}</p>
@@ -357,7 +357,7 @@ export function OptimizeInspector({
                       type="button"
                       title={hex}
                       onClick={() => handleReapplyOriginal(c)}
-                      className="focus-ring h-8 w-8 rounded border border-border transition hover:ring-2 hover:ring-action-blue dark:border-dark-border"
+                      className="focus-ring h-8 w-8 rounded border border-border transition hover:ring-2 hover:ring-accent dark:border-dark-border dark:hover:ring-dark-accent"
                       style={{ backgroundColor: hex }}
                       aria-label={`${t('col.originalColors')}: ${hex}`}
                     />

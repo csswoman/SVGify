@@ -160,7 +160,7 @@ export function Workspace() {
 
   return (
     <ErrorBoundary>
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gray-100 dark:bg-gray-900">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-bg dark:bg-dark-bg">
         <TopBar
           payload={exportState.currentPayload}
           canUndo={editor.canUndo}
@@ -175,7 +175,7 @@ export function Workspace() {
           onDownloadComplete={() => setDownloadHighlight(false)}
         />
         <div className="flex min-h-0 flex-1 flex-col p-3 lg:p-4">
-          <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm dark:border-dark-border dark:bg-dark-surface">
             <ToolBar
               activeTool={activeTool}
               document={document}
@@ -187,7 +187,7 @@ export function Workspace() {
                 exportState.exportStatus !== 'prepared_current'
               }
             />
-            <div className="relative flex min-h-0 flex-1 flex-col bg-gray-50/70 dark:bg-gray-900/40">
+            <div className="relative flex min-h-0 flex-1 flex-col bg-surface-sunken/70 dark:bg-dark-bg/40">
               <div className="relative flex min-h-0 flex-1">
                 <Canvas
                   activeTool={activeTool}

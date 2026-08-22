@@ -38,13 +38,13 @@ export function FirstSvgTip({
     <div
       role="region"
       aria-label={t('onboard.nextStepsLabel')}
-      className="flex shrink-0 flex-col gap-3 border-t border-gray-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 dark:border-gray-700 dark:bg-gray-800"
+      className="flex shrink-0 flex-col gap-3 border-t border-border bg-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 dark:border-dark-border dark:bg-dark-surface"
     >
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+        <p className="text-sm font-semibold text-ink dark:text-dark-ink">
           {t('onboard.nextStepsTitle')}
         </p>
-        <p className="mt-1 max-w-xl text-xs text-gray-500 dark:text-gray-400">
+        <p className="mt-1 max-w-xl text-xs text-ink-muted dark:text-dark-ink-muted">
           {t('optimize.prepare.help')}
         </p>
       </div>
@@ -55,7 +55,7 @@ export function FirstSvgTip({
         <button
           type="button"
           onClick={onGoFill}
-          className="focus-ring rounded-md px-2 py-1.5 text-xs font-medium text-gray-600 underline-offset-2 hover:text-gray-900 hover:underline dark:text-gray-400 dark:hover:text-gray-200"
+          className="focus-ring rounded-md px-2 py-1.5 text-xs font-medium text-ink-muted underline-offset-2 hover:text-ink hover:underline dark:text-dark-ink-muted dark:hover:text-dark-ink"
         >
           {t('onboard.nextFill')}
           <kbd className="ml-1.5 hidden font-mono text-[10px] font-normal opacity-70 sm:inline">
@@ -65,7 +65,7 @@ export function FirstSvgTip({
         <button
           type="button"
           onClick={onDismiss}
-          className="focus-ring flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+          className="focus-ring flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition hover:bg-surface-sunken hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-surface-sunken dark:hover:text-dark-ink"
           aria-label={t('onboard.nextStepsDismiss')}
         >
           <X size={14} aria-hidden />

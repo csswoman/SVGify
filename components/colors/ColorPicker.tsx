@@ -39,7 +39,7 @@ export function ColorPicker({ color, onChange, onCommit, actionLabel }: ColorPic
   };
 
   const fieldClass =
-    'h-9 min-w-0 flex-1 rounded-md border border-border bg-surface px-2.5 font-mono text-xs text-ink outline-none focus-visible:ring-2 focus-visible:ring-action-blue dark:border-dark-border dark:bg-dark-canvas-bg dark:text-dark-ink';
+    'h-9 min-w-0 flex-1 rounded-md border border-border bg-surface px-2.5 font-mono text-xs text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent dark:border-dark-border dark:bg-dark-canvas-bg dark:text-dark-ink';
 
   return (
     <div className="space-y-1.5">

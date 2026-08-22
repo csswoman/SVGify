@@ -117,7 +117,7 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
                 <button
                   type="button"
                   onClick={() => setSeeds([])}
-                  className="focus-ring inline-flex min-h-9 items-center gap-1.5 rounded-md px-1 text-sm font-medium text-action-blue transition hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100"
+                  className="focus-ring inline-flex min-h-9 items-center gap-1.5 rounded-md px-1 text-sm font-medium text-accent transition hover:text-accent-hover dark:text-dark-accent dark:hover:text-dark-accent-hover"
                 >
                   <X size={14} weight="bold" aria-hidden />
                   {t('bg.clear')} ({seeds.length})

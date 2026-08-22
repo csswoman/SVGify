@@ -46,7 +46,7 @@ export function ImagePreview({
       for (const s of seeds) {
         ctx.beginPath();
         ctx.arc(s.x, s.y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(37, 99, 235, 0.9)';
+        ctx.fillStyle = 'rgba(106, 40, 224, 0.9)';
         ctx.fill();
         ctx.lineWidth = Math.max(2, radius / 3);
         ctx.strokeStyle = '#ffffff';
@@ -94,9 +94,9 @@ export function ImagePreview({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">{label}</p>
+      <p className="text-xs font-semibold text-ink-muted dark:text-dark-ink-muted">{label}</p>
       <div
-        className="mx-auto w-fit max-w-full overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700"
+        className="mx-auto w-fit max-w-full overflow-hidden rounded-lg border border-border bg-surface dark:border-dark-border"
         style={displaySize ? { width: displaySize.width, height: displaySize.height } : undefined}
       >
         <canvas

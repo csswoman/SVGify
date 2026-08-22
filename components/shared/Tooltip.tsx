@@ -19,10 +19,10 @@ interface TooltipProps {
  * Hit target is ≥44×44 for touch; the visual glyph stays compact.
  */
 const triggerClassName =
-  'focus-ring relative ml-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-gray-600 dark:text-gray-300';
+  'focus-ring relative ml-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-ink-muted dark:text-dark-ink-muted';
 
 const glyphClassName =
-  'flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 group-hover:bg-gray-300 dark:group-hover:bg-gray-600';
+  'flex h-5 w-5 items-center justify-center rounded-full bg-surface-sunken dark:bg-dark-surface-sunken group-hover:bg-border dark:group-hover:bg-dark-border';
 
 function stopPropagation(event: React.SyntheticEvent) {
   event.stopPropagation();
@@ -81,7 +81,7 @@ export function Tooltip({ text, label, nested = false }: TooltipProps) {
         <span
           id={id}
           role="tooltip"
-          className={`fixed z-[60] w-52 max-w-[calc(100vw-1.5rem)] -translate-x-0 -translate-y-full rounded-md bg-gray-900 px-3 py-2 text-xs font-normal leading-snug text-pretty text-white shadow-lg ${
+          className={`fixed z-[60] w-52 max-w-[calc(100vw-1.5rem)] -translate-x-0 -translate-y-full rounded-md bg-ink px-3 py-2 text-xs font-normal leading-snug text-pretty text-surface shadow-lg dark:bg-dark-ink-muted dark:text-dark-bg ${
             position.placement === 'bottom' ? 'translate-y-0' : ''
           }`}
           style={{ left: position.left, top: position.top }}

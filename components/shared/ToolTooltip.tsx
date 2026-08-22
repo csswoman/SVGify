@@ -47,11 +47,11 @@ export function ToolTooltip({ label, shortcut, children }: ToolTooltipProps) {
         <span
           id={id}
           role="tooltip"
-          className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-[11px] text-white shadow-lg dark:bg-gray-950"
+          className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded bg-ink px-2 py-1 text-[11px] text-surface shadow-lg dark:bg-dark-ink-muted dark:text-dark-bg"
         >
           {label}
           {shortcut ? (
-            <span className="ml-2 font-mono text-gray-300">{shortcut}</span>
+            <span className="ml-2 font-mono text-ink-subtle dark:text-dark-bg">{shortcut}</span>
           ) : null}
         </span>
       ) : null}

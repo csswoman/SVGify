@@ -88,13 +88,13 @@ export function ImageDropzone({ onImageData, onError, compact = false }: ImageDr
       onDrop={handleDrop}
       aria-busy={isLoading}
       className={[
-        'focus-within:ring-2 focus-within:ring-blue-600 focus-within:ring-offset-2 dark:focus-within:ring-offset-gray-800',
+        'focus-within:ring-2 focus-within:ring-accent focus-within:ring-offset-2 dark:focus-within:ring-offset-dark-surface',
         'flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed text-center transition-colors',
         compact ? 'min-h-32 gap-1.5 p-5' : 'min-h-44 p-10',
         isLoading ? 'pointer-events-none opacity-70' : '',
         isDragging
-          ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10'
-          : 'border-gray-300 bg-gray-50 hover:border-gray-400 dark:border-gray-600 dark:bg-gray-800/50 dark:hover:border-gray-500',
+          ? 'border-accent bg-accent-soft dark:bg-dark-accent-soft/40'
+          : 'transparent-preview border-border-strong hover:border-ink-subtle dark:border-dark-border-strong dark:hover:border-dark-ink-subtle',
       ].join(' ')}
     >
       <input
@@ -106,10 +106,10 @@ export function ImageDropzone({ onImageData, onError, compact = false }: ImageDr
         disabled={isLoading}
         className="sr-only"
       />
-      <p className={compact ? 'text-xs font-semibold text-gray-800 dark:text-gray-100' : 'text-sm font-medium text-gray-800 dark:text-gray-100'}>
+      <p className={compact ? 'text-xs font-semibold text-ink dark:text-dark-ink' : 'text-sm font-medium text-ink dark:text-dark-ink'}>
         {isLoading ? t('upload.busy') : compact ? t('upload.replaceDrop') : t('upload.drop')}
       </p>
-      <p className={compact ? 'max-w-sm text-[11px] text-gray-500 dark:text-gray-400' : 'mt-2 max-w-sm text-xs text-gray-500 dark:text-gray-400'}>{t('upload.formats')}</p>
+      <p className={compact ? 'max-w-sm font-mono text-[11px] text-ink-muted dark:text-dark-ink-muted' : 'mt-2 max-w-sm font-mono text-xs text-ink-muted dark:text-dark-ink-muted'}>{t('upload.formats')}</p>
     </label>
   );
 }
