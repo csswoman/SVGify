@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { ArrowsLeftRightIcon } from '@phosphor-icons/react';
+import { AnchorPointIcon } from '@/components/shared/AnchorPointIcon';
 
 interface ImageComparisonSliderProps {
   before: ReactNode;
@@ -35,22 +35,22 @@ export function ImageComparisonSlider({
         style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
       >
         {before}
-        <span className="pointer-events-none absolute left-3 top-3 rounded-md border border-gray-200 bg-white/95 px-2 py-1 text-[11px] font-semibold text-gray-700 dark:border-gray-700 dark:bg-gray-900/95 dark:text-gray-200">
+        <span className="pointer-events-none absolute left-3 top-3 rounded-md border border-border bg-surface/95 px-2 py-1 text-[11px] font-semibold text-ink-muted dark:border-dark-border dark:bg-dark-surface/95 dark:text-dark-ink-muted">
           {beforeLabel}
         </span>
       </div>
 
-      <span className="pointer-events-none absolute right-3 top-3 z-20 rounded-md border border-gray-200 bg-white/95 px-2 py-1 text-[11px] font-semibold text-gray-700 dark:border-gray-700 dark:bg-gray-900/95 dark:text-gray-200">
+      <span className="pointer-events-none absolute right-3 top-3 z-20 rounded-md border border-border bg-surface/95 px-2 py-1 text-[11px] font-semibold text-ink-muted dark:border-dark-border dark:bg-dark-surface/95 dark:text-dark-ink-muted">
         {afterLabel}
       </span>
 
       <div
-        className="pointer-events-none absolute inset-y-0 z-20 w-0.5 bg-blue-600"
+        className="pointer-events-none absolute inset-y-0 z-20 w-0.5 bg-accent dark:bg-dark-accent"
         style={{ left: `${position}%` }}
         aria-hidden="true"
       >
-        <span className="absolute left-1/2 top-1/2 flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-blue-600 bg-white text-blue-700 dark:bg-gray-900 dark:text-blue-300">
-          <ArrowsLeftRightIcon size={16} weight="bold" />
+        <span className="absolute left-1/2 top-1/2 flex size-9 -translate-x-1/2 -translate-y-1/2 -rotate-90 items-center justify-center rounded-full border-2 border-accent bg-surface text-accent dark:border-dark-accent dark:bg-dark-surface dark:text-dark-accent">
+          <AnchorPointIcon className="h-4 w-4" />
         </span>
       </div>
 
