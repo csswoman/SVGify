@@ -14,8 +14,7 @@ export type Lang = 'en' | 'es';
 // Translation dictionary. Keys are dotted; values per language.
 const DICT = {
   // Header / footer
-  'app.tagline': { en: 'Vectorize on your device', es: 'Vectoriza en tu dispositivo' },
-  'app.footer': { en: 'Your images never leave your device', es: 'Tus imágenes nunca salen de tu dispositivo' },
+  'app.badge': { en: 'On-device · nothing uploaded', es: 'En tu dispositivo · nada se sube' },
   'app.source': { en: 'Source on GitHub', es: 'Código en GitHub' },
   'app.source.hint': {
     en: 'SVG Tool lets you trace, refine, and download vector SVGs directly in your browser.',
@@ -121,7 +120,7 @@ const DICT = {
 
   // Vectorize
   'vec.title': { en: 'Vectorize', es: 'Vectorizar' },
-  'vec.subtitle': { en: 'Adjust until the SVG looks right.', es: 'Ajusta hasta que el SVG se vea bien.' },
+  'vec.subtitle': { en: 'Changes re-run automatically.', es: 'Los cambios se aplican automáticamente.' },
   'vec.original': { en: 'Original', es: 'Original' },
   'vec.originalPick': { en: 'Original — click the background to remove it', es: 'Original — haz clic en el fondo para quitarlo' },
   'vec.showOriginal': { en: 'Show original', es: 'Ver original' },
@@ -169,16 +168,16 @@ const DICT = {
   // Settings groups
   'set.advanced': { en: 'More settings', es: 'Más ajustes' },
   // Settings controls
-  'set.traceMode': { en: 'Mode', es: 'Modo' },
+  'set.traceMode': { en: 'Image type', es: 'Tipo de imagen' },
   'set.traceMode.help': { en: 'Illustration keeps color variation and smooth curves. Logo or icon cleans the image into stable flat-color shapes first.', es: 'Ilustración conserva variaciones de color y curvas suaves. Logo o icono limpia primero la imagen en formas estables de color plano.' },
   'set.traceMode.standard': { en: 'Illustration', es: 'Ilustración' },
   'set.traceMode.icon': { en: 'Logo or icon', es: 'Logo o icono' },
   'set.traceMode.icon.help': { en: 'Best for flat logos, icons, and simple UI art. Cleans soft edge noise before tracing so you get fewer stray shapes.', es: 'Ideal para logos planos, iconos e ilustraciones simples de UI. Limpia el ruido de bordes suaves antes de trazar para que salgan menos formas sueltas.' },
   'set.detailLevel': { en: 'Detail', es: 'Detalle' },
   'set.detailLevel.help': { en: 'Clean removes more small fragments. More detail keeps smaller color and shape changes.', es: 'Limpio elimina más fragmentos pequeños. Más detalle conserva cambios de color y forma más pequeños.' },
-  'set.detailLevel.clean': { en: 'Clean', es: 'Limpio' },
+  'set.detailLevel.clean': { en: 'Simple', es: 'Simple' },
   'set.detailLevel.balanced': { en: 'Balanced', es: 'Equilibrado' },
-  'set.detailLevel.detailed': { en: 'More detail', es: 'Más detalle' },
+  'set.detailLevel.detailed': { en: 'Detailed', es: 'Detallado' },
   'set.refine.summary': { en: 'Photo smoothing, corners, edge cleanup', es: 'Suavizado, esquinas y limpieza de borde' },
   'set.colors': { en: 'Colors', es: 'Colores' },
   'set.colors.help': { en: 'How many colors the SVG can use. Start low for a cleaner file; raise it only if important colors disappear.', es: 'Cuántos colores puede usar el SVG. Empieza bajo para un archivo más limpio; súbelo solo si desaparecen colores importantes.' },
@@ -200,8 +199,8 @@ const DICT = {
     en: 'On: removes only the area connected to your click. Off: removes that color everywhere in the image.',
     es: 'Activado: quita solo el área conectada a tu clic. Desactivado: quita ese color en toda la imagen.',
   },
-  'bg.tolerance': { en: 'Tolerance', es: 'Tolerancia' },
-  'bg.tolerance.help': { en: 'How close a pixel must be to the picked color to be removed. Higher removes more shades.', es: 'Cuán cercano debe ser un píxel al color elegido para quitarlo. Más alto quita más tonos.' },
+  'bg.tolerance': { en: 'Background tolerance', es: 'Tolerancia de fondo' },
+  'bg.tolerance.help': { en: 'Higher removes more of the background.', es: 'Más alto quita más del fondo.' },
   'bg.tolerance.hint': { en: 'Higher = removes more shades of the picked color.', es: 'Más alto = quita más tonos del color elegido.' },
   'bg.clear': { en: 'Clear picked points', es: 'Limpiar puntos elegidos' },
 
@@ -421,12 +420,12 @@ const DICT = {
     es: 'Prepara una vez un SVG más liviano y listo para producción.',
   },
   'optimize.prepare': {
-    en: 'Prepare for download',
-    es: 'Preparar para descargar',
+    en: 'Optimize & download',
+    es: 'Optimizar y descargar',
   },
   'optimize.prepare.help': {
-    en: 'Cleans the palette and compacts shapes so the download is smaller and ready to ship.',
-    es: 'Limpia la paleta y compacta formas para que la descarga sea más liviana y lista para usar.',
+    en: 'Merges duplicate colors and simplifies paths. Usually cuts the file size in half.',
+    es: 'Fusiona colores duplicados y simplifica trazos. Suele reducir el tamaño del archivo a la mitad.',
   },
   'optimize.prepare.targets': {
     en: '{colors} colors · ~{shapes} shapes',
@@ -465,18 +464,18 @@ const DICT = {
     en: 'Add an image to create an editable SVG',
     es: 'Agrega una imagen para crear un SVG editable',
   },
-  'workspace.readyToDownload': { en: 'Ready', es: 'Listo' },
+  'workspace.readyToDownload': { en: 'Ready to optimize', es: 'Listo para optimizar' },
   'workspace.downloadUnprepared': {
-    en: 'Download without preparing',
-    es: 'Descargar sin preparar',
+    en: 'Download raw SVG',
+    es: 'Descargar SVG sin optimizar',
   },
   'workspace.downloadPrepared': {
     en: 'Download SVG',
     es: 'Descargar SVG',
   },
   'workspace.downloadRaw': {
-    en: 'Downloads the SVG as-is. For a smaller production file, use Prepare for download first.',
-    es: 'Descarga el SVG tal cual. Para un archivo de producción más liviano, usa Preparar para descargar primero.',
+    en: 'Skips cleanup. Larger file.',
+    es: 'Omite la limpieza. Archivo más grande.',
   },
   'workspace.downloadNeedsPrepare': {
     en: 'Prepare for download in Optimize first. Raw download is available there if you need it.',

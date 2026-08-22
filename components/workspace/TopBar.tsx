@@ -9,6 +9,7 @@ import {
   Sun,
   X,
 } from '@phosphor-icons/react';
+import { AnchorPointIcon } from '@/components/shared/AnchorPointIcon';
 import { DownloadButton } from '@/components/shared/DownloadButton';
 import { useI18n } from '@/lib/i18n';
 import { useTheme } from '@/lib/theme';
@@ -49,28 +50,21 @@ export function TopBar({
     <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-gray-200 bg-white px-3 py-2 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:px-4 dark:border-gray-700 dark:bg-gray-800">
       <div className="flex min-w-0 items-center gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[#0a111c]">
-            {/* eslint-disable-next-line @next/next/no-img-element -- static brand SVG from /public */}
-            <img
-              src="/svgify-transparent.svg"
-              alt=""
-              width={36}
-              height={32}
-              className="h-8 w-8 object-contain"
-              decoding="async"
-            />
-          </span>
+          <AnchorPointIcon className="h-6 w-6 shrink-0 text-ink dark:text-dark-ink" />
           <div className="min-w-0">
-            <span className="block text-[1.125rem] font-bold leading-tight tracking-tight text-gray-900 dark:text-gray-100">
+            <span
+              className="block truncate text-[1.75rem] leading-[1.1] font-bold tracking-[-0.03em] text-ink dark:text-dark-ink"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
               SVGify
-            </span>
-            <span className="block truncate text-xs text-gray-500 dark:text-gray-400">
-              {t('app.tagline')}
             </span>
           </div>
         </div>
-        <span className="hidden text-xs text-ink-muted xl:inline dark:text-dark-ink-muted">
-          {t('workspace.editableSvg')}
+        <span className="hidden items-center gap-1.5 rounded-full bg-success-soft px-2.5 py-1 dark:bg-dark-success-soft sm:inline-flex">
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-success dark:bg-dark-success" aria-hidden />
+          <span className="text-[11px] font-medium text-ink dark:text-dark-ink">
+            {t('app.badge')}
+          </span>
         </span>
       </div>
 
