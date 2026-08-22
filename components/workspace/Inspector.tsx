@@ -84,12 +84,20 @@ export function Inspector({
       <aside
         aria-label={t('workspace.inspector')}
         className={[
-          'fixed inset-y-0 right-0 z-40 flex w-[min(100%,20rem)] max-h-dvh shrink-0 flex-col overflow-hidden border-l border-border bg-surface px-4 py-4 transition-transform duration-200 ease-out inspector:static inspector:z-auto inspector:h-full inspector:max-h-none inspector:w-80 inspector:translate-x-0 dark:border-dark-border dark:bg-dark-surface',
+          // Below the inspector breakpoint: bottom sheet anchored to the viewport
+          // floor, capped well under full height so the TopBar (and its own
+          // close-inspector toggle) always stays visible and reachable above it.
+          // At/above the breakpoint: static sidebar, full column height.
+          'fixed inset-x-0 bottom-0 z-40 flex max-h-[min(70dvh,32rem)] w-full shrink-0 flex-col overflow-hidden rounded-t-2xl border-t border-border bg-surface px-4 pb-4 pt-2 transition-transform duration-200 ease-out inspector:static inspector:inset-auto inspector:z-auto inspector:h-full inspector:max-h-none inspector:w-80 inspector:translate-y-0 inspector:rounded-none inspector:border-t-0 inspector:border-l inspector:pt-4 dark:border-dark-border dark:bg-dark-surface',
           open
-            ? 'translate-x-0'
-            : 'pointer-events-none translate-x-full inspector:pointer-events-auto inspector:translate-x-0',
+            ? 'translate-y-0'
+            : 'pointer-events-none translate-y-full inspector:pointer-events-auto inspector:translate-y-0',
         ].join(' ')}
       >
+        <div
+          aria-hidden
+          className="mx-auto mb-2 h-1 w-10 shrink-0 rounded-full bg-border-strong inspector:hidden dark:bg-dark-border-strong"
+        />
         {(activeTool === 'erase' || activeTool === 'erasePath') && editor ? (
           <EraseInspector
             mode={activeTool === 'erase' ? 'brush' : 'path'}

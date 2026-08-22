@@ -103,10 +103,21 @@ export interface WorkerMessage {
   settings?: VectorizeSettings;
 }
 
+export type VectorizeErrorCode =
+  | 'NO_ENDPOINT'
+  | 'HTTP_ERROR'
+  | 'NO_SVG_RETURNED'
+  | 'EMPTY_SVG'
+  | 'WORKER_UNAVAILABLE'
+  | 'WORKER_CRASHED'
+  | 'UNKNOWN';
+
 export interface WorkerResponse {
   type: 'ready' | 'progress' | 'done' | 'error';
   requestId?: number;
   value?: number;        // progress: 0..1
   svg?: string;          // done
-  message?: string;      // error
+  message?: string;      // error — technical detail, not user-facing
+  code?: VectorizeErrorCode; // error — stable code to translate at render site
+  statusCode?: number;   // error — HTTP status, when code is HTTP_ERROR
 }

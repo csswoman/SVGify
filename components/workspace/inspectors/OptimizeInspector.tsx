@@ -246,7 +246,7 @@ export function OptimizeInspector({
         <div
           className="flex gap-0.5 rounded-md border border-border bg-canvas-bg p-0.5 dark:border-dark-border dark:bg-dark-canvas-bg"
           role="group"
-          aria-label={t('optimize.prepare')}
+          aria-label={t('optimize.prepare.presetGroup')}
         >
           {(
             [

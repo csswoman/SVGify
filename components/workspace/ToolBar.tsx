@@ -72,7 +72,7 @@ export function ToolBar({
     <nav
       role="toolbar"
       aria-label={t('workspace.tools')}
-      className="scroll-quiet flex w-16 shrink-0 flex-col items-center gap-1 border-r border-border bg-surface py-2 dark:border-dark-border dark:bg-dark-surface"
+      className="scroll-quiet flex w-19 shrink-0 flex-col items-center gap-1 border-r border-border bg-surface py-2 dark:border-dark-border dark:bg-dark-surface"
     >
       {visibleGroups.map((group, groupIndex) => {
         const isEdit = group.id === 'edit';
@@ -93,6 +93,7 @@ export function ToolBar({
                   shortcut="G"
                   active={activeTool === 'fill'}
                   expanded={activeTool === 'eyedropper' ? true : undefined}
+                  showLabel
                   disabled={!isToolEnabled('fill', document)}
                   onClick={() => onToolChange('fill')}
                 />
@@ -102,6 +103,7 @@ export function ToolBar({
                     label={t('tool.eyedropper')}
                     shortcut="I"
                     active={activeTool === 'eyedropper'}
+                    showLabel
                     disabled={!isToolEnabled('eyedropper', document)}
                     onClick={() => onToolChange('eyedropper')}
                   />
@@ -119,6 +121,7 @@ export function ToolBar({
                   shortcut="A"
                   active={activeTool === 'nodes'}
                   expanded={shapeOpen && activeTool !== 'nodes' ? true : undefined}
+                  showLabel
                   badge={showRefineHint && !shapeOpen}
                   disabled={!isToolEnabled('nodes', document)}
                   onClick={() => onToolChange('nodes')}
@@ -130,6 +133,7 @@ export function ToolBar({
                       label={t('tool.brush')}
                       shortcut="B"
                       active={activeTool === 'brush'}
+                      showLabel
                       disabled={!isToolEnabled('brush', document)}
                       onClick={() => onToolChange('brush')}
                     />
@@ -139,6 +143,7 @@ export function ToolBar({
                       shortcut="E"
                       active={activeTool === 'erase'}
                       expanded={activeTool === 'erasePath' ? true : undefined}
+                      showLabel
                       disabled={!isToolEnabled('erase', document)}
                       onClick={() => onToolChange('erase')}
                     />
@@ -148,6 +153,7 @@ export function ToolBar({
                         label={t('tool.erasePath')}
                         shortcut="X"
                         active={activeTool === 'erasePath'}
+                        showLabel
                         disabled={!isToolEnabled('erasePath', document)}
                         onClick={() => onToolChange('erasePath')}
                       />
@@ -157,6 +163,7 @@ export function ToolBar({
                       label={t('tool.labels')}
                       shortcut="L"
                       active={activeTool === 'labels'}
+                      showLabel
                       disabled={!isToolEnabled('labels', document)}
                       onClick={() => onToolChange('labels')}
                     />
@@ -180,6 +187,7 @@ export function ToolBar({
                     }
                     shortcut={shortcut}
                     active={activeTool === id}
+                    showLabel
                     disabled={!isToolEnabled(id, document)}
                     onClick={() => onToolChange(id)}
                   />

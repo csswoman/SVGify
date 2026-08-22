@@ -136,6 +136,7 @@ const DICT = {
   'vec.revectorize': { en: 'Trace again', es: 'Trazar de nuevo' },
   'vec.auto': { en: 'Updates live as you adjust.', es: 'Se actualiza al instante al ajustar.' },
   'vec.vectorizing': { en: 'Creating your SVG…', es: 'Creando tu SVG…' },
+  'workspace.cancelTrace': { en: 'Cancel', es: 'Cancelar' },
   'workspace.working': { en: 'Updating…', es: 'Actualizando…' },
   'vec.optimized': { en: 'optimized', es: 'optimizado' },
   'vec.paletteEditor': { en: 'Clean icon palette', es: 'Paleta del icono limpio' },
@@ -166,6 +167,20 @@ const DICT = {
   'set.detail.help': { en: 'Higher simplifies curves (lighter file, more angular); lower preserves smooth rounded detail.', es: 'Más alto simplifica curvas (archivo más ligero, más angular); más bajo conserva detalle redondeado y suave.' },
   'vec.complexWarn': { en: 'This image produced many shapes. Try fewer colors, more noise removal, or Optimize to the max to keep the file light.', es: 'Esta imagen generó muchas formas. Prueba menos colores, más “Quitar ruido” u “Optimizar al máximo” para aligerar el archivo.' },
 
+  // Vectorize errors (rendered from stable worker error codes — see VectorizerError)
+  'vec.error.NO_ENDPOINT': {
+    en: 'Vectorization service unavailable. Run the app with npm run dev or npm run start — it needs a live server, not a static export.',
+    es: 'Servicio de vectorización no disponible. Ejecuta la app con npm run dev o npm run start — necesita un servidor activo, no una exportación estática.',
+  },
+  'vec.error.HTTP_ERROR': { en: 'Vectorization failed on the server. Try again in a moment.', es: 'La vectorización falló en el servidor. Inténtalo de nuevo en un momento.' },
+  'vec.error.NO_SVG_RETURNED': { en: 'Vectorization did not return a result. Try again.', es: 'La vectorización no devolvió resultado. Inténtalo de nuevo.' },
+  'vec.error.EMPTY_SVG': { en: 'Vectorization produced no valid SVG. Try fewer colors or a cleaner detail level.', es: 'La vectorización no produjo un SVG válido. Prueba con menos colores o un nivel más limpio.' },
+  'vec.error.WORKER_UNAVAILABLE': { en: 'The vectorizer failed to start. Reload the page and try again.', es: 'El vectorizador no pudo iniciar. Recarga la página e inténtalo de nuevo.' },
+  'vec.error.WORKER_CRASHED': { en: 'The vectorizer crashed. Reload the page and try again.', es: 'El vectorizador falló. Recarga la página e inténtalo de nuevo.' },
+  'vec.error.NOT_INITIALIZED': { en: 'The vectorizer isn’t ready yet. Try again in a moment.', es: 'El vectorizador aún no está listo. Inténtalo de nuevo en un momento.' },
+  'vec.error.TIMEOUT': { en: 'Vectorization took too long. Try fewer colors or a cleaner detail level.', es: 'La vectorización tardó demasiado. Prueba con menos colores o un nivel más limpio.' },
+  'vec.error.UNKNOWN': { en: 'Vectorization failed. Try again.', es: 'La vectorización falló. Inténtalo de nuevo.' },
+
   // Settings groups
   'set.advanced': { en: 'More settings', es: 'Más ajustes' },
   // Settings controls
@@ -180,10 +195,8 @@ const DICT = {
   'set.detailLevel.balanced': { en: 'Balanced', es: 'Equilibrado' },
   'set.detailLevel.detailed': { en: 'Detailed', es: 'Detallado' },
   'set.refine.summary': { en: 'Photo smoothing, corners, edge cleanup', es: 'Suavizado, esquinas y limpieza de borde' },
-  'set.colors': { en: 'Colors', es: 'Colores' },
   'set.maxColors': { en: 'Max colors', es: 'Máx. de colores' },
   'set.maxColors.help': { en: 'Upper limit of colors the SVG can use. Start low for a cleaner file; raise it only if important colors disappear.', es: 'Límite superior de colores que puede usar el SVG. Empieza bajo para un archivo más limpio; súbelo solo si desaparecen colores importantes.' },
-  'set.colors.help': { en: 'How many colors the SVG can use. Start low for a cleaner file; raise it only if important colors disappear.', es: 'Cuántos colores puede usar el SVG. Empieza bajo para un archivo más limpio; súbelo solo si desaparecen colores importantes.' },
   'set.cornerThreshold': { en: 'Corners', es: 'Esquinas' },
   'set.cornerThreshold.help': { en: 'How sharp an angle must be to count as a corner. Higher = fewer false corners and smoother outlines.', es: 'Qué tan agudo debe ser un ángulo para contar como esquina. Más alto = menos esquinas falsas y contornos más suaves.' },
   'set.alphaThreshold': { en: 'Edge cleanup', es: 'Limpieza de borde' },
@@ -423,8 +436,12 @@ const DICT = {
     es: 'Prepara una vez un SVG más liviano y listo para producción.',
   },
   'optimize.prepare': {
-    en: 'Optimize & download',
-    es: 'Optimizar y descargar',
+    en: 'Prepare for download',
+    es: 'Preparar para descargar',
+  },
+  'optimize.prepare.presetGroup': {
+    en: 'Optimization preset',
+    es: 'Preajuste de optimización',
   },
   'optimize.prepare.help': {
     en: 'Merges duplicate colors and simplifies paths. Usually cuts the file size in half.',
@@ -478,7 +495,7 @@ const DICT = {
     en: 'Add an image to create an editable SVG',
     es: 'Agrega una imagen para crear un SVG editable',
   },
-  'workspace.readyToDownload': { en: 'Ready to optimize', es: 'Listo para optimizar' },
+  'workspace.readyToDownload': { en: 'Ready to download', es: 'Listo para descargar' },
   'workspace.downloadUnprepared': {
     en: 'Download raw SVG',
     es: 'Descargar SVG sin optimizar',
@@ -545,8 +562,8 @@ const DICT = {
     es: 'Añade un comentario con las etiquetas exportadas al inicio del archivo SVG.',
   },
   'workspace.preparedReady': {
-    en: 'Ready to export',
-    es: 'Listo para exportar',
+    en: 'Ready to download',
+    es: 'Listo para descargar',
   },
   'workspace.preparedReadyHint': {
     en: 'Use Download SVG in the top bar to save the prepared file.',

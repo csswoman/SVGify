@@ -198,23 +198,43 @@ async function vectorizeImage(imageData: ImageData, settings: VectorizeSettings,
 
     if (!response.ok) {
       const error = await response.json().catch(() => null) as { error?: string } | null;
+      if (requestId !== activeRequestId) return;
       if (response.status === 404) {
-        throw new Error(
-          'No se encontró /api/vectorize. Ejecuta la app con Next.js (npm run dev o npm run start); la vectorización actual no funciona desde out/ ni hosting estático.'
-        );
+        self.postMessage({
+          type: 'error',
+          code: 'NO_ENDPOINT',
+          message: '/api/vectorize not found — the app must run via Next.js (npm run dev / npm run start), not static hosting.',
+          requestId,
+        } satisfies WorkerResponse);
+        return;
       }
-      throw new Error(error?.error ?? `Vectorization failed with HTTP ${response.status}`);
+      self.postMessage({
+        type: 'error',
+        code: 'HTTP_ERROR',
+        statusCode: response.status,
+        message: error?.error ?? `Vectorization failed with HTTP ${response.status}`,
+        requestId,
+      } satisfies WorkerResponse);
+      return;
     }
 
     const { svg: optimized } = await response.json() as { svg?: string };
-    if (!optimized) throw new Error('Vectorization did not return an SVG');
-
     if (requestId !== activeRequestId) return;
+    if (!optimized) {
+      self.postMessage({
+        type: 'error',
+        code: 'NO_SVG_RETURNED',
+        message: 'Vectorization did not return an SVG',
+        requestId,
+      } satisfies WorkerResponse);
+      return;
+    }
+
     self.postMessage({ type: 'done', svg: optimized, requestId } satisfies WorkerResponse);
   } catch (err) {
     if (requestId !== activeRequestId) return;
     const message = err instanceof Error ? err.message : 'Vectorization failed';
-    self.postMessage({ type: 'error', message, requestId } satisfies WorkerResponse);
+    self.postMessage({ type: 'error', code: 'UNKNOWN', message, requestId } satisfies WorkerResponse);
   } finally {
     if (requestId === activeRequestId) activeRequestController = null;
   }

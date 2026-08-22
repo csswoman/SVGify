@@ -2,7 +2,6 @@
 
 import type { Icon } from '@phosphor-icons/react';
 import { ToolTooltip } from '@/components/shared/ToolTooltip';
-import { AnchorPointIcon } from '@/components/shared/AnchorPointIcon';
 
 interface ToolButtonProps {
   icon: Icon;
@@ -16,6 +15,8 @@ interface ToolButtonProps {
   badge?: boolean;
   disabled?: boolean;
   mode?: 'icon' | 'row';
+  /** Render the label under the icon (tool rail) so tools are readable without hovering. */
+  showLabel?: boolean;
   onClick: () => void;
 }
 
@@ -28,6 +29,7 @@ export function ToolButton({
   badge,
   disabled,
   mode = 'icon',
+  showLabel = false,
   onClick,
 }: ToolButtonProps) {
   const accessibleName = shortcut ? `${label} (${shortcut})` : label;
@@ -47,19 +49,15 @@ export function ToolButton({
           'focus-ring relative flex min-h-11 items-center rounded-md border transition-colors duration-150 ease-out',
           isRow
             ? 'w-full justify-start gap-3 px-3 py-2 text-left'
-            : 'h-10 w-10 justify-center',
+            : showLabel
+              ? 'h-auto w-16 flex-col justify-start gap-1 px-1 pb-1.5 pt-2'
+              : 'h-10 w-10 justify-center',
           active || expanded
-            ? 'border-transparent text-accent dark:text-dark-accent'
+            ? 'border-transparent bg-accent-soft text-accent dark:bg-dark-accent-soft dark:text-dark-accent'
             : 'border-transparent text-ink-muted hover:bg-surface-sunken dark:text-dark-ink-muted dark:hover:bg-dark-surface-sunken',
           disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer',
         ].join(' ')}
       >
-        {active ? (
-          <AnchorPointIcon
-            className="absolute -left-1 h-3 w-3 text-accent dark:text-dark-accent"
-            aria-hidden
-          />
-        ) : null}
         <IconComponent
           size={20}
           weight={filled ? 'fill' : 'regular'}
@@ -73,6 +71,11 @@ export function ToolButton({
                 {shortcut}
               </span>
             ) : null}
+          </span>
+        ) : null}
+        {showLabel && !isRow ? (
+          <span className="w-full truncate text-center text-[11px] font-medium leading-tight">
+            {label}
           </span>
         ) : null}
         {badge ? (

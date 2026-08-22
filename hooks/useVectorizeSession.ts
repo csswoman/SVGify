@@ -20,12 +20,55 @@ interface UseVectorizeSessionOptions {
 
 const RECONSTRUCTED_MATTE_PIPELINE_ENABLED = true;
 
+/** Settings changes restart tracing; 400ms batches slider drags without feeling laggy. */
+const REVECTORIZE_DEBOUNCE_MS = 400;
+
+const VECTORIZE_STORAGE_KEY = 'svgify.vectorize.settings.v1';
+
+interface PersistedVectorizeState {
+  settings?: Partial<VectorizeProductSettings>;
+  removeBg?: boolean;
+  bgTolerance?: number;
+}
+
+function clampBGTolerance(value: number): number {
+  return Math.max(0, Math.min(128, Math.round(value)));
+}
+
 export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeSessionOptions) {
   const [settings, setSettings] = useState<VectorizeProductSettings>(VECTORIZE_PRODUCT_DEFAULTS);
   const [removeBg, setRemoveBg] = useState(false);
   const [bgTolerance, setBgTolerance] = useState(48);
   const [seeds, setSeeds] = useState<SeedPoint[]>([]);
-  const { svg, isLoading, error, vectorize, cancel, clear } = useVectorizer();
+  const { svg, isLoading, error, progress, vectorize, cancel, clear } = useVectorizer();
+
+  // Restore persisted preferences once on mount (client-only).
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(VECTORIZE_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as PersistedVectorizeState;
+      if (parsed.settings && typeof parsed.settings === 'object') {
+        setSettings((prev) => ({ ...prev, ...parsed.settings }));
+      }
+      if (typeof parsed.removeBg === 'boolean') setRemoveBg(parsed.removeBg);
+      if (typeof parsed.bgTolerance === 'number') setBgTolerance(clampBGTolerance(parsed.bgTolerance));
+    } catch {
+      // Malformed storage — fall back to defaults silently.
+    }
+  }, []);
+
+  // Persist on every change so a refresh keeps the user's tuning.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        VECTORIZE_STORAGE_KEY,
+        JSON.stringify({ settings, removeBg, bgTolerance })
+      );
+    } catch {
+      // Storage may be unavailable (private mode); settings stay session-only.
+    }
+  }, [settings, removeBg, bgTolerance]);
   const {
     colors: paletteColors,
     selectedColor: selectedPaletteColor,
@@ -129,7 +172,10 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
   useEffect(() => {
     if (!enabled || !processedImageData) return;
     cancel();
-    const timer = setTimeout(() => vectorize(processedImageData, settingsWithPalette), 300);
+    const timer = setTimeout(
+      () => vectorize(processedImageData, settingsWithPalette),
+      REVECTORIZE_DEBOUNCE_MS
+    );
     return () => {
       clearTimeout(timer);
       cancel();
@@ -159,6 +205,8 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
     resetPalette: () => replacePalette(suggestedPalette),
     svg,
     isLoading,
+    progress,
     error,
+    cancel,
   };
 }

@@ -21,7 +21,7 @@ import type { useVectorizeSession } from '@/hooks/useVectorizeSession';
 import type { useWorkspaceSvg } from '@/hooks/useWorkspaceSvg';
 import type { useWorkspaceShapeTools } from '@/hooks/useWorkspaceShapeTools';
 import type { useWorkspaceLabels } from '@/hooks/useWorkspaceLabels';
-import { useI18n } from '@/lib/i18n';
+import { useI18n, type TKey } from '@/lib/i18n';
 import { CanvasOverlay } from '@/components/shared/CanvasOverlay';
 import { ImageComparisonSlider } from '@/components/shared/ImageComparisonSlider';
 import { createSampleIconImageData } from '@/lib/sampleImage';
@@ -194,11 +194,11 @@ export function Canvas({
   );
 
   const handleSample = useCallback(() => {
-    try {
-      handleUpload(createSampleIconImageData());
-    } catch {
-      onUploadError(t('upload.error.UNKNOWN'));
-    }
+    createSampleIconImageData()
+      .then(handleUpload)
+      .catch(() => {
+        onUploadError(t('upload.error.UNKNOWN'));
+      });
   }, [handleUpload, onUploadError, t]);
 
   if (!imageData) {
@@ -210,7 +210,7 @@ export function Canvas({
         {uploadError && (
           <div
             role="alert"
-            className="w-full max-w-lg rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300"
+            className="w-full max-w-lg rounded-lg border border-danger-border bg-danger-surface p-3 text-sm text-danger-ink dark:border-dark-danger-border dark:bg-dark-danger-surface dark:text-dark-danger-ink"
           >
             {uploadError}
           </div>
@@ -296,9 +296,9 @@ export function Canvas({
           {error && (
             <div
               role="alert"
-              className="mb-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300"
+              className="mb-4 rounded-lg border border-danger-border bg-danger-surface p-3 text-sm text-danger-ink dark:border-dark-danger-border dark:bg-dark-danger-surface dark:text-dark-danger-ink"
             >
-              {error}
+              {t(`vec.error.${error.code}` as TKey)}
             </div>
           )}
           {processedImageData && (

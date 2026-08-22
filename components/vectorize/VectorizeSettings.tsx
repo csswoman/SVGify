@@ -16,8 +16,8 @@ const COLOR_PRECISION_MIN = 2;
 const COLOR_PRECISION_MAX = 7;
 const COLOR_COUNT_TICKS = [4, 8, 16, 32, 64, 128] as const;
 
-/** Half of the typical range thumb — ticks share this inset so marks sit under the thumb. */
-const RANGE_THUMB_INSET = 'px-2';
+/** Thumb is 14px wide (see .themed-range); its center travels 7px … width−7px. */
+const RANGE_THUMB_HALF_PX = 7;
 
 const segmentGroup =
   'grid rounded-md border border-border bg-canvas-bg p-0.5 text-xs dark:border-dark-border dark:bg-dark-canvas-bg';
@@ -137,8 +137,8 @@ export function VectorizeSettingsPanel({
           htmlFor="vectorize-color-precision"
           className={inspectorLabelStrong}
         >
-          {t('set.colors')}: <span className="ml-1 font-mono">{colorCount}</span>
-          <Tooltip text={t('set.colors.help')} label={t('set.colors')} />
+          {t('set.maxColors')}: <span className="ml-1 font-mono">{colorCount}</span>
+          <Tooltip text={t('set.maxColors.help')} label={t('set.maxColors')} />
         </label>
         <input
           type="range"
@@ -158,18 +158,27 @@ export function VectorizeSettingsPanel({
           ))}
         </datalist>
         {/*
-          Tick centers must match discrete thumb stops (0%…100% of travel),
-          not equal column centers. Inset ≈ half thumb width.
+          Tick centers must match discrete thumb stops: the thumb center
+          travels from 7px to (width − 7px), not edge to edge.
         */}
-        <div className={`mt-0.5 flex justify-between ${RANGE_THUMB_INSET}`} aria-hidden>
-          {COLOR_COUNT_TICKS.map((count) => (
-            <span key={count} className="flex w-0 flex-col items-center">
-              <span className="h-1 w-px bg-ink-subtle dark:bg-dark-ink-muted" />
-              <span className="mt-0.5 font-mono text-[10px] leading-none text-ink-muted dark:text-dark-ink-muted">
-                {count}
+        <div className="relative mt-0.5 h-4" aria-hidden>
+          {COLOR_COUNT_TICKS.map((count, i) => {
+            const progress = i / (COLOR_COUNT_TICKS.length - 1);
+            return (
+              <span
+                key={count}
+                className="absolute top-0 flex -translate-x-1/2 flex-col items-center"
+                style={{
+                  left: `calc(${RANGE_THUMB_HALF_PX}px + ${progress} * (100% - ${RANGE_THUMB_HALF_PX * 2}px))`,
+                }}
+              >
+                <span className="h-1 w-px bg-ink-subtle dark:bg-dark-ink-muted" />
+                <span className="mt-0.5 font-mono text-[10px] leading-none text-ink-muted dark:text-dark-ink-muted">
+                  {count}
+                </span>
               </span>
-            </span>
-          ))}
+            );
+          })}
         </div>
       </div>
 

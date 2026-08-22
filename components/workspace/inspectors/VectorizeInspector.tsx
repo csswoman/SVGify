@@ -12,9 +12,8 @@ import {
   inspectorLabel,
   inspectorRange,
 } from '@/components/workspace/inspectorChrome';
-import { Tooltip } from '@/components/shared/Tooltip';
 import type { useVectorizeSession } from '@/hooks/useVectorizeSession';
-import { useI18n } from '@/lib/i18n';
+import { useI18n, type TKey } from '@/lib/i18n';
 
 interface VectorizeInspectorProps {
   session: ReturnType<typeof useVectorizeSession>;
@@ -41,6 +40,8 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
     resetPalette,
     error,
     isLoading,
+    progress,
+    cancel,
     svg,
     hasTranslucentEdges,
   } = session;
@@ -48,10 +49,10 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const hasSvg = svg !== null;
 
-  const paletteCountSummary =
-    paletteColors.length === 1
-      ? `1 ${t('vec.color')}`
-      : `${paletteColors.length} ${t('vec.colors')}`;
+  const paletteCountSummary = t('vec.paletteCount').replace(
+    '{n}',
+    String(paletteColors.length)
+  );
   const paletteSummary = `${paletteCountSummary} · ${t(`set.detailLevel.${settings.detailLevel}`)}`;
 
   return (
@@ -70,7 +71,7 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
           role="alert"
           className="rounded-lg border border-danger-border bg-danger-surface p-3 text-xs text-danger-ink dark:border-dark-danger-border dark:bg-dark-danger-surface dark:text-dark-danger-ink"
         >
-          {error}
+          {t(`vec.error.${error.code}` as TKey)}
         </div>
       )}
 
@@ -81,16 +82,18 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
         />
 
         <div className="space-y-2.5 border-t border-border pt-3 dark:border-dark-border">
-          <label className="flex min-h-9 cursor-pointer items-center gap-2 text-sm font-medium text-ink dark:text-dark-ink">
-            <input
-              type="checkbox"
-              checked={removeBg}
-              onChange={(e) => setRemoveBg(e.target.checked)}
-              className={inspectorCheckbox}
-            />
-            {t('bg.remove')}
-            <Tooltip text={t('bg.auto.help')} label={t('bg.remove')} />
-          </label>
+          <div>
+            <label className="flex min-h-9 cursor-pointer items-center gap-2 text-sm font-medium text-ink dark:text-dark-ink">
+              <input
+                type="checkbox"
+                checked={removeBg}
+                onChange={(e) => setRemoveBg(e.target.checked)}
+                className={inspectorCheckbox}
+              />
+              {t('bg.remove')}
+            </label>
+            <p className={`${inspectorHint} -mt-1.5 mb-1 pl-6`}>{t('bg.auto.help')}</p>
+          </div>
 
           {removeBg && (
             <div className="space-y-2">
@@ -99,8 +102,10 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
               ) : null}
               <div>
                 <label id="vectorize-bg-tolerance-label" htmlFor="vectorize-bg-tolerance" className={inspectorLabel}>
-                  {t('bg.tolerance')}: <span className="ml-1 font-mono">{bgTolerance}</span>
-                  <Tooltip text={t('bg.tolerance.help')} label={t('bg.tolerance')} />
+                  {t('bg.tolerance')}:{' '}
+                  <span className="ml-1 font-mono">
+                    {bgTolerance}/128
+                  </span>
                 </label>
                 <input
                   type="range"
@@ -112,6 +117,7 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
                   className={inspectorRange}
                   aria-labelledby="vectorize-bg-tolerance-label"
                 />
+                <p className={`${inspectorHint} -mt-1`}>{t('bg.tolerance.hint')}</p>
               </div>
               {seeds.length > 0 && (
                 <button
@@ -129,8 +135,7 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
           {hasTranslucentEdges && (
             <div>
               <label id="vectorize-alpha-threshold-label" htmlFor="vectorize-alpha-threshold" className={inspectorLabel}>
-                {t('set.alphaThreshold')}: <span className="ml-1 font-mono">{settings.alphaThreshold}</span>
-                <Tooltip text={t('set.alphaThreshold.help')} label={t('set.alphaThreshold')} />
+                {t('set.alphaThreshold')}: <span className="ml-1 font-mono">{settings.alphaThreshold}/255</span>
               </label>
               <input
                 type="range"
@@ -142,6 +147,7 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
                 className={inspectorRange}
                 aria-labelledby="vectorize-alpha-threshold-label"
               />
+              <p className={`${inspectorHint} -mt-1`}>{t('set.alphaThreshold.help')}</p>
             </div>
           )}
         </div>
@@ -166,9 +172,30 @@ export function VectorizeInspector({ session }: VectorizeInspectorProps) {
       </InspectorDisclosure>
 
       {isLoading && (
-        <p className="border-t border-border pt-3 text-xs text-ink-muted dark:border-dark-border dark:text-dark-ink-muted" aria-live="polite">
-          {t('vec.vectorizing')}
-        </p>
+        <div className="space-y-2 border-t border-border pt-3 dark:border-dark-border" aria-live="polite">
+          <p className={inspectorHint}>{t('vec.vectorizing')}</p>
+          <div
+            className="h-1 w-full overflow-hidden rounded-full bg-border dark:bg-dark-border"
+            role="progressbar"
+            aria-label={t('vec.vectorizing')}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(progress * 100)}
+          >
+            <div
+              className="h-full rounded-full bg-accent transition-[width] duration-300 ease-out dark:bg-dark-accent"
+              style={{ width: `${Math.max(4, Math.round(progress * 100))}%` }}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => cancel()}
+            className="focus-ring inline-flex min-h-8 items-center gap-1 rounded-md px-1 text-xs font-medium text-ink-muted transition hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+          >
+            <X size={12} weight="bold" aria-hidden />
+            {t('workspace.cancelTrace')}
+          </button>
+        </div>
       )}
     </div>
   );

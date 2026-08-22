@@ -1,13 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { VectorizeSettings, WorkerResponse } from '@/types/svg.types';
+import { VectorizeSettings, VectorizeErrorCode, WorkerResponse } from '@/types/svg.types';
 
 const VECTORIZE_TIMEOUT_MS = 45_000;
+
+export interface VectorizerError {
+  code: VectorizeErrorCode | 'TIMEOUT' | 'NOT_INITIALIZED';
+  message: string; // technical detail for logs; UI should translate by code
+  statusCode?: number;
+}
 
 export interface VectorizerState {
   svg: string | null;
   isLoading: boolean;
   progress: number;
-  error: string | null;
+  error: VectorizerError | null;
 }
 
 export function useVectorizer() {
@@ -38,7 +44,7 @@ export function useVectorizer() {
     });
 
     worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
-      const { type, svg, message, value, requestId } = event.data;
+      const { type, svg, message, code, statusCode, value, requestId } = event.data;
 
       if (requestId !== undefined && requestId !== requestIdRef.current) {
         return;
@@ -54,15 +60,19 @@ export function useVectorizer() {
           svg: prev.svg,
           isLoading: false,
           progress: 0,
-          error: 'La vectorización no produjo un SVG válido. Prueba con menos colores o un nivel más limpio.',
+          error: { code: 'EMPTY_SVG', message: 'Vectorization produced no SVG' },
         }));
-      } else if (type === 'error' && message) {
+      } else if (type === 'error') {
         clearVectorizeTimeout();
         setState((prev) => ({
           svg: prev.svg,
           isLoading: false,
           progress: 0,
-          error: message,
+          error: {
+            code: code ?? 'UNKNOWN',
+            message: message ?? 'Vectorization failed',
+            statusCode,
+          },
         }));
       } else if (type === 'progress' && value !== undefined) {
         setState((prev) => ({ ...prev, progress: value }));
@@ -75,7 +85,7 @@ export function useVectorizer() {
         svg: prev.svg,
         isLoading: false,
         progress: 0,
-        error: `Worker error: ${err.message}`,
+        error: { code: 'WORKER_CRASHED', message: `Worker error: ${err.message}` },
       }));
     };
 
@@ -95,7 +105,7 @@ export function useVectorizer() {
           svg: null,
           isLoading: false,
           progress: 0,
-          error: 'Worker not initialized',
+          error: { code: 'NOT_INITIALIZED', message: 'Worker not initialized' },
         });
         return;
       }
@@ -119,7 +129,7 @@ export function useVectorizer() {
         setState((prev) => ({
           ...prev,
           isLoading: false,
-          error: 'La vectorización tardó demasiado. Prueba con menos colores o un nivel más limpio.',
+          error: { code: 'TIMEOUT', message: 'Vectorization timed out' },
         }));
       }, VECTORIZE_TIMEOUT_MS);
 

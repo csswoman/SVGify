@@ -48,7 +48,7 @@ export function TopBar({
   const nextTheme = theme === 'light' ? 'dark' : 'light';
 
   return (
-    <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-surface px-3 py-2 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:px-4 dark:border-dark-border dark:bg-dark-surface">
+    <header className="relative z-50 grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-surface px-3 py-2 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:px-4 dark:border-dark-border dark:bg-dark-surface">
       <div className="flex min-w-0 items-center gap-3">
         <Link
           href="/"
