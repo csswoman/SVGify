@@ -68,16 +68,16 @@ const DICT = {
     es: 'Siguientes pasos tras vectorizar',
   },
   'onboard.nextStepsTitle': {
-    en: 'SVG ready — prepare to download',
-    es: 'SVG listo — prepáralo para descargar',
+    en: 'Ready to optimize',
+    es: 'Listo para optimizar',
   },
   'onboard.nextFill': {
     en: 'Edit colors first',
     es: 'Editar colores primero',
   },
   'onboard.nextOptimize': {
-    en: 'Prepare for download',
-    es: 'Preparar para descargar',
+    en: 'Optimize & download',
+    es: 'Optimizar y descargar',
   },
   'onboard.nextStepsDismiss': {
     en: 'Dismiss next steps',

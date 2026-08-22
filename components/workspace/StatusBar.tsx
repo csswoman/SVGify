@@ -10,6 +10,7 @@ type PreviewBackground = 'checkerboard' | 'black';
 interface StatusBarProps {
   pathCount: number | null;
   byteSize: number | null;
+  colorCount?: number | null;
   activeTool: WorkspaceTool;
   statusMessage?: string | null;
   /** When true, hide ambient tool hints (next-steps chrome owns guidance). */
@@ -32,6 +33,7 @@ function formatBytes(bytes: number): string {
 export function StatusBar({
   pathCount,
   byteSize,
+  colorCount,
   activeTool,
   statusMessage,
   suppressGuidance = false,
@@ -78,6 +80,16 @@ export function StatusBar({
               ·
             </span>
             <span>{byteSize !== null ? formatBytes(byteSize) : '0 B'}</span>
+            {colorCount !== null && colorCount !== undefined ? (
+              <>
+                <span className="text-border dark:text-dark-border" aria-hidden>
+                  ·
+                </span>
+                <span>
+                  {colorCount} {colorCount === 1 ? t('vec.color') : t('vec.colors')}
+                </span>
+              </>
+            ) : null}
           </span>
         ) : null}
         {hint ? (

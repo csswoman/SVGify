@@ -5,6 +5,7 @@ import { DEFAULT_ZOOM_VIEWPORT, type SvgZoomViewport, type RGBColor } from '@/ty
 import type { WorkspaceTool } from '@/types/workspace.types';
 import { countPaths } from '@/lib/simplifyPath';
 import { svgByteSize } from '@/lib/optimizeSvg';
+import { extractPaletteFromSvgString } from '@/lib/colorUtils';
 import { isShapeTool } from '@/lib/workspaceTools';
 import { useI18n } from '@/lib/i18n';
 import { useVectorizeSession } from '@/hooks/useVectorizeSession';
@@ -141,6 +142,9 @@ export function Workspace() {
   const isPreTrace = activeTool === 'vectorize' && workspaceSvgString === null;
   const pathCount = workspaceSvgString ? countPaths(workspaceSvgString) : null;
   const byteSize = workspaceSvgString ? svgByteSize(workspaceSvgString) : null;
+  const colorCount = workspaceSvgString
+    ? extractPaletteFromSvgString(workspaceSvgString).length
+    : null;
   const statusZoom = canvasViewControls
     ? {
         scale: canvasViewControls.scale,
@@ -259,6 +263,7 @@ export function Workspace() {
               <StatusBar
                 pathCount={pathCount}
                 byteSize={byteSize}
+                colorCount={colorCount}
                 activeTool={activeTool}
                 statusMessage={exportState.effectiveStatusMessage ?? statusMessage}
                 suppressGuidance={guidanceTipActive}
