@@ -128,6 +128,7 @@ const DICT = {
   'vec.vector': { en: 'Vector SVG', es: 'SVG vectorial' },
   'vec.notTracedYet': { en: 'Waiting for first SVG…', es: 'Esperando el primer SVG…' },
   'vec.palette': { en: 'Palette', es: 'Paleta' },
+  'vec.paletteCount': { en: '{n} in palette', es: '{n} en paleta' },
   'vec.colors': { en: 'colors', es: 'colores' },
   'vec.color': { en: 'color', es: 'color' },
   'vec.download': { en: 'Download SVG', es: 'Descargar SVG' },
@@ -180,6 +181,8 @@ const DICT = {
   'set.detailLevel.detailed': { en: 'Detailed', es: 'Detallado' },
   'set.refine.summary': { en: 'Photo smoothing, corners, edge cleanup', es: 'Suavizado, esquinas y limpieza de borde' },
   'set.colors': { en: 'Colors', es: 'Colores' },
+  'set.maxColors': { en: 'Max colors', es: 'Máx. de colores' },
+  'set.maxColors.help': { en: 'Upper limit of colors the SVG can use. Start low for a cleaner file; raise it only if important colors disappear.', es: 'Límite superior de colores que puede usar el SVG. Empieza bajo para un archivo más limpio; súbelo solo si desaparecen colores importantes.' },
   'set.colors.help': { en: 'How many colors the SVG can use. Start low for a cleaner file; raise it only if important colors disappear.', es: 'Cuántos colores puede usar el SVG. Empieza bajo para un archivo más limpio; súbelo solo si desaparecen colores importantes.' },
   'set.cornerThreshold': { en: 'Corners', es: 'Esquinas' },
   'set.cornerThreshold.help': { en: 'How sharp an angle must be to count as a corner. Higher = fewer false corners and smoother outlines.', es: 'Qué tan agudo debe ser un ángulo para contar como esquina. Más alto = menos esquinas falsas y contornos más suaves.' },
@@ -203,7 +206,6 @@ const DICT = {
   'bg.tolerance.help': { en: 'Higher removes more of the background.', es: 'Más alto quita más del fondo.' },
   'bg.tolerance.hint': { en: 'Higher = removes more shades of the picked color.', es: 'Más alto = quita más tonos del color elegido.' },
   'bg.clear': { en: 'Clear picked points', es: 'Limpiar puntos elegidos' },
-
   // Color editor
   'col.title': { en: 'Edit Colors', es: 'Editar colores' },
   'col.subtitle': { en: 'Pick a fill color from the canvas with the eyedropper, then choose a replacement.', es: 'Recoge un color de relleno del lienzo con el cuentagotas, luego elige uno nuevo.' },
@@ -352,6 +354,7 @@ const DICT = {
   'shape.list.help': { en: 'Every shape in the SVG. Hover a row to highlight it; click the trash to delete it. Useful for removing stray bits.', es: 'Cada forma del SVG. Pasa el cursor por una fila para resaltarla; pulsa la papelera para borrarla. Útil para quitar trozos sueltos.' },
   'shape.previewBg': { en: 'View background', es: 'Fondo de la vista' },
   'shape.bgCheckerboard': { en: 'Checkerboard', es: 'Cuadrícula' },
+  'shape.bgCheckerboardLight': { en: 'Light checker', es: 'Cuadrícula clara' },
   'shape.bgSolid': { en: 'Solid', es: 'Sólido' },
 
   // Workspace tools
@@ -459,6 +462,17 @@ const DICT = {
 
   // Workspace chrome
   'workspace.download': { en: 'Download SVG', es: 'Descargar SVG' },
+  'workspace.resultColors': { en: 'Result: {n} colors', es: 'Resultado: {n} colores' },
+  'workspace.sizeCompare': { en: '{format} {before} → SVG {after}', es: '{format} {before} → SVG {after}' },
+  'workspace.svgHeavierWarn': {
+    en: 'SVG is heavier than the original — fewer colors or “Simple” detail will shrink it.',
+    es: 'El SVG pesa más que el original — menos colores o detalle “Simple” lo aligerará.',
+  },
+  'workspace.copySvg': { en: 'Copy SVG to clipboard', es: 'Copiar SVG al portapapeles' },
+  'workspace.copied': { en: 'Copied', es: 'Copiado' },
+  'workspace.viewSource': { en: 'View SVG source', es: 'Ver código del SVG' },
+  'workspace.sourceTitle': { en: 'SVG source', es: 'Código del SVG' },
+  'workspace.close': { en: 'Close', es: 'Cerrar' },
   'workspace.editableSvg': { en: 'Editable SVG', es: 'SVG editable' },
   'workspace.vectorizeHint': {
     en: 'Add an image to create an editable SVG',

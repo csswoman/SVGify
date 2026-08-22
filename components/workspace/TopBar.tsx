@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {
   ArrowCounterClockwise,
   ArrowClockwise,
@@ -49,17 +50,19 @@ export function TopBar({
   return (
     <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-surface px-3 py-2 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:px-4 dark:border-dark-border dark:bg-dark-surface">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="flex min-w-0 items-center gap-2.5">
+        <Link
+          href="/"
+          aria-label="SVGify"
+          className="focus-ring flex min-w-0 items-center gap-2.5 rounded-md"
+        >
           <AnchorPointIcon className="h-6 w-6 shrink-0 text-ink dark:text-dark-ink" />
-          <div className="min-w-0">
-            <span
-              className="block truncate text-[1.75rem] leading-[1.1] font-bold tracking-[-0.03em] text-ink dark:text-dark-ink"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              SVGify
-            </span>
-          </div>
-        </div>
+          <span
+            className="block truncate text-[1.75rem] leading-[1.1] font-bold tracking-[-0.03em] text-ink dark:text-dark-ink"
+            style={{ fontFamily: 'var(--font-display)' }}
+          >
+            SVGify
+          </span>
+        </Link>
         <span className="hidden items-center gap-1.5 rounded-full bg-success-soft px-2.5 py-1 dark:bg-dark-success-soft sm:inline-flex">
           <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-success dark:bg-dark-success" aria-hidden />
           <span className="text-[11px] font-medium text-ink dark:text-dark-ink">
@@ -130,7 +133,7 @@ export function TopBar({
             onClick={onInspectorToggle}
             aria-label={inspectorOpen ? t('workspace.closeInspector') : t('workspace.openInspector')}
             aria-pressed={inspectorOpen}
-            className="focus-ring flex h-10 w-10 items-center justify-center rounded-md border border-border text-ink-muted hover:bg-surface-sunken lg:hidden dark:border-dark-border dark:text-dark-ink-muted dark:hover:bg-dark-surface-sunken"
+            className="focus-ring flex h-10 w-10 items-center justify-center rounded-md border border-border text-ink-muted hover:bg-surface-sunken inspector:hidden dark:border-dark-border dark:text-dark-ink-muted dark:hover:bg-dark-surface-sunken"
           >
             {inspectorOpen ? <X size={18} aria-hidden /> : <Sidebar size={18} aria-hidden />}
           </button>

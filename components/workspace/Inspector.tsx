@@ -77,17 +77,17 @@ export function Inspector({
         <button
           type="button"
           aria-label={t('workspace.closeInspector')}
-          className="fixed inset-0 z-30 bg-black/30 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/30 inspector:hidden"
           onClick={onClose}
         />
       )}
       <aside
         aria-label={t('workspace.inspector')}
         className={[
-          'fixed inset-y-0 right-0 z-40 flex w-[min(100%,20rem)] max-h-dvh shrink-0 flex-col overflow-hidden border-l border-border bg-surface px-4 py-4 transition-transform duration-200 ease-out lg:static lg:z-auto lg:h-full lg:max-h-none lg:w-80 lg:translate-x-0 dark:border-dark-border dark:bg-dark-surface',
+          'fixed inset-y-0 right-0 z-40 flex w-[min(100%,20rem)] max-h-dvh shrink-0 flex-col overflow-hidden border-l border-border bg-surface px-4 py-4 transition-transform duration-200 ease-out inspector:static inspector:z-auto inspector:h-full inspector:max-h-none inspector:w-80 inspector:translate-x-0 dark:border-dark-border dark:bg-dark-surface',
           open
             ? 'translate-x-0'
-            : 'pointer-events-none translate-x-full lg:pointer-events-auto lg:translate-x-0',
+            : 'pointer-events-none translate-x-full inspector:pointer-events-auto inspector:translate-x-0',
         ].join(' ')}
       >
         {(activeTool === 'erase' || activeTool === 'erasePath') && editor ? (

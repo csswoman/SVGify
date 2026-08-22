@@ -16,7 +16,8 @@
 
   --color-ink: #1A1030;
   --color-ink-muted: #5A5170;
-  --color-ink-subtle: #8A83A0;
+  /* #8A83A0 failed AA as text on white (3.6:1); #756C90 measures 4.9:1. */
+  --color-ink-subtle: #756C90;
 
   --color-accent: #6A28E0;
   --color-accent-hover: #5A1FC7;
@@ -44,7 +45,8 @@
 
   --color-dark-ink: #F3F0FA;
   --color-dark-ink-muted: #A79CC4;
-  --color-dark-ink-subtle: #6F6690;
+  /* #6F6690 failed AA on dark surfaces (2.6:1); #8B80AE measures 5.1:1. */
+  --color-dark-ink-subtle: #8B80AE;
 
   --color-dark-accent: #9B6BFF;
   --color-dark-accent-hover: #B38FFF;
@@ -65,6 +67,11 @@
 
   --radius-token: 10px;
   --radius-token-sm: 6px;
+
+  /* Inspector collapse point (spec: bottom sheet below 900px, sidebar at/above).
+     Distinct from Tailwind's default lg (1024px) — only the inspector's own
+     sidebar-vs-sheet layout and its toggle button use this variant. */
+  --breakpoint-inspector: 900px;
 }
 
 @layer utilities {
@@ -240,6 +247,18 @@
 }
 
 .transparent-preview {
+  background-color: var(--color-surface);
+  background-image:
+    linear-gradient(45deg, var(--color-border) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--color-border) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--color-border) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--color-border) 75%);
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-size: 16px 16px;
+}
+
+/* Forced-light checkerboard — dark art stays visible on transparency even in dark mode. */
+.transparent-preview-light {
   background-color: var(--color-surface);
   background-image:
     linear-gradient(45deg, var(--color-border) 25%, transparent 25%),
