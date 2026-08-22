@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ImageDropzone } from '@/components/upload/ImageDropzone';
 import { ImagePreview } from '@/components/vectorize/ImagePreview';
@@ -23,6 +23,7 @@ import type { useWorkspaceShapeTools } from '@/hooks/useWorkspaceShapeTools';
 import type { useWorkspaceLabels } from '@/hooks/useWorkspaceLabels';
 import { useI18n } from '@/lib/i18n';
 import { CanvasOverlay } from '@/components/shared/CanvasOverlay';
+import { ImageComparisonSlider } from '@/components/shared/ImageComparisonSlider';
 import { createSampleIconImageData } from '@/lib/sampleImage';
 import { labelToClassName } from '@/lib/labelUtils';
 
@@ -77,7 +78,6 @@ export function Canvas({
 }: CanvasProps) {
   const { t } = useI18n();
   const canvasPanelRef = useRef<HTMLElement>(null);
-  const [showOriginalPreview, setShowOriginalPreview] = useState(false);
   const isVectorizeView = activeTool === 'vectorize';
   const canEdit = svgString !== null && editor !== null;
   const tracedSvg = svgString ?? vectorizeSession.svg;
@@ -106,8 +106,7 @@ export function Canvas({
       return;
     }
 
-    const useVectorizeZoom =
-      isVectorizeView && Boolean(tracedSvg) && !showOriginalPreview && !isPreTrace;
+    const useVectorizeZoom = isVectorizeView && Boolean(tracedSvg) && !isPreTrace;
     const active = useVectorizeZoom ? vectorizeZoom : imageZoom;
 
     onViewControlsChange({
@@ -123,7 +122,6 @@ export function Canvas({
     showEditorSurface,
     isVectorizeView,
     tracedSvg,
-    showOriginalPreview,
     isPreTrace,
     vectorizeZoom.scale,
     vectorizeZoom.zoomIn,
@@ -137,7 +135,7 @@ export function Canvas({
   ]);
 
   useEffect(() => {
-    if (!isVectorizeView || !tracedSvg || showOriginalPreview) return;
+    if (!isVectorizeView || !tracedSvg) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
@@ -158,7 +156,7 @@ export function Canvas({
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isVectorizeView, showOriginalPreview, tracedSvg, vectorizeZoom]);
+  }, [isVectorizeView, tracedSvg, vectorizeZoom]);
   const handleCanvasStatusMessage = useCallback(
     (event: CanvasStatusEvent, detail?: string) => {
       if (event === 'colorPicked' && detail) {
@@ -311,14 +309,6 @@ export function Canvas({
                     </span>
                   )}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setShowOriginalPreview((v) => !v)}
-                  className="focus-ring min-h-8 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-                  aria-expanded={showOriginalPreview}
-                >
-                  {showOriginalPreview ? t('vec.hideOriginal') : t('workflow.compareOriginal')}
-                </button>
               </div>
 
               <div
@@ -330,35 +320,38 @@ export function Canvas({
                     {t('vec.notTracedYet')}
                   </div>
                 )}
-                <div
-                  ref={vectorizeContainerRef}
-                  className="w-full h-full"
-                  style={{ visibility: showOriginalPreview ? 'hidden' : 'visible' }}
-                  onPointerDown={vectorizeZoom.onPointerDown}
-                  onPointerMove={vectorizeZoom.onPointerMove}
-                  onPointerUp={vectorizeZoom.onPointerUp}
-                  onPointerCancel={vectorizeZoom.onPointerUp}
+                <ImageComparisonSlider
+                  before={
+                    <div className={removeBg ? 'h-full w-full' : 'pointer-events-none h-full w-full'}>
+                      <ImagePreview
+                        imageData={processedImageData}
+                        label={removeBg ? t('vec.originalPick') : t('vec.original')}
+                        onPick={removeBg ? handlePick : undefined}
+                        seeds={removeBg ? seeds : undefined}
+                        zoomTransform="scale(1)"
+                      />
+                    </div>
+                  }
+                  beforeLabel={t('vec.original')}
+                  afterLabel={t('vec.vector')}
+                  ariaLabel={t('workflow.compareOriginal')}
+                  beforeInteractive={removeBg}
                 >
-                  <SvgPreview
-                    svgString={svg}
-                    onSvgMount={handleVectorizeSvgMount}
-                    transparentBackground={false}
-                  />
-                </div>
-
-                {showOriginalPreview && (
-                  <ImagePreview
-                    imageData={processedImageData}
-                    label={removeBg ? t('vec.originalPick') : t('vec.original')}
-                    onPick={removeBg ? handlePick : undefined}
-                    seeds={removeBg ? seeds : undefined}
-                    zoomTransform={imageZoom.transform}
-                    onPointerDown={imageZoom.onPointerDown}
-                    onPointerMove={imageZoom.onPointerMove}
-                    onPointerUp={imageZoom.onPointerUp}
-                    onWheel={imageZoom.onWheel}
-                  />
-                )}
+                  <div
+                    ref={vectorizeContainerRef}
+                    className="h-full w-full"
+                    onPointerDown={vectorizeZoom.onPointerDown}
+                    onPointerMove={vectorizeZoom.onPointerMove}
+                    onPointerUp={vectorizeZoom.onPointerUp}
+                    onPointerCancel={vectorizeZoom.onPointerUp}
+                  >
+                    <SvgPreview
+                      svgString={svg}
+                      onSvgMount={handleVectorizeSvgMount}
+                      transparentBackground={false}
+                    />
+                  </div>
+                </ImageComparisonSlider>
               </div>
             </div>
           )}
@@ -375,21 +368,11 @@ export function Canvas({
               <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
                 {t(`tool.${activeTool}`)}
               </p>
-              {compareOriginalImage && (
-                <button
-                  type="button"
-                  onClick={() => setShowOriginalPreview((v) => !v)}
-                  className="focus-ring min-h-8 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-                  aria-expanded={showOriginalPreview}
-                >
-                  {showOriginalPreview ? t('vec.hideOriginal') : t('workflow.compareOriginal')}
-                </button>
-              )}
             </div>
             <div
               className={`relative min-h-0 flex-1 overflow-hidden border border-gray-200 dark:border-gray-700 ${previewBackgroundClass}`}
               style={{
-                cursor: showEditorSurface && !showOriginalPreview ? cursor : undefined,
+                cursor: showEditorSurface ? cursor : undefined,
               }}
             >
               <CanvasOverlay isVisible={editor?.isBusy ?? false} label={t('workspace.working')} />
@@ -403,9 +386,19 @@ export function Canvas({
                   </span>
                 </div>
               ) : null}
-              <div
-                className="h-full w-full"
-                style={{ visibility: showOriginalPreview ? 'hidden' : 'visible' }}
+              <ImageComparisonSlider
+                before={
+                  <div className="pointer-events-none h-full w-full">
+                    <ImagePreview
+                      imageData={compareOriginalImage}
+                      label={t('vec.original')}
+                      zoomTransform="scale(1)"
+                    />
+                  </div>
+                }
+                beforeLabel={t('vec.original')}
+                afterLabel={t('workspace.editableSvg')}
+                ariaLabel={t('workflow.compareOriginal')}
               >
                 <ZoomableSvgViewport
                   containerRef={containerRef}
@@ -424,14 +417,7 @@ export function Canvas({
                   }}
                   aria-label={t('workspace.canvas')}
                 />
-              </div>
-              {showOriginalPreview && compareOriginalImage && (
-                <ImagePreview
-                  imageData={compareOriginalImage}
-                  label={t('vec.original')}
-                  zoomTransform="scale(1)"
-                />
-              )}
+              </ImageComparisonSlider>
             </div>
           </div>
           {showEditorSurface &&
