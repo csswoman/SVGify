@@ -118,7 +118,7 @@ export function generateLabelLegendComment(labels: LabelInfo[]): string {
   const uniqueLabels = Array.from(new Set(labels.map((l) => l.label))).sort((a, b) =>
     a.localeCompare(b)
   );
-  return `<!-- SVGcraft labels: ${uniqueLabels.join(', ')} -->`;
+  return `<!-- SVGify labels: ${uniqueLabels.join(', ')} -->`;
 }
 
 export function prependLabelLegend(svgString: string, labels: LabelInfo[]): string {

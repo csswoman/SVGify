@@ -14,11 +14,11 @@ export type Lang = 'en' | 'es';
 // Translation dictionary. Keys are dotted; values per language.
 const DICT = {
   // Header / footer
-  'app.badge': { en: 'On-device · nothing uploaded', es: 'En tu dispositivo · nada se sube' },
+  'app.badge': { en: 'Free · open source', es: 'Gratis · código abierto' },
   'app.source': { en: 'Source on GitHub', es: 'Código en GitHub' },
   'app.source.hint': {
-    en: 'SVG Tool lets you trace, refine, and download vector SVGs directly in your browser.',
-    es: 'SVG Tool te permite trazar, refinar y descargar SVG vectoriales directamente en tu navegador.',
+    en: 'SVGify traces images into vector SVGs you can refine and download.',
+    es: 'SVGify convierte imágenes en SVG vectoriales que puedes refinar y descargar.',
   },
   'lang.toggle': { en: 'EN', es: 'ES' },
   'lang.current': { en: 'English', es: 'Español' },
@@ -48,8 +48,8 @@ const DICT = {
     es: 'Convierte cualquier imagen en un SVG editable.',
   },
   'onboard.emptyBody': {
-    en: 'Runs entirely in your browser. Nothing is uploaded, nothing is stored.',
-    es: 'Funciona completamente en tu navegador. Nada se sube, nada se almacena.',
+    en: 'Drop a PNG, JPG or WEBP. Tracing runs on the server; editing and export happen in your browser.',
+    es: 'Suelta un PNG, JPG o WEBP. El trazado se hace en el servidor; la edición y la exportación, en tu navegador.',
   },
   'onboard.trySample': {
     en: 'Try a sample icon',

@@ -1,7 +1,7 @@
 import type { SvgBaseViewBox } from './svgViewBox';
 
-const EDITOR_SELECTOR = '[data-svgcraft-editor]';
-const TRANSIENT_LABEL_EDIT_SELECTOR = 'path[data-svgcraft-label-editing]';
+const EDITOR_SELECTOR = '[data-svgify-editor]';
+const TRANSIENT_LABEL_EDIT_SELECTOR = 'path[data-svgify-label-editing]';
 
 /** Strip transient editor overlays and hover styles before exporting SVG text. */
 export function serializeSvgElement(svg: SVGSVGElement, baseViewBox?: SvgBaseViewBox): string {
@@ -40,7 +40,7 @@ export function serializeSvgElement(svg: SVGSVGElement, baseViewBox?: SvgBaseVie
   });
 
   clone.querySelectorAll(TRANSIENT_LABEL_EDIT_SELECTOR).forEach((path) => {
-    path.removeAttribute('data-svgcraft-label-editing');
+    path.removeAttribute('data-svgify-label-editing');
     (path as SVGPathElement).style.stroke = '';
     (path as SVGPathElement).style.strokeWidth = '';
     (path as SVGPathElement).style.vectorEffect = '';

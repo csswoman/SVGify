@@ -42,7 +42,7 @@ export function useWorkspaceShapeTools(editor: ReturnType<typeof useWorkspaceSvg
   const refreshPathItems = useCallback((svg: SVGSVGElement) => {
     const items: PathItem[] = [];
     svg.querySelectorAll('path').forEach((el, i) => {
-      if (el.closest('defs') || el.closest('[data-svgcraft-editor]')) return;
+      if (el.closest('defs') || el.closest('[data-svgify-editor]')) return;
       items.push({
         el,
         id: i,

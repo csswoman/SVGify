@@ -99,7 +99,7 @@ export function NodeEditor({ pathEl, svgEl, onChange }: NodeEditorProps) {
 
   return (
     <g
-      data-svgcraft-editor
+      data-svgify-editor
       aria-hidden="true"
       onClick={(e) => e.stopPropagation()}
       onPointerMove={onPointerMove}

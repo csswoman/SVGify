@@ -34,11 +34,11 @@ export const metadata: Metadata = {
     template: "%s — SVGify",
   },
   description:
-    "Trace raster images into SVG, refine colors and shapes, and download everything locally in your browser.",
+    "Trace raster images into SVG, refine colors and shapes, and download a clean, optimized SVG.",
   openGraph: {
     title: "SVGify — Free SVG Vectorizer",
     description:
-      "Trace raster images into SVG, refine colors and shapes, and download everything locally in your browser.",
+      "Trace raster images into SVG, refine colors and shapes, and download a clean, optimized SVG.",
     url: "https://svg-ify.vercel.app/",
     siteName: "SVGify",
     type: "website",
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "SVGify — Free SVG Vectorizer",
     description:
-      "Trace raster images into SVG, refine colors and shapes, and download everything locally in your browser.",
+      "Trace raster images into SVG, refine colors and shapes, and download a clean, optimized SVG.",
   },
 };
 

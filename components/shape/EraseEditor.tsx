@@ -67,7 +67,7 @@ export function EraseEditor({ svgEl, size, onChange }: EraseEditorProps) {
   const vb = svgEl.viewBox.baseVal;
 
   return (
-    <g data-svgcraft-editor="true" aria-hidden="true">
+    <g data-svgify-editor="true" aria-hidden="true">
       <rect
         x={vb.x}
         y={vb.y}

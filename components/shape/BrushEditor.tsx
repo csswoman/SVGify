@@ -67,7 +67,7 @@ export function BrushEditor({ svgEl, color, size, onChange }: BrushEditorProps) 
 
   // A transparent capture rectangle over the whole canvas catches the strokes.
   return (
-    <g data-svgcraft-editor aria-hidden="true">
+    <g data-svgify-editor aria-hidden="true">
       <rect
         x={vb.x}
         y={vb.y}

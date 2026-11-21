@@ -1,5 +1,5 @@
 const SVG_NS = 'http://www.w3.org/2000/svg';
-const MASK_ID = 'svgcraft-erase-mask';
+const MASK_ID = 'svgify-erase-mask';
 let stackEraseId = 0;
 
 function directChild<T extends Element>(parent: Element, predicate: (el: Element) => el is T): T | null {
@@ -11,12 +11,12 @@ function directChild<T extends Element>(parent: Element, predicate: (el: Element
 
 function ensureEraseDefs(svgEl: SVGSVGElement): SVGDefsElement {
   let defs = directChild(svgEl, (el): el is SVGDefsElement =>
-    el instanceof SVGDefsElement && el.getAttribute('data-svgcraft-erase-defs') === 'true'
+    el instanceof SVGDefsElement && el.getAttribute('data-svgify-erase-defs') === 'true'
   );
 
   if (!defs) {
     defs = document.createElementNS(SVG_NS, 'defs');
-    defs.setAttribute('data-svgcraft-erase-defs', 'true');
+    defs.setAttribute('data-svgify-erase-defs', 'true');
     svgEl.insertBefore(defs, svgEl.firstChild);
   }
 
@@ -31,7 +31,7 @@ function setMaskBounds(mask: SVGMaskElement, svgEl: SVGSVGElement): void {
   mask.setAttribute('width', String(vb.width));
   mask.setAttribute('height', String(vb.height));
 
-  const keep = mask.querySelector<SVGRectElement>('[data-svgcraft-erase-base]');
+  const keep = mask.querySelector<SVGRectElement>('[data-svgify-erase-base]');
   if (keep) {
     keep.setAttribute('x', String(vb.x));
     keep.setAttribute('y', String(vb.y));
@@ -53,7 +53,7 @@ function createMask(svgEl: SVGSVGElement, id: string): SVGMaskElement {
   setMaskCoordinateMode(mask);
 
   const keep = document.createElementNS(SVG_NS, 'rect');
-  keep.setAttribute('data-svgcraft-erase-base', 'true');
+  keep.setAttribute('data-svgify-erase-base', 'true');
   keep.setAttribute('fill', '#fff');
   mask.appendChild(keep);
   defs.appendChild(mask);
@@ -74,12 +74,12 @@ export function ensureEraseMask(svgEl: SVGSVGElement): SVGMaskElement {
   setMaskBounds(mask, svgEl);
 
   let content = directChild(svgEl, (el): el is SVGGElement =>
-    el instanceof SVGGElement && el.getAttribute('data-svgcraft-content') === 'true'
+    el instanceof SVGGElement && el.getAttribute('data-svgify-content') === 'true'
   );
 
   if (!content) {
     content = document.createElementNS(SVG_NS, 'g');
-    content.setAttribute('data-svgcraft-content', 'true');
+    content.setAttribute('data-svgify-content', 'true');
     content.setAttribute('mask', `url(#${MASK_ID})`);
     svgEl.appendChild(content);
   } else {
@@ -90,7 +90,7 @@ export function ensureEraseMask(svgEl: SVGSVGElement): SVGMaskElement {
     if (node === content) return false;
     if (!(node instanceof Element)) return true;
     if (node === defs) return false;
-    if (node.getAttribute('data-svgcraft-editor') === 'true') return false;
+    if (node.getAttribute('data-svgify-editor') === 'true') return false;
     return true;
   });
 
@@ -144,7 +144,7 @@ export function clickedSubpathD(
     if (fillRule) testPath.setAttribute('fill-rule', fillRule);
     testPath.setAttribute('opacity', '0');
     testPath.setAttribute('pointer-events', 'none');
-    testPath.setAttribute('data-svgcraft-editor', 'true');
+    testPath.setAttribute('data-svgify-editor', 'true');
     parent.appendChild(testPath);
     const point = clientPointToElement(testPath, clientX, clientY);
     const containsPoint = testPath.isPointInFill(point);
@@ -171,11 +171,11 @@ export function addStackEraseShape(
   fillRule?: string | null
 ): void {
   const parent = targetPath.parentElement;
-  if (!parent || parent.closest('defs') || parent.getAttribute('data-svgcraft-editor') === 'true') {
+  if (!parent || parent.closest('defs') || parent.getAttribute('data-svgify-editor') === 'true') {
     return;
   }
 
-  const mask = createMask(svgEl, `svgcraft-stack-erase-mask-${++stackEraseId}`);
+  const mask = createMask(svgEl, `svgify-stack-erase-mask-${++stackEraseId}`);
   const erase = document.createElementNS(SVG_NS, 'path');
   erase.setAttribute('d', d);
   erase.setAttribute('fill', '#000');
@@ -183,7 +183,7 @@ export function addStackEraseShape(
   mask.appendChild(erase);
 
   const group = document.createElementNS(SVG_NS, 'g');
-  group.setAttribute('data-svgcraft-stack-erase', 'true');
+  group.setAttribute('data-svgify-stack-erase', 'true');
   group.setAttribute('mask', `url(#${mask.id})`);
 
   const siblings = Array.from(parent.childNodes);
@@ -194,7 +194,7 @@ export function addStackEraseShape(
   parent.insertBefore(group, first);
 
   for (const node of siblings.slice(0, targetIndex + 1)) {
-    if (node instanceof Element && node.getAttribute('data-svgcraft-editor') === 'true') continue;
+    if (node instanceof Element && node.getAttribute('data-svgify-editor') === 'true') continue;
     group.appendChild(node);
   }
 }

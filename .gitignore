@@ -56,3 +56,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local agent / tool state
+.kiro/
+.claude/
+.agents/
+.playwright-mcp/
+tmp-*/

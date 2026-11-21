@@ -88,7 +88,7 @@ export default function OpenGraphImage() {
               letterSpacing: '-0.05em',
             }}
           >
-            Trace images into SVG in your browser.
+            Trace images into editable SVG.
           </div>
           <div
             style={{

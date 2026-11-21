@@ -115,7 +115,7 @@ export function serializeSvgAtBaseViewBox(svg: SVGSVGElement, base: SvgBaseViewB
   const current = svg.getAttribute('viewBox');
   svg.setAttribute('viewBox', `${base.x} ${base.y} ${base.w} ${base.h}`);
   const clone = svg.cloneNode(true) as SVGSVGElement;
-  clone.querySelectorAll('[data-svgcraft-editor]').forEach((el) => el.remove());
+  clone.querySelectorAll('[data-svgify-editor]').forEach((el) => el.remove());
   const serialized = new XMLSerializer().serializeToString(clone);
   if (current !== null) {
     svg.setAttribute('viewBox', current);

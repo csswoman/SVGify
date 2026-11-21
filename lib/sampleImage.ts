@@ -3,7 +3,7 @@
  * so users vectorize something recognizable on their very first run.
  */
 export async function createSampleIconImageData(): Promise<ImageData> {
-  const image = await loadImage('/craftie-icon.png');
+  const image = await loadImage('/sample-icon.png');
 
   const canvas = document.createElement('canvas');
   canvas.width = image.naturalWidth;

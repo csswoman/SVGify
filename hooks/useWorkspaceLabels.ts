@@ -35,7 +35,7 @@ export function useWorkspaceLabels(
     previous.path.style.stroke = previous.stroke;
     previous.path.style.strokeWidth = previous.strokeWidth;
     previous.path.style.vectorEffect = previous.vectorEffect;
-    previous.path.removeAttribute('data-svgcraft-label-editing');
+    previous.path.removeAttribute('data-svgify-label-editing');
     editingPathRestoreRef.current = null;
   }, []);
 
@@ -50,7 +50,7 @@ export function useWorkspaceLabels(
           strokeWidth: path.style.strokeWidth,
           vectorEffect: path.style.vectorEffect,
         };
-        path.setAttribute('data-svgcraft-label-editing', 'true');
+        path.setAttribute('data-svgify-label-editing', 'true');
         path.style.stroke = '#2563eb';
         path.style.strokeWidth = '3';
         path.style.vectorEffect = 'non-scaling-stroke';

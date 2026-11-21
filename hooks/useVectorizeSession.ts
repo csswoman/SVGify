@@ -42,13 +42,15 @@ export function useVectorizeSession({ imageData, enabled = true }: UseVectorizeS
   const [seeds, setSeeds] = useState<SeedPoint[]>([]);
   const { svg, isLoading, error, progress, vectorize, cancel, clear } = useVectorizer();
 
-  // Restore persisted preferences once on mount (client-only).
+  // Restore persisted preferences once on mount (client-only). Reading storage
+  // in a lazy useState initializer would desync the prerendered HTML on hydration.
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(VECTORIZE_STORAGE_KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw) as PersistedVectorizeState;
       if (parsed.settings && typeof parsed.settings === 'object') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from persisted user preference on mount
         setSettings((prev) => ({ ...prev, ...parsed.settings }));
       }
       if (typeof parsed.removeBg === 'boolean') setRemoveBg(parsed.removeBg);

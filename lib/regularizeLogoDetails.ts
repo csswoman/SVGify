@@ -945,7 +945,7 @@ export function regularizeLogoDetails(
 
   if (!innerBoundary) return output;
 
-  const clipId = 'svgcraft-logo-inner-boundary';
+  const clipId = 'svgify-logo-inner-boundary';
   const boundary = innerBoundary as Bounds;
   const center = boundsCenter(boundary);
   const rx = round((boundary.right - boundary.left) / 2);

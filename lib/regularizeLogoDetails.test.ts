@@ -14,13 +14,13 @@ describe('regularizeLogoDetails', () => {
     const output = regularizeLogoDetails(svg);
 
     expect(output).toContain('fill-rule="evenodd"');
-    expect(output).toContain('<clipPath id="svgcraft-logo-inner-boundary"><ellipse cx="80" cy="80" rx="70" ry="70"/></clipPath>');
-    expect(output).toContain('clip-path="url(#svgcraft-logo-inner-boundary)"');
+    expect(output).toContain('<clipPath id="svgify-logo-inner-boundary"><ellipse cx="80" cy="80" rx="70" ry="70"/></clipPath>');
+    expect(output).toContain('clip-path="url(#svgify-logo-inner-boundary)"');
   });
 
   it('does not turn a compound square frame into a circular badge', () => {
     const svg = '<svg viewBox="0 0 160 160"><path fill="#501b56" d="M0 0H160V160H0ZM10 10H150V150H10Z"/></svg>';
-    expect(regularizeLogoDetails(svg)).not.toContain('svgcraft-logo-inner-boundary');
+    expect(regularizeLogoDetails(svg)).not.toContain('svgify-logo-inner-boundary');
   });
 
   it('does not rewrite large artwork or shapes without a curved end', () => {

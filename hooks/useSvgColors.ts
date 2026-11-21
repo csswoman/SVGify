@@ -23,7 +23,7 @@ function getColorStats(svgElement: SVGElement): ColorStat[] {
   const stats = new Map<string, ColorStat>();
 
   svgElement.querySelectorAll('path').forEach((path) => {
-    if (path.closest('defs') || path.closest('[data-svgcraft-editor]')) return;
+    if (path.closest('defs') || path.closest('[data-svgify-editor]')) return;
     const fill = path.getAttribute('fill');
     const stroke = path.getAttribute('stroke');
     const visibleColor = fill && fill !== 'none' ? fill : stroke;

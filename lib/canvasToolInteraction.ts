@@ -126,7 +126,7 @@ export function resolvePathFromEvent(
         (el): el is SVGPathElement =>
           el instanceof SVGPathElement &&
           container.contains(el) &&
-          !el.closest('[data-svgcraft-editor]')
+          !el.closest('[data-svgify-editor]')
       );
 
     // The browser returns this list from front to back, so the first path is
